@@ -1,20 +1,22 @@
 # Import necessary libraries
 import os
-import openai
-from fastapi import FastAPI, HTTPException, status, Query, Security, Depends
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
-from qdrant_client import QdrantClient
-from qdrant_client.http import models
-from qdrant_client.http.models import CollectionDescription
-from pydantic import BaseModel
+import re
 from datetime import datetime
 from typing import Optional, List
+
+import openai
+from fastapi import FastAPI, HTTPException, Depends, Query, status, FileResponse
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel, validator
+
+from qdrant_client import QdrantClient
+from qdrant_client.http import models
 from scipy.spatial.distance import cosine
 
-# Importing local modules
-from functions import load_configuration
+# Importing local modules assuming they contain required functionalities
+from functions import load_configuration, get_text_entries, calculate_similarity_scores
+
 
 # Load configuration on startup
 BASE_URL, API_KEY, qdrant_host, qdrant_port, qdrant_api_key, openai_api_key, qdrant_client = load_configuration()
@@ -44,16 +46,27 @@ class CollectionAction(BaseModel):
     action: str
     name: str
 
-class EmbeddingData(BaseModel):
-    collection: str
-    content: str
-    keywords: Optional[str] = Query(None, regex=r'^(\w+(,\s*\w+)*)?$')  # Comma-separated keywords or single word
+class KeywordModel(BaseModel):
+    # Define a common validator for keywords in a base class
+    keywords: Optional[List[str]] = []
 
-class SearchData(BaseModel):
+    @validator('keywords', each_item=True)
+    def validate_keywords(cls, v):
+        if not re.match(r'^\w+$', v):
+            raise ValueError("Keywords must be single words composed of alphanumeric characters and underscores.")
+        return v
+
+class EmbeddingData(KeywordModel):
+    content: str
+    collection: str
+    # Inherits the 'keywords' field with validator from KeywordModel
+
+class SearchData(KeywordModel):
     collection: str
     number_of_results: int
     query: str
-    keywords: Optional[str] = Query(None, regex=r'^(\w+(,\s*\w+)*)?$')  # Comma-separated keywords or single word to filter search results
+    # Inherits the 'keywords' field with validator from KeywordModel and allows setting it via Query with default None
+    keywords: Optional[List[str]] = Query(None)
 
 @app.post("/collections/", operation_id="manage_collections")
 async def manage_collection(data: CollectionAction):
@@ -116,39 +129,31 @@ async def add_embedding(data: EmbeddingData, qdrant_client: QdrantClient = Depen
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/search/", operation_id="retrieve")
-async def search_embeddings(data: SearchData):
-    # Validate input data
+async def search_embeddings(data: SearchData, qdrant_client: QdrantClient = Depends(load_qdrant_client)):
     if data.keywords:
-        keywords_list = [keyword.strip() for keyword in data.keywords.split(',')]
-        for keyword in keywords_list:
-            if len(keyword.split()) > 1:  # Check if keyword contains multiple words
-                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Keywords must be single words or multiple words separated by commas")
+        for keyword in data.keywords:
+            if ' ' in keyword:  # Check if keyword contains spaces
+                raise HTTPException(status_code=400, detail="Keywords must be single words.")
 
-    # Generate embedding for the search query
-    query_embedding_response = openai.Embedding.create(
-        input=data.query,
-        model="text-embedding-3-large",
-        dimensions=128
-    )
-    query_embedding = query_embedding_response['data'][0]['embedding']
+    # Generate embedding for the search query using the specified model and dimensions
+    try:
+        response = openai.Embedding.create(
+            input=data.query,
+            model="text-embedding-3-large",  # Your specified model
+            dimensions=128                    # Specified dimension
+        )
+        query_embedding = response['data'][0]['embedding']
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to generate embedding: {str(e)}")
 
-    # Retrieve text entries from the vector database based on search criteria
-    text_entries = get_text_entries(data.collection, data.keywords)
+    # Retrieve and process text entries (this part needs actual implementation details)
+    text_entries = get_text_entries(data.collection, data.keywords)  # Assuming you have this function implemented
 
-    # Filter text entries based on keywords if provided
-    filtered_text_entries = filter_text_entries(text_entries, data.keywords)
+    # Calculate similarity and prepare results
+    search_results = calculate_similarity_scores(text_entries, query_embedding)
 
-    # Calculate similarity scores between query embedding and filtered text entry embeddings
-    search_results = []
-    for text_entry in filtered_text_entries:
-        entry_embedding = text_entry['embedding']
-        similarity_score = 1 - cosine(query_embedding, entry_embedding)
-        search_results.append({"text_entry": text_entry, "similarity_score": similarity_score})
-
-    # Rank search results based on similarity scores
+    # Sort and return top results
     search_results.sort(key=lambda x: x["similarity_score"], reverse=True)
-
-    # Return top-ranked search results
     return {"results": search_results[:data.number_of_results]}
 
 # Root endpoint serving index.html directly
