@@ -6,7 +6,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from qdrant_client import QdrantClient
-from qdrant_client.http.models import CollectionDescription, FieldIndex
+from qdrant_client.http.models import CollectionDescription
 from pydantic import BaseModel
 from datetime import datetime
 from typing import Optional, List
@@ -67,19 +67,28 @@ async def manage_collection(data: CollectionAction):
             # Assuming a vector size, this should match your model's output dimensions
             vector_size = 128  # Example size
 
-            # Define field indexes if needed
-            field_indexes = [
-                FieldIndex(field_name="metadata.timestamp", field_type="float"),
-                FieldIndex(field_name="metadata.context", field_type="keyword")
-            ]
+            # Configuration for the collection
+            collection_config = {
+                "vector_size": vector_size,
+                "distance": "Cosine",
+                "index": {  # Setting up index for metadata fields
+                    "context": {
+                        "type": "keyword"
+                    },
+                    "keywords": {
+                        "type": "keyword_array"
+                    },
+                    "timestamp": {
+                        "type": "integer"  # Assuming timestamp is stored as an integer
+                    }
+                }
+            }
 
-            # Creating collection with the specified configuration
+            print(f"Configuration set for '{data.name}' with vector size and metadata indexing")
             response = qdrant_client.recreate_collection(
                 collection_name=data.name,
-                collection_description=CollectionDescription(vector_size=vector_size),
-                field_indexes=field_indexes
+                config=collection_config
             )
-
             print(f"Collection '{data.name}' successfully created with response: {response}")
             return {"message": f"Collection '{data.name}' created successfully", "response": response}
 
@@ -110,7 +119,7 @@ async def add_embedding(data: EmbeddingData):
     embeddings_response = openai.Embedding.create(
         input=data.content,
         model="text-embedding-3-large",
-        dimensions=256
+        dimensions=128
     )
     embedding = embeddings_response['data'][0]['embedding']
 
@@ -141,7 +150,7 @@ async def search_embeddings(data: SearchData):
     query_embedding_response = openai.Embedding.create(
         input=data.query,
         model="text-embedding-3-large",
-        dimensions=256
+        dimensions=128
     )
     query_embedding = query_embedding_response['data'][0]['embedding']
 
