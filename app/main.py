@@ -19,7 +19,7 @@ from functions import load_configuration, get_text_entries, calculate_similarity
 
 
 # Load configuration on startup
-BASE_URL, API_KEY, qdrant_host, qdrant_port, qdrant_api_key, openai_api_key, qdrant_client = load_configuration()
+BASE_URL, API_KEY, qdrant_host, qdrant_port, qdrant_api_key, qdrant_client = load_configuration()
 print(f"Configuration Loaded: BASE_URL={BASE_URL}, API_KEY={API_KEY}, qdrant_host={qdrant_host}, qdrant_port={qdrant_port}")
 
 # Setup the bearer token authentication scheme
