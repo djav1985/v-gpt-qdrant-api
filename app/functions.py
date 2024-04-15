@@ -14,6 +14,6 @@ def load_configuration():
     openai_api_key = os.getenv("OPENAI_API_KEY")
 
     # Initialize the QdrantClient without protocol in the host
-    qdrant_client = QdrantClient(host=qdrant_host, port=qdrant_port, api_key=qdrant_api_key)
+    qdrant_client = QdrantClient(url=f"http://{qdrant_host}:{qdrant_port}", api_key=qdrant_api_key)
 
     return BASE_URL, API_KEY, qdrant_host, qdrant_port, qdrant_api_key, openai_api_key, qdrant_client
