@@ -5,7 +5,7 @@ from fastapi import FastAPI, HTTPException, status, Query, Security
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
-from qdrant_client import QdrantClient, models, VectorParams, Distance
+from qdrant_client import QdrantClient, models, Distance
 from qdrant_client.http.models import CollectionDescription
 from pydantic import BaseModel
 from datetime import datetime
