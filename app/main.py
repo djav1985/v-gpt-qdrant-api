@@ -1,6 +1,7 @@
+# Import necessary libraries
 import openai
 import os
-from fastapi import FastAPI, HTTPException, status
+from fastapi import FastAPI, HTTPException, status, Query
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from qdrant_client import QdrantClient
 from qdrant_client.http.models import CollectionDescription
@@ -41,17 +42,17 @@ class CollectionAction(BaseModel):
 class EmbeddingData(BaseModel):
     collection: str
     content: str
-    keywords: Optional[str] = None  # Comma-separated keywords
-    context: Optional[str] = None  # Indicates message context (AI, user, info)
+    keywords: Optional[str] = Query(None, regex=r'^(\w+(,\s*\w+)*)?$')  # Comma-separated keywords or single word
+    context: Optional[str] = Query(None, regex=r'^ai|user|info$')  # Indicates message context (ai, user, info)
 
 class SearchData(BaseModel):
     collection: str
     number_of_results: int
     query: str
-    context: Optional[str] = None  # Search based on message context (ai, user, info)
-    keywords: Optional[str] = None  # Comma-separated keywords to filter search results
+    context: Optional[str] = Query(None, regex=r'^ai|user|info$')  # Search based on message context (ai, user, info)
+    keywords: Optional[str] = Query(None, regex=r'^(\w+(,\s*\w+)*)?$')  # Comma-separated keywords or single word to filter search results
 
-@app.post("/collections/")
+@app.post("/collections/", operation_id="manage_collections")
 async def manage_collection(data: CollectionAction):
     if data.action == 'create':
         # Define vectors configuration with indexing by timestamp and context
@@ -77,39 +78,29 @@ async def manage_collection(data: CollectionAction):
 
     return {"message": f"Collection '{data.name}' {data.action}d successfully", "response": response}
 
-@app.post("/embeddings/")
+@app.post("/embeddings/", operation_id="save")
 async def add_embedding(data: EmbeddingData):
-    # Validate context field
-    valid_context_values = ["ai", "user", "info"]
-    if data.context and data.context not in valid_context_values:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid context value. Valid values are: ai, user, info")
-
-    # Validate keywords field
+    # Validate input data
     if data.keywords:
         keywords_list = [keyword.strip() for keyword in data.keywords.split(',')]
         for keyword in keywords_list:
             if len(keyword.split()) > 1:  # Check if keyword contains multiple words
                 raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Keywords must be single words or multiple words separated by commas")
 
-    # Generate timestamp
-    timestamp = datetime.now()
-
-    # Split keywords into a list
-    keywords = [] if not data.keywords else [keyword.strip() for keyword in data.keywords.split(',')]
-
-    # Add metadata including timestamp, keywords, and context
-    metadata = {
-        "timestamp": timestamp.isoformat(),
-        "keywords": keywords,
-        "context": data.context
-    }
-
-    # Generate embedding
+    # Generate embedding with specified dimensions
     embeddings_response = openai.Embedding.create(
         input=data.content,
-        model="text-embedding-ada-002"
+        model="text-embedding-3-large",
+        dimensions=256
     )
     embedding = embeddings_response['data'][0]['embedding']
+
+    # Generate metadata including timestamp, keywords, and context
+    metadata = {
+        "timestamp": datetime.now().isoformat(),
+        "keywords": data.keywords.split(',') if data.keywords else [],
+        "context": data.context
+    }
 
     # Upload embedding with metadata to the collection
     response = qdrant_client.upload_collection(
@@ -118,35 +109,41 @@ async def add_embedding(data: EmbeddingData):
     )
     return {"message": "Embedding added successfully", "response": response}
 
-@app.get("/search/")
+@app.get("/search/", operation_id="retrieve")
 async def search_embeddings(data: SearchData):
-    # Initialize metadata filter
-    metadata_filter = {}
+    # Validate input data
+    if data.keywords:
+        keywords_list = [keyword.strip() for keyword in data.keywords.split(',')]
+        for keyword in keywords_list:
+            if len(keyword.split()) > 1:  # Check if keyword contains multiple words
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Keywords must be single words or multiple words separated by commas")
 
-    # Apply context filter if provided
-    if data.context:
-        metadata_filter["context"] = data.context
-
-    # Convert space-separated string of keywords into a list if provided
-    keywords_list = None if not data.keywords else [keyword.strip() for keyword in data.keywords.split(',')]
-
-    # Initialize text filter
-    text_filter = None
-
-    # Apply keywords filter if provided
-    if keywords_list:
-        text_filter = keywords_list
-
-    # Perform search with context filter, keywords filter, and query
-    search_response = qdrant_client.search(
-        collection_name=data.collection,
-        query_vector=[float(x) for x in data.query.split()],  # Convert space-separated string of floats into a list
-        top=data.number_of_results,
-        metadata_filter=metadata_filter,
-        text_filter=text_filter,
-        text_query=data.query  # Use query for text search
+    # Generate embedding for the search query
+    query_embedding_response = openai.Embedding.create(
+        input=data.query,
+        model="text-embedding-3-large",
+        dimensions=256
     )
-    return {"results": search_response}
+    query_embedding = query_embedding_response['data'][0]['embedding']
+
+    # Retrieve text entries from the vector database based on search criteria
+    text_entries = get_text_entries(data.collection, data.context, data.keywords)
+
+    # Filter text entries based on context and keywords if provided
+    filtered_text_entries = filter_text_entries(text_entries, data.context, data.keywords)
+
+    # Calculate similarity scores between query embedding and filtered text entry embeddings
+    search_results = []
+    for text_entry in filtered_text_entries:
+        entry_embedding = text_entry['embedding']
+        similarity_score = 1 - cosine(query_embedding, entry_embedding)
+        search_results.append({"text_entry": text_entry, "similarity_score": similarity_score})
+
+    # Rank search results based on similarity scores
+    search_results.sort(key=lambda x: x["similarity_score"], reverse=True)
+
+    # Return top-ranked search results
+    return {"results": search_results[:data.number_of_results]}
 
 # Root endpoint serving index.html directly
 @app.get("/", include_in_schema=False)
