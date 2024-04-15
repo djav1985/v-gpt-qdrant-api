@@ -1,13 +1,17 @@
 # Import necessary libraries
 import openai
-import os
+from os import getenv  # Environment variables
 from fastapi import FastAPI, HTTPException, status, Query, Security
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from qdrant_client import QdrantClient
 from qdrant_client.http.models import CollectionDescription
 from pydantic import BaseModel
 from datetime import datetime
 from typing import Optional, List
+from scipy.spatial.distance import cosine
+
 
 # Importing local modules
 from functions import load_configuration
