@@ -67,7 +67,7 @@ async def manage_collection(data: CollectionAction):
             # Create vectors configuration
             vectors_config = {
                 "vector_size": 128,  # Set vector size to match embedding dimension
-                "distance": "Cosine"  # Set distance function
+                "distance": "Cosine",  # Set distance function
                 "index": {  # Setting up index for metadata fields
                     "context": {
                         "type": "keyword"
