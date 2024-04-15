@@ -58,29 +58,35 @@ class SearchData(BaseModel):
 
 @app.post("/collections/", operation_id="manage_collections")
 async def manage_collection(data: CollectionAction):
-    if data.action == 'create':
-        # Define vectors configuration with indexing by timestamp and context
-        vectors_config = CollectionDescription(
-            distance="Cosine",
-            indexing=[
-                {"field": "metadata.timestamp", "type": "float", "params": {"dimension": 1}},
-                {"field": "metadata.context", "type": "string", "params": {"dimension": 1}}
-            ]
-        )
+    try:
+        if data.action == 'create':
+            # Ensure you replace 'YourCollectionName' with the appropriate logic to set collection names
+            vectors_config = CollectionDescription(
+                name=data.name,  # Set the collection name dynamically based on input
+                distance="Cosine",
+                indexing=[
+                    {"field": "metadata.timestamp", "type": "float", "params": {"dimension": 1}},
+                    {"field": "metadata.context", "type": "string", "params": {"dimension": 1}}
+                ]
+            )
 
-        # Create or recreate the collection with the specified configuration
-        response = qdrant_client.recreate_collection(
-            collection_name=data.name,
-            vectors_config=vectors_config
-        )
-    elif data.action == 'delete':
-        # Delete the collection
-        response = qdrant_client.delete_collection(collection_name=data.name)
-    else:
-        # Handle invalid action
-        raise HTTPException(status_code=400, detail="Invalid action specified")
+            # Create or recreate the collection with the specified configuration
+            response = qdrant_client.recreate_collection(
+                collection_name=data.name,
+                vectors_config=vectors_config
+            )
+            return {"message": f"Collection '{data.name}' created successfully", "response": response}
 
-    return {"message": f"Collection '{data.name}' {data.action}d successfully", "response": response}
+        elif data.action == 'delete':
+            # Delete the collection
+            response = qdrant_client.delete_collection(collection_name=data.name)
+            return {"message": f"Collection '{data.name}' deleted successfully", "response": response}
+
+        else:
+            raise HTTPException(status_code=400, detail="Invalid action specified")
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/embeddings/", operation_id="save")
 async def add_embedding(data: EmbeddingData):
