@@ -9,7 +9,7 @@ def load_configuration():
     BASE_URL = getenv("BASE_URL", "http://localhost")  # Ensure HTTP protocol is included for BASE_URL if needed elsewhere
     API_KEY = getenv("API_KEY")
     qdrant_host = getenv("QDRANT_HOST", "localhost")  # No protocol should be included here
-    qdrant_port = int(getenv("QDRANT_PORT", 6336))
+    qdrant_port = int(getenv("QDRANT_PORT", 6333))
     qdrant_api_key = getenv("QDRANT_API_KEY")
     openai_api_key = getenv("OPENAI_API_KEY")
 

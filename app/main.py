@@ -12,24 +12,24 @@ from datetime import datetime
 from typing import Optional, List
 from scipy.spatial.distance import cosine
 
-
 # Importing local modules
 from functions import load_configuration
 
 # Load configuration on startup
 BASE_URL, API_KEY, qdrant_host, qdrant_port, qdrant_api_key, openai_api_key, qdrant_client = load_configuration()
+print(f"Configuration Loaded: BASE_URL={BASE_URL}, API_KEY={API_KEY}, qdrant_host={qdrant_host}, qdrant_port={qdrant_port}")
 
 # Setup the bearer token authentication scheme
 bearer_scheme = HTTPBearer(auto_error=False)
 
 # Async function to get the API key from the request
 async def get_api_key(credentials: HTTPAuthorizationCredentials = Security(bearer_scheme)):
-    # If the API key is not provided or does not match the expected value, return a 403 error
     if API_KEY and (not credentials or credentials.credentials != API_KEY):
+        print("API key validation failed")
         raise HTTPException(status_code=HTTP_403_FORBIDDEN, detail="Invalid or missing API key")
-
-    # Return the provided API key, or None if it was not provided
+    print("API key validated successfully")
     return credentials.credentials if credentials else None
+
 
 # FastAPI application instance setup
 app = FastAPI(
@@ -58,11 +58,13 @@ class SearchData(BaseModel):
 
 @app.post("/collections/", operation_id="manage_collections")
 async def manage_collection(data: CollectionAction):
+    print(f"Request to manage collection received with action: {data.action} and name: {data.name}")
+
     try:
         if data.action == 'create':
-            # Ensure you replace 'YourCollectionName' with the appropriate logic to set collection names
+            print(f"Preparing to create a collection named '{data.name}'")
             vectors_config = CollectionDescription(
-                name=data.name,  # Set the collection name dynamically based on input
+                name=data.name,
                 distance="Cosine",
                 indexing=[
                     {"field": "metadata.timestamp", "type": "float", "params": {"dimension": 1}},
@@ -70,23 +72,28 @@ async def manage_collection(data: CollectionAction):
                 ]
             )
 
-            # Create or recreate the collection with the specified configuration
+            print(f"Vector configuration set for '{data.name}' with distance: {vectors_config.distance}")
             response = qdrant_client.recreate_collection(
                 collection_name=data.name,
                 vectors_config=vectors_config
             )
+            print(f"Collection '{data.name}' successfully created with response: {response}")
             return {"message": f"Collection '{data.name}' created successfully", "response": response}
 
         elif data.action == 'delete':
-            # Delete the collection
+            print(f"Preparing to delete a collection named '{data.name}'")
             response = qdrant_client.delete_collection(collection_name=data.name)
+            print(f"Collection '{data.name}' successfully deleted with response: {response}")
             return {"message": f"Collection '{data.name}' deleted successfully", "response": response}
 
         else:
+            print(f"Invalid action specified: {data.action}")
             raise HTTPException(status_code=400, detail="Invalid action specified")
 
     except Exception as e:
+        print(f"Error handling the {data.action} action for the collection: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.post("/embeddings/", operation_id="save")
 async def add_embedding(data: EmbeddingData):
