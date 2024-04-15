@@ -1,7 +1,7 @@
 # Import necessary libraries
 import openai
 import os
-from fastapi import FastAPI, HTTPException, status, Query
+from fastapi import FastAPI, HTTPException, status, Query, Security
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from qdrant_client import QdrantClient
 from qdrant_client.http.models import CollectionDescription
