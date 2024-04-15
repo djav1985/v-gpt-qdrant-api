@@ -1,7 +1,7 @@
 # Import necessary libraries
 import os
 import openai
-from fastapi import FastAPI, HTTPException, status, Query, Security
+from fastapi import FastAPI, HTTPException, status, Query, Security, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -90,34 +90,30 @@ async def manage_collection(data: CollectionAction):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/embeddings/", operation_id="save")
-async def add_embedding(data: EmbeddingData):
-    # Validate input data
-    if data.keywords:
-        keywords_list = [keyword.strip() for keyword in data.keywords.split(',')]
-        for keyword in keywords_list:
-            if len(keyword.split()) > 1:  # Check if keyword contains multiple words
-                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Keywords must be single words or multiple words separated by commas")
+async def add_embedding(data: EmbeddingData, qdrant_client: QdrantClient = Depends(load_qdrant_client)):
+    try:
+        # Generate embedding using the updated OpenAI API
+        response = openai.Embedding.create(
+            model="text-embedding-3-large",
+            input=data.content,
+            dimensions=128
+        )
+        embedding = response['data']
 
-    # Generate embedding with specified dimensions
-    embeddings_response = openai.Embedding.create(
-        input=data.content,
-        model="text-embedding-3-large",
-        dimensions=128
-    )
-    embedding = embeddings_response['data'][0]['embedding']
+        # Metadata including timestamp, keywords
+        metadata = {
+            "timestamp": datetime.now().isoformat(),
+            "keywords": data.keywords
+        }
 
-    # Generate metadata including timestamp, keywords
-    metadata = {
-        "timestamp": datetime.now().isoformat(),
-        "keywords": data.keywords.split(',') if data.keywords else [],
-    }
-
-    # Upload embedding with metadata to the collection
-    response = qdrant_client.upload_collection(
-        collection_name=data.collection,
-        points=[{"id": 1, "vector": embedding, "metadata": metadata}]  # Ensure proper ID management in real applications
-    )
-    return {"message": "Embedding added successfully", "response": response}
+        # Upload embedding with metadata to the collection
+        response = qdrant_client.upload_points(
+            collection_name=data.collection,
+            points=[{"id": some_unique_identifier(), "vector": embedding, "payload": metadata}]
+        )
+        return {"message": "Embedding added successfully", "response": response}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/search/", operation_id="retrieve")
 async def search_embeddings(data: SearchData):
