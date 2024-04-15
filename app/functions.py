@@ -12,7 +12,7 @@ def load_configuration():
     # The API key for authentication
     API_KEY = os.getenv("API_KEY")
 
-    # Environment variables
+    # Qdrant and OpenAI API configurations
     qdrant_host = os.getenv('QDRANT_HOST', 'localhost')
     qdrant_port = int(os.getenv('QDRANT_PORT', 6333))
     qdrant_api_key = os.getenv('QDRANT_API_KEY', '')
@@ -20,5 +20,8 @@ def load_configuration():
 
     # Configure Qdrant client
     qdrant_client = QdrantClient(host=qdrant_host, port=qdrant_port, api_key=qdrant_api_key)
+
+    # Set the OpenAI API key globally
     openai.api_key = openai_api_key
-    return BASE_URL, API_KEY
+
+    return BASE_URL, API_KEY, qdrant_host, qdrant_port, qdrant_api_key, openai_api_key, qdrant_client
