@@ -64,13 +64,10 @@ async def manage_collection(data: CollectionAction):
         if data.action == 'create':
             print(f"Preparing to create a collection named '{data.name}'")
 
-            # Assuming a vector size, this should match your model's output dimensions
-            vector_size = 128  # Example size
-
-            # Configuration for the collection
-            collection_config = {
-                "vector_size": vector_size,
-                "distance": "Cosine",
+            # Create vectors configuration
+            vectors_config = {
+                "vector_size": 128,  # Set vector size to match embedding dimension
+                "distance": "Cosine"  # Set distance function
                 "index": {  # Setting up index for metadata fields
                     "context": {
                         "type": "keyword"
@@ -84,11 +81,12 @@ async def manage_collection(data: CollectionAction):
                 }
             }
 
-            print(f"Configuration set for '{data.name}' with vector size and metadata indexing")
+            # Create or recreate the collection with the specified configuration
             response = qdrant_client.recreate_collection(
                 collection_name=data.name,
-                config=collection_config
+                vectors_config=vectors_config  # Passing vectors_config
             )
+
             print(f"Collection '{data.name}' successfully created with response: {response}")
             return {"message": f"Collection '{data.name}' created successfully", "response": response}
 
