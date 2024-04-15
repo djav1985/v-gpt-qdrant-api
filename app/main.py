@@ -6,7 +6,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from qdrant_client import QdrantClient
-from qdrant_client.http.models import CollectionDescription
+from qdrant_client.http.models import CollectionDescription, FieldIndex
 from pydantic import BaseModel
 from datetime import datetime
 from typing import Optional, List
@@ -63,20 +63,23 @@ async def manage_collection(data: CollectionAction):
     try:
         if data.action == 'create':
             print(f"Preparing to create a collection named '{data.name}'")
-            vectors_config = CollectionDescription(
-                name=data.name,
-                distance="Cosine",
-                indexing=[
-                    {"field": "metadata.timestamp", "type": "float", "params": {"dimension": 1}},
-                    {"field": "metadata.context", "type": "string", "params": {"dimension": 1}}
-                ]
-            )
 
-            print(f"Vector configuration set for '{data.name}' with distance: {vectors_config.distance}")
+            # Assuming a vector size, this should match your model's output dimensions
+            vector_size = 128  # Example size
+
+            # Define field indexes if needed
+            field_indexes = [
+                FieldIndex(field_name="metadata.timestamp", field_type="float"),
+                FieldIndex(field_name="metadata.context", field_type="keyword")
+            ]
+
+            # Creating collection with the specified configuration
             response = qdrant_client.recreate_collection(
                 collection_name=data.name,
-                vectors_config=vectors_config
+                collection_description=CollectionDescription(vector_size=vector_size),
+                field_indexes=field_indexes
             )
+
             print(f"Collection '{data.name}' successfully created with response: {response}")
             return {"message": f"Collection '{data.name}' created successfully", "response": response}
 
@@ -93,7 +96,6 @@ async def manage_collection(data: CollectionAction):
     except Exception as e:
         print(f"Error handling the {data.action} action for the collection: {e}")
         raise HTTPException(status_code=500, detail=str(e))
-
 
 @app.post("/embeddings/", operation_id="save")
 async def add_embedding(data: EmbeddingData):
