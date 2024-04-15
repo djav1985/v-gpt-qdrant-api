@@ -5,7 +5,7 @@ from fastapi import FastAPI, HTTPException, status, Query, Security
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
-from qdrant_client import QdrantClient
+from qdrant_client import QdrantClient, models, VectorParams, Distance
 from qdrant_client.http.models import CollectionDescription
 from pydantic import BaseModel
 from datetime import datetime
@@ -47,13 +47,11 @@ class EmbeddingData(BaseModel):
     collection: str
     content: str
     keywords: Optional[str] = Query(None, regex=r'^(\w+(,\s*\w+)*)?$')  # Comma-separated keywords or single word
-    context: Optional[str] = Query(None, regex=r'^ai|user|info$')  # Indicates message context (ai, user, info)
 
 class SearchData(BaseModel):
     collection: str
     number_of_results: int
     query: str
-    context: Optional[str] = Query(None, regex=r'^ai|user|info$')  # Search based on message context (ai, user, info)
     keywords: Optional[str] = Query(None, regex=r'^(\w+(,\s*\w+)*)?$')  # Comma-separated keywords or single word to filter search results
 
 @app.post("/collections/", operation_id="manage_collections")
@@ -64,27 +62,13 @@ async def manage_collection(data: CollectionAction):
         if data.action == 'create':
             print(f"Preparing to create a collection named '{data.name}'")
 
-            # Create vectors configuration
-            vectors_config = {
-                "vector_size": 128,  # Set vector size to match embedding dimension
-                "distance": "Cosine",  # Set distance function
-                "index": {  # Setting up index for metadata fields
-                    "context": {
-                        "type": "keyword"
-                    },
-                    "keywords": {
-                        "type": "keyword_array"
-                    },
-                    "timestamp": {
-                        "type": "integer"  # Assuming timestamp is stored as an integer
-                    }
-                }
-            }
-
             # Create or recreate the collection with the specified configuration
-            response = qdrant_client.recreate_collection(
+            response = qdrant_client.create_collection(
                 collection_name=data.name,
-                vectors_config=vectors_config  # Passing vectors_config
+                vectors_config={
+                    "history" : models.VectorParams(size=128, distance=models.Distance.COSINE),
+                    "info" : models.VectorParams(size=128, distance=models.Distance.COSINE),
+                }
             )
 
             print(f"Collection '{data.name}' successfully created with response: {response}")
@@ -121,11 +105,10 @@ async def add_embedding(data: EmbeddingData):
     )
     embedding = embeddings_response['data'][0]['embedding']
 
-    # Generate metadata including timestamp, keywords, and context
+    # Generate metadata including timestamp, keywords
     metadata = {
         "timestamp": datetime.now().isoformat(),
         "keywords": data.keywords.split(',') if data.keywords else [],
-        "context": data.context
     }
 
     # Upload embedding with metadata to the collection
@@ -153,10 +136,10 @@ async def search_embeddings(data: SearchData):
     query_embedding = query_embedding_response['data'][0]['embedding']
 
     # Retrieve text entries from the vector database based on search criteria
-    text_entries = get_text_entries(data.collection, data.context, data.keywords)
+    text_entries = get_text_entries(data.collection, data.keywords)
 
-    # Filter text entries based on context and keywords if provided
-    filtered_text_entries = filter_text_entries(text_entries, data.context, data.keywords)
+    # Filter text entries based on keywords if provided
+    filtered_text_entries = filter_text_entries(text_entries, data.keywords)
 
     # Calculate similarity scores between query embedding and filtered text entry embeddings
     search_results = []
