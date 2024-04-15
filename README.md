@@ -3,6 +3,8 @@
 ## Description
 This repository contains a FastAPI application for interacting with Qdrant, a vector database, and OpenAI's API for embeddings. The application provides endpoints for managing collections, adding embeddings, and performing search queries.
 
+This is meant for use with custom GPTs or other AI platforms. It can be used to store conversation history (marked AI or User). It can also store custom (Info) entries. Each entry can be marked with metadata. Context: ai, user or info. Keywords: one or more comma separated words that tag entry. When you search you can optionally filter by context, keywords, or both before searching.
+
 ## Setup
 1. Clone this repository to your local machine.
 2. Install the required dependencies by running:
@@ -22,15 +24,15 @@ Once the application is running, you can access the API documentation at http://
 - **GET /search/**: Perform search queries to retrieve results from a collection.
 
 ## Usage
-To create a new collection:
+- **Create a new collection**:
 ```bash
 curl -X POST "http://localhost:8000/collections/" -H "Content-Type: application/json" -d '{"action": "create", "name": "my_collection"}'
 ```
-To add an embedding to a collection:
+- **Add an embedding to a collection**:
 ```bash
-curl -X POST "http://localhost:8000/embeddings/" -H "Content-Type: application/json" -d '{"collection": "my_collection", "content": "example_text_to_embed"}'
+curl -X POST "http://localhost:8000/embeddings/" -H "Content-Type: application/json" -d '{"collection": "my_collection", "content": "example_text_to_embed", "keywords": "example_keyword1, example_keyword2", "context": "user"}'
 ```
-To search for embeddings:
+- **Search for embeddings**:
 ```bash
-curl -X GET "http://localhost:8000/search/?collection=my_collection&number_of_results=10&query=example_query_text"
+curl -X GET "http://localhost:8000/embeddings/" -H "Content-Type: application/json" -d '{"collection": "my_collection", "content": "example_text_to_embed", "keywords": "example_keyword1, example_keyword2", "context": "user"}'
 ```
