@@ -1,10 +1,14 @@
 version: '3.8'
 
 services:
-  fastapi-app:
-    build: .
+  app:
+    container_name: qdrant-api
+    image: vontainment/gpt-qdrant-api:latest  # Use your appropriate image
+    hostname: qdrant-api
+    restart: unless-stopped
+    network_mode: bridge
     ports:
-      - "8000:8000"
+      - "8077:80"
     depends_on:
       - qdrant
     environment:
@@ -15,10 +19,8 @@ services:
 
   qdrant:
     image: generall/qdrant
-    ports:
-      - "6333:6333"
     environment:
-      QDRANT_API_KEY: YOUR_QDRANT_API_KEY
+      API_KEY: YOUR_QDRANT_API_KEY
 
 volumes:
   qdrant_data:
