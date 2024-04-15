@@ -1,5 +1,5 @@
-import openai
 import os
+import openai
 from fastapi import FastAPI, HTTPException
 from qdrant_client import QdrantClient
 from qdrant_client.http.models import CollectionDescription

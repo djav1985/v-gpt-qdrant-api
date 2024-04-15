@@ -1,6 +1,6 @@
 # Import necessary libraries
-import openai
 import os
+import openai
 from fastapi import FastAPI, HTTPException, status, Query, Security
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.staticfiles import StaticFiles
