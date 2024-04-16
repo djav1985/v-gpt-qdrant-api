@@ -5,6 +5,8 @@ from datetime import datetime
 from typing import Optional, List
 
 import openai
+from openai import OpenAI
+
 from fastapi import FastAPI, HTTPException, Depends, Query, Security, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.responses import FileResponse
@@ -16,11 +18,11 @@ from qdrant_client.http import models
 from scipy.spatial.distance import cosine
 
 # Importing local modules assuming they contain required functionalities
-from functions import load_configuration, get_text_entries, calculate_similarity_scores
+from functions import load_configuration, get_text_entries, calculate_similarity_scores, generate_unique_identifier
 
 
 # Load configuration on startup
-BASE_URL, API_KEY, qdrant_host, qdrant_port, qdrant_api_key, qdrant_client = load_configuration()
+BASE_URL, API_KEY, qdrant_host, qdrant_port, qdrant_api_key, qdrant_client, openai.api_key = load_configuration()
 print(f"Configuration Loaded: BASE_URL={BASE_URL}, API_KEY={API_KEY}, qdrant_host={qdrant_host}, qdrant_port={qdrant_port}")
 
 # Setup the bearer token authentication scheme
@@ -108,16 +110,21 @@ async def manage_collection(data: CollectionAction):
         print(f"Error handling the {data.action} action for the collection: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/embeddings/", operation_id="save")
-async def add_embedding(data: EmbeddingData):
+async def add_embedding(data: EmbeddingData, qdrant_client: QdrantClient = Depends(get_qdrant_client)):
     try:
-        # Generate embedding using the updated OpenAI API
-        response = openai.Embedding.create(
-            model="text-embedding-3-large",
+        # Initialize the OpenAI client
+        client = OpenAI()
+
+        # Generate embedding using the new OpenAI API
+        response = client.embeddings.create(
+            model="text-embedding-ada-002",
             input=data.content,
-            dimensions=128
+            encoding_format="float"
         )
         embedding = response['data']
+
+        # Generate a unique identifier for the new point
+        point_id = some_unique_identifier()  # Ensure you have a method to generate unique IDs
 
         # Metadata including timestamp, keywords
         metadata = {
@@ -125,12 +132,16 @@ async def add_embedding(data: EmbeddingData):
             "keywords": data.keywords
         }
 
-        # Upload embedding with metadata to the collection
-        response = qdrant_client.upload_points(
+        # Upload embedding with metadata to the Qdrant collection
+        upload_response = qdrant_client.upload_points(
             collection_name=data.collection,
-            points=[{"id": some_unique_identifier(), "vector": embedding, "payload": metadata}]
+            points=[{
+                "id": point_id,
+                "vector": embedding,
+                "payload": metadata
+            }]
         )
-        return {"message": "Embedding added successfully", "response": response}
+        return {"message": "Embedding added successfully", "response": upload_response}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

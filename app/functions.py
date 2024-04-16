@@ -1,5 +1,6 @@
 import os
 import openai
+import uuid
 from qdrant_client import QdrantClient
 from scipy.spatial.distance import cosine
 from typing import List, Optional
@@ -20,7 +21,7 @@ def load_configuration():
     # Initialize the QdrantClient
     qdrant_client = QdrantClient(url=f"http://{qdrant_host}:{qdrant_port}", api_key=qdrant_api_key)
 
-    return BASE_URL, API_KEY, qdrant_host, qdrant_port, qdrant_api_key, qdrant_client
+    return BASE_URL, API_KEY, qdrant_host, qdrant_port, qdrant_api_key, qdrant_client, openai.api_key
 
 def calculate_similarity_scores(text_entries, query_embedding):
     results = []
@@ -48,3 +49,7 @@ def get_text_entries(qdrant_client, collection, keywords):
     except Exception as e:
         print(f"Failed to fetch or filter entries from Qdrant: {str(e)}")
         return []  # Return an empty list if there's an error
+
+def generate_unique_identifier():
+    # Generate a unique identifier using UUID4
+    return str(uuid.uuid4())
