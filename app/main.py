@@ -105,7 +105,7 @@ async def add_embedding(data: EmbeddingData):
         memories_list = data.memories.split(',')
 
         # Generate embeddings for all provided texts
-        response = ai_client.Embedding.create(input=memories_list, model="text-embedding-ada")
+        response = ai_client.embeddings.create(input=memories_list, model="text-embedding-ada")
 
         # Prepare points for insertion into Qdrant
         points = [
