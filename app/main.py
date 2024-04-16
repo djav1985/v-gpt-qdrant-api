@@ -59,7 +59,7 @@ class EmbeddingData(BaseModel):
     memories: list[str]  # List of texts for embedding
     collection: str
 
-class SearchData(BaseDataModel):
+class SearchData(BaseModel):
     collection: str
     query: str
 
