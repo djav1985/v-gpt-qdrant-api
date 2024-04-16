@@ -122,28 +122,30 @@ async def add_embedding(data: EmbeddingData, qdrant_client: QdrantClient = Depen
         embedding = response['data']  # Adjust according to the actual response structure
 
         # Generate a unique identifier for the new point
-        point_id = generate_unique_identifier()  # Ensure you have this function defined
+        point_id = generate_unique_identifier()  # This function should return a unique string or number
 
-        # Metadata including timestamp, keywords
         metadata = {
             "timestamp": datetime.now().isoformat(),
-            "keywords": data.keywords
+            "keywords": data.keywords if data.keywords else []
         }
 
-        # Upload embedding with metadata to the Qdrant collection
+        # Correct construction of dictionary for upload:
+        point_data = {
+            "id": point_id,
+            "vector": embedding,
+            "payload": metadata
+        }
+
+        # Assuming upload_points expects a list of such dictionaries:
         upload_response = qdrant_client.upload_points(
             collection_name=data.collection,
-            points=[{
-                "id": point_id,
-                "vector": embedding,
-                "payload": metadata
-            }]
+            points=[point_data]
         )
+
         return {"message": "Embedding added successfully", "response": upload_response}
 
     except Exception as e:
-        # General catch-all exception, consider logging or more specific handling
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"Failed due to an error: {str(e)}")
 
 @app.get("/search/", operation_id="retrieve")
 async def search_embeddings(data: SearchData, qdrant_client: QdrantClient = Depends(get_qdrant_client)):
