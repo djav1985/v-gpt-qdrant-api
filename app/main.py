@@ -75,13 +75,10 @@ async def manage_collection(data: CollectionAction):
 
             # Create or recreate the collection with the specified configuration
             response = qdrant_client.create_collection(
-                collection_name=data.name,
-                vectors_config={
-                    "history" : models.VectorParams(size=128, distance=models.Distance.COSINE),
-                    "info" : models.VectorParams(size=128, distance=models.Distance.COSINE),
-                }
+            collection_name=data.collection,
+            vectors_config=models.VectorParams(size=128, distance=models.Distance.COSINE)
             )
-
+            
             print(f"Collection '{data.name}' successfully created with response: {response}")
             return {"message": f"Collection '{data.name}' created successfully", "response": response}
 
