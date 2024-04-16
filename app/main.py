@@ -22,7 +22,7 @@ from functions import load_configuration
 # Load configuration on startup
 BASE_URL, API_KEY = load_configuration()
 
-ai_client = openai.OpenAI(
+ai_client = OpenAI(
     api_key=os.environ['OPENAI_API_KEY']
 )
 
