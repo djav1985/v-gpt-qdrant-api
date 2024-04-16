@@ -51,8 +51,8 @@ class EmbeddingData(BaseModel):
     collection: str
 
 class SearchData(BaseModel):
-    collection: str
     query: str
+    collection: str
 
 @app.post("/collections/", operation_id="manage_collections")
 async def manage_collection(data: CollectionAction):
@@ -154,7 +154,7 @@ async def search_embeddings(data: SearchData):
         )
 
         # Perform the search using the query vector
-        query_vector = response['data'][0]['embedding']
+        query_vector = query_vector = response.data[0].embedding
         print("Query vector:", query_vector)
         search_results = qdrant_client.search(
             data.collection,
