@@ -9,7 +9,7 @@ from fastapi import FastAPI, HTTPException, Depends, Query, Security, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, Field, validator
 
 from qdrant_client import QdrantClient
 from qdrant_client.http import models
@@ -48,7 +48,9 @@ class CollectionAction(BaseModel):
     name: str
 
 class BaseDataModel(BaseModel):
-    # Common validator for keywords that can handle both a single comma-separated string and a list of strings
+    # Define the keywords field explicitly in the base model where validators are used
+    keywords: Optional[List[str]] = Field(default=None)
+
     @validator('keywords', pre=True)
     def convert_string_to_list(cls, v):
         if isinstance(v, str):
@@ -57,20 +59,20 @@ class BaseDataModel(BaseModel):
 
     @validator('keywords', each_item=True)
     def validate_keywords(cls, v):
-        if not re.match(r'^\w+$', v):
+        if v and not re.match(r'^\w+$', v):
             raise ValueError("Keywords must be single words composed of alphanumeric characters and underscores.")
         return v
 
 class EmbeddingData(BaseDataModel):
     content: str
     collection: str
-    keywords: Optional[List[str]] = None
+    # Inherits keywords field and its validators from BaseDataModel
 
 class SearchData(BaseDataModel):
     collection: str
     number_of_results: int
     query: str
-    keywords: Optional[List[str]] = None
+    # Inherits keywords field and its validators from BaseDataModel
 
 @app.post("/collections/", operation_id="manage_collections")
 async def manage_collection(data: CollectionAction):
