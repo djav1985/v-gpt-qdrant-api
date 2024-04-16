@@ -141,7 +141,7 @@ async def search_embeddings(data: SearchData):
         )
 
         # Generate embedding for the query
-        query_embedding_response = ai_client.Embedding.create(input=data.query, model="text-embedding-ada")
+        query_embedding_response = ai_client.Embedding.create(input=data.query, model="text-embedding-3-small")
         query_vector = query_embedding_response['data'][0]['embedding']
 
         qdrant_client = QdrantClient(
