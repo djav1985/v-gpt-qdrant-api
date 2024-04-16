@@ -1,28 +1,35 @@
 # Import necessary libraries
 import os
-import re
-from datetime import datetime
-from typing import Optional, List
 
-import openai
+from qdrant_client import QdrantClient
+from qdrant_client.models import PointStruct
+from qdrant_client.http import models
 
 from fastapi import FastAPI, HTTPException, Depends, Query, Security, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.responses import FileResponse
-from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel, Field, validator
+from fastapi.staticfiles import StaticFilesfrom pydantic import BaseModel, Field, validator
 
-from qdrant_client import QdrantClient
-from qdrant_client.http import models
 from scipy.spatial.distance import cosine
+from datetime import datetime
+from openai import OpenAI
+from typing import Optional, List
 
 # Importing local modules assuming they contain required functionalities
 from functions import load_configuration, get_text_entries, calculate_similarity_scores, generate_unique_identifier, get_qdrant_client
 
 
 # Load configuration on startup
-BASE_URL, API_KEY, qdrant_host, qdrant_port, qdrant_api_key, qdrant_client, openai.api_key = load_configuration()
-print(f"Configuration Loaded: BASE_URL={BASE_URL}, API_KEY={API_KEY}, qdrant_host={qdrant_host}, qdrant_port={qdrant_port}")
+BASE_URL, API_KEY = load_configuration()
+
+ai_client = openai.OpenAI(
+    api_key=os.environ['OPENAI_API_KEY']
+)
+
+qdrant_client = QdrantClient(
+    url="http://qdrant:6333",
+    api_key=os.getenv("QDRANT_API_KEY")
+)
 
 # Setup the bearer token authentication scheme
 bearer_scheme = HTTPBearer(auto_error=False)
@@ -48,27 +55,10 @@ class CollectionAction(BaseModel):
     action: str
     name: str
 
-class BaseDataModel(BaseModel):
-    # Define the keywords field explicitly in the base model where validators are used
-    keywords: Optional[List[str]] = Field(default=None)
-
-    @validator('keywords', pre=True)
-    def convert_string_to_list(cls, v):
-        if isinstance(v, str):
-            return [k.strip() for k in v.split(",") if k.strip()]  # Split and strip spaces from keywords
-        return v
-
-    @validator('keywords', each_item=True)
-    def validate_keywords(cls, v):
-        if v and not re.match(r'^\w+$', v):
-            raise ValueError("Keywords must be single words composed of alphanumeric characters and underscores.")
-        return v
-
-class EmbeddingData(BaseDataModel):
-    content: str
+class EmbeddingData(BaseModel):
+    memories: list[str]  # List of texts for embedding
     collection: str
-    # Inherits keywords field and its validators from BaseDataModel
-
+    
 class SearchData(BaseDataModel):
     collection: str
     number_of_results: int
@@ -110,48 +100,34 @@ async def manage_collection(data: CollectionAction):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/embeddings/", operation_id="save")
-async def add_embedding(data: EmbeddingData, qdrant_client: QdrantClient = Depends(get_qdrant_client)):
+async def add_embedding(data: EmbeddingData):
     try:
-        # Generate embedding using the new OpenAI API
-        response = openai.Embedding.create(
-            model="text-embedding-3-large",
-            input=data.content,
-            encoding_format="float",
-            dimensions=128
-        )
+        # Initialize the OpenAI client
+        ai_client = OpenAI()
+        
+        # Generate embeddings for all provided texts
+        response = ai_client.Embedding.create(input=data.memories, model="text-embedding-ada")
+        
+        # Prepare points for insertion into Qdrant
+        points = [
+            PointStruct(
+                id=idx,
+                vector=entry['embedding'],
+                payload={
+                    "memory": memory,  # Using 'memory' instead of 'text'
+                    "timestamp": datetime.now().isoformat()
+                }
+            )
+            for idx, (entry, memory) in enumerate(zip(response['data'], data.memories))  # Renamed 'text' to 'memory'
+        ]
+        
+        # Insert all points into the specified collection in Qdrant
+        qdrant_client.upsert(data.collection, points)
 
-        print("Response object type:", type(response))
-        print("Response content:", response)
-
-        # Access embedding data from the response
-        embedding = response.data[0]['embedding']
-
-        # Generate a unique identifier for the new point
-        point_id = generate_unique_identifier()  # This function should return a unique string or number
-
-        metadata = {
-            "timestamp": datetime.now().isoformat(),
-            "keywords": data.keywords if data.keywords else []
-        }
-
-        # Correct construction of dictionary for upload:
-        point_data = {
-            "id": point_id,
-            "vector": embedding,
-            "payload": metadata
-        }
-
-        # Assuming upload_points expects a list of such dictionaries:
-        upload_response = qdrant_client.upload_points(
-            collection_name=data.collection,
-            points=[point_data]
-        )
-
-        return {"message": "Embedding added successfully", "response": upload_response}
-
+        return {"message": "Embeddings added successfully"}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed due to an error: {str(e)}")
-
+        raise HTTPException(status_code=500, detail=str(e))
+        
 @app.get("/search/", operation_id="retrieve")
 async def search_embeddings(data: SearchData, qdrant_client: QdrantClient = Depends(get_qdrant_client)):
     # Generate embedding for the search query using the specified model and dimensions
