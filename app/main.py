@@ -120,7 +120,8 @@ async def add_embedding(data: EmbeddingData, qdrant_client: QdrantClient = Depen
         response = client.embeddings.create(
             model="text-embedding-ada-002",
             input=data.content,
-            encoding_format="float"
+            encoding_format="float",
+            dimensions=128
         )
         embedding = response['data']
 
