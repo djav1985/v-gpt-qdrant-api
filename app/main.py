@@ -109,7 +109,7 @@ async def add_embedding(data: EmbeddingData):
 
         # Prepare points for insertion into Qdrant
         points = [
-            model.PointStruct(
+            PointStruct(
                 id=idx,
                 vector=entry['embedding'],
                 payload={
