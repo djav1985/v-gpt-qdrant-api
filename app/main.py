@@ -145,7 +145,7 @@ async def search_embeddings(data: SearchData):
         )
 
         # Generate embedding for the query
-        response = ai_client.Embedding.create(input=data.query, model="text-embedding-3-small", dimensions=128)
+        response = ai_client.embeddings.create(input=data.query, model="text-embedding-3-small", dimensions=128)
         print("Response from OpenAI:", response)
 
         qdrant_client = QdrantClient(
