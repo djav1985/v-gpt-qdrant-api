@@ -30,9 +30,11 @@ def load_configuration():
     )
 
 def get_qdrant_client():
-    """Simply returns the QdrantClient from the loaded configuration."""
-    _, _, _, _, _, qdrant_client, _ = load_configuration()
-    return qdrant_client
+    """Create and return a QdrantClient instance."""
+    return QdrantClient(
+        url=f"http://{os.getenv('QDRANT_HOST', 'localhost')}:{int(os.getenv('QDRANT_PORT', 6333))}",
+        api_key=os.getenv("QDRANT_API_KEY")
+    )
 
 def calculate_similarity_scores(text_entries, query_embedding):
     results = []
