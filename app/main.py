@@ -27,7 +27,7 @@ ai_client = OpenAI(
 )
 
 qdrant_client = QdrantClient(
-    url="http://qdrant:6333",
+    url=f"http://qdrant:6333",
     api_key=os.getenv("QDRANT_API_KEY")
 )
 
