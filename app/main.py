@@ -113,22 +113,17 @@ async def manage_collection(data: CollectionAction):
 @app.post("/embeddings/", operation_id="save")
 async def add_embedding(data: EmbeddingData, qdrant_client: QdrantClient = Depends(get_qdrant_client)):
     try:
-        # Initialize the OpenAI client
-        client = OpenAI()
-
         # Generate embedding using the new OpenAI API
-        response = client.embeddings.create(
+        response = openai.embeddings.create(
             model="text-embedding-3-large",
             input=data.content,
             encoding_format="float",
             dimensions=128
         )
-        embedding = response.data
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to retrieve embedding: {str(e)}")
+        embedding = response['data']  # Adjust according to the actual response structure
 
         # Generate a unique identifier for the new point
-        point_id = generate_unique_identifier()  # Ensure you have a method to generate unique IDs
+        point_id = generate_unique_identifier()  # Ensure you have this function defined
 
         # Metadata including timestamp, keywords
         metadata = {
@@ -146,7 +141,9 @@ async def add_embedding(data: EmbeddingData, qdrant_client: QdrantClient = Depen
             }]
         )
         return {"message": "Embedding added successfully", "response": upload_response}
+
     except Exception as e:
+        # General catch-all exception, consider logging or more specific handling
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/search/", operation_id="retrieve")
