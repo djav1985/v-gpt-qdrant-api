@@ -104,7 +104,7 @@ async def manage_collection(data: CollectionAction):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/embeddings/", operation_id="save")
-async def add_embedding(data: EmbeddingData, qdrant_client: QdrantClient = Depends(load_qdrant_client)):
+async def add_embedding(data: EmbeddingData):
     try:
         # Generate embedding using the updated OpenAI API
         response = openai.Embedding.create(
@@ -130,7 +130,7 @@ async def add_embedding(data: EmbeddingData, qdrant_client: QdrantClient = Depen
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/search/", operation_id="retrieve")
-async def search_embeddings(data: SearchData, qdrant_client: QdrantClient = Depends(load_qdrant_client)):
+async def search_embeddings(data: SearchData):
     if data.keywords:
         for keyword in data.keywords:
             if ' ' in keyword:  # Check if keyword contains spaces
