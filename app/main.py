@@ -53,7 +53,7 @@ app = FastAPI(
 
 class CollectionAction(BaseModel):
     action: str
-    name: str
+    collection: str
 
 class EmbeddingData(BaseModel):
     memories: list[str]  # List of texts for embedding
@@ -65,11 +65,11 @@ class SearchData(BaseModel):
 
 @app.post("/collections/", operation_id="manage_collections")
 async def manage_collection(data: CollectionAction):
-    print(f"Request to manage collection received with action: {data.action} and name: {data.name}")
+    print(f"Request to manage collection received with action: {data.action} and name: {data.collection}")
 
     try:
         if data.action == 'create':
-            print(f"Preparing to create a collection named '{data.name}'")
+            print(f"Preparing to create a collection named '{data.collection}'")
 
             # Create or recreate the collection with the specified configuration
             response = qdrant_client.create_collection(
@@ -77,14 +77,14 @@ async def manage_collection(data: CollectionAction):
             vectors_config=models.VectorParams(size=128, distance=models.Distance.COSINE)
             )
 
-            print(f"Collection '{data.name}' successfully created with response: {response}")
-            return {"message": f"Collection '{data.name}' created successfully", "response": response}
+            print(f"Collection '{data.collection}' successfully created with response: {response}")
+            return {"message": f"Collection '{data.collection}' created successfully", "response": response}
 
         elif data.action == 'delete':
-            print(f"Preparing to delete a collection named '{data.name}'")
-            response = qdrant_client.delete_collection(collection_name=data.name)
-            print(f"Collection '{data.name}' successfully deleted with response: {response}")
-            return {"message": f"Collection '{data.name}' deleted successfully", "response": response}
+            print(f"Preparing to delete a collection named '{data.collection}'")
+            response = qdrant_client.delete_collection(collection_name=data.collection)
+            print(f"Collection '{data.collection}' successfully deleted with response: {response}")
+            return {"message": f"Collection '{data.collection}' deleted successfully", "response": response}
 
         else:
             print(f"Invalid action specified: {data.action}")
