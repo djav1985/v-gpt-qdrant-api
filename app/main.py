@@ -5,7 +5,6 @@ from datetime import datetime
 from typing import Optional, List
 
 import openai
-from openai import OpenAI
 
 from fastapi import FastAPI, HTTPException, Depends, Query, Security, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
