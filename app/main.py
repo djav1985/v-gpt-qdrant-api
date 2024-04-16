@@ -113,7 +113,7 @@ async def manage_collection(data: CollectionAction):
 async def add_embedding(data: EmbeddingData, qdrant_client: QdrantClient = Depends(get_qdrant_client)):
     try:
         # Generate embedding using the new OpenAI API
-        response = openai.embeddings.create(
+        response = openai.Embedding.create(
             model="text-embedding-3-large",
             input=data.content,
             encoding_format="float",
