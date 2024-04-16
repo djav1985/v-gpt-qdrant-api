@@ -47,7 +47,7 @@ class CollectionAction(BaseModel):
     collection: str
 
 class EmbeddingData(BaseModel):
-    memories: list[str]  # List of texts for embedding
+    memories: str
     collection: str
 
 class SearchData(BaseModel):
@@ -102,8 +102,10 @@ async def add_embedding(data: EmbeddingData):
         api_key=os.environ['OPENAI_API_KEY']
         )
 
+        memories_list = data.memories.split(',')
+
         # Generate embeddings for all provided texts
-        response = ai_client.Embedding.create(input=data.memories, model="text-embedding-ada")
+        response = ai_client.Embedding.create(input=memories_list, model="text-embedding-ada")
 
         # Prepare points for insertion into Qdrant
         points = [
@@ -115,7 +117,7 @@ async def add_embedding(data: EmbeddingData):
                     "timestamp": datetime.now().isoformat()
                 }
             )
-            for idx, (entry, memory) in enumerate(zip(response['data'], data.memories))  # Renamed 'text' to 'memory'
+            for idx, (entry, memory) in enumerate(zip(response['data'], memories_list))  # Renamed 'text' to 'memory'
         ]
 
         qdrant_client = QdrantClient(
