@@ -123,7 +123,8 @@ async def add_embedding(data: EmbeddingData, qdrant_client: QdrantClient = Depen
         print("Response object type:", type(response))
         print("Response content:", response)
 
-        embedding = response['data']  # Adjust according to the actual response structure
+        # Assuming 'response' is already the parsed JSON from the OpenAI API response
+        embeddings = response['data'][0]['embedding']  # This gets the first embedding in the list
 
         # Generate a unique identifier for the new point
         point_id = generate_unique_identifier()  # This function should return a unique string or number
