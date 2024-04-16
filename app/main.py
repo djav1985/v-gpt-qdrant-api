@@ -132,10 +132,12 @@ async def add_embedding(data: EmbeddingData):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/search/", operation_id="retrieve")
-async def search_embeddings(data: SearchData):
+@app.post("/search/", operation_id="retrieve")
+async def search_embeddings(data: SearchRequest):
     try:
-        print("Received search request data:", data.query)  # Print received search request data for debugging
+        print("Received search request data:")
+        print("Collection:", data.collection)
+        print("Query:", data.query)
 
         # Initialize the OpenAI client
         ai_client = OpenAI(
@@ -144,7 +146,7 @@ async def search_embeddings(data: SearchData):
 
         # Generate embedding for the query
         response = ai_client.Embedding.create(input=data.query, model="text-embedding-3-small", dimensions=128)
-        print("Response from OpenAI:", response)  # Print response from OpenAI for debugging
+        print("Response from OpenAI:", response)
 
         qdrant_client = QdrantClient(
             url=f"http://gpt-qdrant:6333",
@@ -153,18 +155,18 @@ async def search_embeddings(data: SearchData):
 
         # Perform the search using the query vector
         query_vector = response['data'][0]['embedding']
-        print("Query vector:", query_vector)  # Print query vector for debugging
+        print("Query vector:", query_vector)
         search_results = qdrant_client.search(
             data.collection,
             search_params=models.SearchParams(hnsw_ef=128, exact=False),
             query_vector=query_vector,
             limit=5
         )
-        print("Search results:", search_results)  # Print search results for debugging
+        print("Search results:", search_results)
 
         return search_results
     except Exception as e:
-        print("Error occurred:", e)  # Print error for debugging
+        print("Error occurred:", e)
         raise HTTPException(status_code=500, detail=str(e))
 
 
