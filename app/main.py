@@ -109,7 +109,7 @@ async def add_embedding(data: EmbeddingData):
 
         # Prepare points for insertion into Qdrant
         points = [
-            PointStruct(
+            model.PointStruct(
                 id=idx,
                 vector=entry['embedding'],
                 payload={
@@ -117,7 +117,7 @@ async def add_embedding(data: EmbeddingData):
                     "timestamp": datetime.now().isoformat()
                 }
             )
-            for idx, (entry, memory) in enumerate(zip(response['data'], memories_list))  # Renamed 'text' to 'memory'
+            for idx, (entry, memory) in enumerate(zip(response.data, memories_list))
         ]
 
         qdrant_client = QdrantClient(
