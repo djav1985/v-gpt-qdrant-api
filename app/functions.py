@@ -8,20 +8,31 @@ from pydantic import BaseModel
 from fastapi import HTTPException
 
 def load_configuration():
-    BASE_URL = os.getenv("BASE_URL", "http://localhost")
-    API_KEY = os.getenv("API_KEY")
-    qdrant_host = os.getenv("QDRANT_HOST", "localhost")
-    qdrant_port = int(os.getenv("QDRANT_PORT", 6333))
-    qdrant_api_key = os.getenv("QDRANT_API_KEY")
-    openai_api_key = os.getenv("OPENAI_API_KEY")
-
+    """Loads and returns application configuration details as a tuple."""
     # Set OpenAI API Key globally for the library
+    openai_api_key = os.getenv("OPENAI_API_KEY")
     openai.api_key = openai_api_key
 
-    # Initialize the QdrantClient
-    qdrant_client = QdrantClient(url=f"http://{qdrant_host}:{qdrant_port}", api_key=qdrant_api_key)
+    # Initialize and return all configuration details along with QdrantClient
+    qdrant_client = QdrantClient(
+        url=f"http://{os.getenv('QDRANT_HOST', 'localhost')}:{int(os.getenv('QDRANT_PORT', 6333))}",
+        api_key=os.getenv("QDRANT_API_KEY")
+    )
 
-    return BASE_URL, API_KEY, qdrant_host, qdrant_port, qdrant_api_key, qdrant_client, openai.api_key
+    return (
+        os.getenv("BASE_URL", "http://localhost"),
+        os.getenv("API_KEY"),
+        os.getenv("QDRANT_HOST", "localhost"),
+        int(os.getenv("QDRANT_PORT", 6333)),
+        os.getenv("QDRANT_API_KEY"),
+        qdrant_client,
+        openai.api_key
+    )
+
+def get_qdrant_client():
+    """Simply returns the QdrantClient from the loaded configuration."""
+    _, _, _, _, _, qdrant_client, _ = load_configuration()
+    return qdrant_client
 
 def calculate_similarity_scores(text_entries, query_embedding):
     results = []

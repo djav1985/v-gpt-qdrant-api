@@ -18,7 +18,7 @@ from qdrant_client.http import models
 from scipy.spatial.distance import cosine
 
 # Importing local modules assuming they contain required functionalities
-from functions import load_configuration, get_text_entries, calculate_similarity_scores, generate_unique_identifier
+from functions import load_configuration, get_text_entries, calculate_similarity_scores, generate_unique_identifier, get_qdrant_client
 
 
 # Load configuration on startup
@@ -110,6 +110,7 @@ async def manage_collection(data: CollectionAction):
         print(f"Error handling the {data.action} action for the collection: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.post("/embeddings/", operation_id="save")
 async def add_embedding(data: EmbeddingData, qdrant_client: QdrantClient = Depends(get_qdrant_client)):
     try:
         # Initialize the OpenAI client
