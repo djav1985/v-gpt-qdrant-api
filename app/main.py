@@ -133,7 +133,7 @@ async def add_embedding(data: EmbeddingData):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/search/", operation_id="retrieve")
-async def search_embeddings(data: SearchRequest):
+async def search_embeddings(data: SearchData):
     try:
         print("Received search request data:")
         print("Collection:", data.collection)
