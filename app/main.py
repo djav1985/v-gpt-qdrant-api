@@ -118,7 +118,7 @@ async def add_embedding(data: EmbeddingData, qdrant_client: QdrantClient = Depen
 
         # Generate embedding using the new OpenAI API
         response = client.embeddings.create(
-            model="text-embedding-ada-002",
+            model="text-embedding-3-large",
             input=data.content,
             encoding_format="float",
             dimensions=128
