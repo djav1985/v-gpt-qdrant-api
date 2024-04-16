@@ -47,13 +47,12 @@ class CollectionAction(BaseModel):
     action: str
     name: str
 
-class KeywordModel(BaseModel):
-    keywords: Optional[List[str]] = []
-
-    @validator('keywords', pre=True, each_item=False)
-    def split_str_to_list(cls, v):
+class BaseDataModel(BaseModel):
+    # Common validator for keywords that can handle both a single comma-separated string and a list of strings
+    @validator('keywords', pre=True)
+    def convert_string_to_list(cls, v):
         if isinstance(v, str):
-            return v.split(", ")
+            return [k.strip() for k in v.split(",") if k.strip()]  # Split and strip spaces from keywords
         return v
 
     @validator('keywords', each_item=True)
@@ -62,17 +61,15 @@ class KeywordModel(BaseModel):
             raise ValueError("Keywords must be single words composed of alphanumeric characters and underscores.")
         return v
 
-class EmbeddingData(BaseModel):
+class EmbeddingData(BaseDataModel):
     content: str
     collection: str
-    # Optional keywords field, defaults to None if not provided
     keywords: Optional[List[str]] = None
 
-class SearchData(BaseModel):
+class SearchData(BaseDataModel):
     collection: str
     number_of_results: int
     query: str
-    # Optional keywords field, defaults to None if not provided
     keywords: Optional[List[str]] = None
 
 @app.post("/collections/", operation_id="manage_collections")
