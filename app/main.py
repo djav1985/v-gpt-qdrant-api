@@ -111,7 +111,7 @@ async def add_embedding(data: EmbeddingData):
         points = [
             PointStruct(
                 id=idx,
-                vector=entry['embedding'],
+                vector=entry.embedding,
                 payload={
                     "memory": memory,  # Using 'memory' instead of 'text'
                     "timestamp": datetime.now().isoformat()
