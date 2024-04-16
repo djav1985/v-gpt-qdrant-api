@@ -168,6 +168,7 @@ async def search_embeddings(data: SearchData):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+
 # Root endpoint serving index.html directly
 @app.get("/", include_in_schema=False)
 async def root():
