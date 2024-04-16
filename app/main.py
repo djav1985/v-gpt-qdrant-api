@@ -16,7 +16,7 @@ from openai import OpenAI
 from typing import Optional, List
 
 # Importing local modules assuming they contain required functionalities
-from functions import load_configuration, get_text_entries, calculate_similarity_scores, generate_unique_identifier, get_qdrant_client
+from functions import load_configuration, get_text_entries, calculate_similarity_scores
 
 
 # Load configuration on startup
