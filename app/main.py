@@ -111,7 +111,7 @@ async def manage_collection(data: CollectionAction):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/embeddings/", operation_id="save")
-async def add_embedding(data: EmbeddingData, qdrant_client: QdrantClient = Depends(get_qdrant_client)):
+async def add_embedding(data: EmbeddingData, qdrant_client: QdrantClient = Depends(qdrant_client)):
     try:
         # Initialize the OpenAI client
         client = OpenAI()
