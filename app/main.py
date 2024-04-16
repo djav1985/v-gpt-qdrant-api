@@ -62,7 +62,7 @@ async def manage_collection(data: CollectionAction):
         if data.action == 'create':
             print(f"Preparing to create a collection named '{data.collection}'")
             qdrant_client = QdrantClient(
-            url=f"http://qdrant:6333",
+            url=f"http://gpt-qdrant:6333",
             api_key=os.getenv("QDRANT_API_KEY")
             )
 
@@ -78,7 +78,7 @@ async def manage_collection(data: CollectionAction):
         elif data.action == 'delete':
             print(f"Preparing to delete a collection named '{data.collection}'")
             qdrant_client = QdrantClient(
-            url=f"http://qdrant:6333",
+            url=f"http://gpt-qdrant:6333",
             api_key=os.getenv("QDRANT_API_KEY")
             )
 
@@ -119,7 +119,7 @@ async def add_embedding(data: EmbeddingData):
         ]
 
         qdrant_client = QdrantClient(
-        url=f"http://qdrant:6333",
+        url=f"http://gpt-qdrant:6333",
         api_key=os.getenv("QDRANT_API_KEY")
         )
 
@@ -143,7 +143,7 @@ async def search_embeddings(data: SearchData):
         query_vector = query_embedding_response['data'][0]['embedding']
 
         qdrant_client = QdrantClient(
-        url=f"http://qdrant:6333",
+        url=f"http://gpt-qdrant:6333",
         api_key=os.getenv("QDRANT_API_KEY")
         )
 
