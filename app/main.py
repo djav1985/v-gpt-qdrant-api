@@ -123,7 +123,7 @@ async def add_embedding(data: EmbeddingData, qdrant_client: QdrantClient = Depen
             encoding_format="float",
             dimensions=128
         )
-        embedding = response['data']
+        embedding = response.data
 
         # Generate a unique identifier for the new point
         point_id = some_unique_identifier()  # Ensure you have a method to generate unique IDs
@@ -148,20 +148,19 @@ async def add_embedding(data: EmbeddingData, qdrant_client: QdrantClient = Depen
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/search/", operation_id="retrieve")
-async def search_embeddings(data: SearchData):
-    if data.keywords:
-        for keyword in data.keywords:
-            if ' ' in keyword:  # Check if keyword contains spaces
-                raise HTTPException(status_code=400, detail="Keywords must be single words.")
-
+async def search_embeddings(data: SearchData, qdrant_client: QdrantClient = Depends(get_qdrant_client)):
     # Generate embedding for the search query using the specified model and dimensions
     try:
-        response = openai.Embedding.create(
-            input=data.query,
+        # Initialize the OpenAI client
+        client = OpenAI()
+
+        response = client.embeddings.create(
             model="text-embedding-3-large",  # Your specified model
+            input=data.query,
+            encoding_format="float",
             dimensions=128                    # Specified dimension
         )
-        query_embedding = response['data'][0]['embedding']
+        query_embedding = response.data
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to generate embedding: {str(e)}")
 
