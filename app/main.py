@@ -141,8 +141,7 @@ async def search_embeddings(data: SearchData):
         )
 
         # Generate embedding for the query
-        query_embedding_response = ai_client.Embedding.create(input=data.query, model="text-embedding-3-small")
-        query_vector = query_embedding_response['data'][0]['embedding']
+        response = ai_client.Embedding.create(input=data.query, model="text-embedding-3-small", dimensions=128)
 
         qdrant_client = QdrantClient(
         url=f"http://gpt-qdrant:6333",
@@ -153,7 +152,7 @@ async def search_embeddings(data: SearchData):
         search_results = qdrant_client.search(
             data.collection,
             search_params=models.SearchParams(hnsw_ef=128, exact=False),
-            query_vector=query_vector,
+            query_vector=response['data'][0]['embedding'],
             limit=5
         )
 
