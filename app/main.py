@@ -1,14 +1,15 @@
 # Import necessary libraries
 import os
 
-from qdrant_client import QdrantClient
+from qdrant_client import QdrantClient, models
 from qdrant_client.models import PointStruct
-from qdrant_client.http import models
 
 from fastapi import FastAPI, HTTPException, Depends, Query, Security, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.responses import FileResponse
-from fastapi.staticfiles import StaticFilesfrom pydantic import BaseModel, Field, validator
+from fastapi.staticfiles import StaticFiles
+
+from pydantic import BaseModel, Field, validator
 
 from scipy.spatial.distance import cosine
 from datetime import datetime
@@ -58,12 +59,10 @@ class CollectionAction(BaseModel):
 class EmbeddingData(BaseModel):
     memories: list[str]  # List of texts for embedding
     collection: str
-    
+
 class SearchData(BaseDataModel):
     collection: str
-    number_of_results: int
     query: str
-    # Inherits keywords field and its validators from BaseDataModel
 
 @app.post("/collections/", operation_id="manage_collections")
 async def manage_collection(data: CollectionAction):
@@ -78,7 +77,7 @@ async def manage_collection(data: CollectionAction):
             collection_name=data.collection,
             vectors_config=models.VectorParams(size=128, distance=models.Distance.COSINE)
             )
-            
+
             print(f"Collection '{data.name}' successfully created with response: {response}")
             return {"message": f"Collection '{data.name}' created successfully", "response": response}
 
@@ -101,10 +100,10 @@ async def add_embedding(data: EmbeddingData):
     try:
         # Initialize the OpenAI client
         ai_client = OpenAI()
-        
+
         # Generate embeddings for all provided texts
         response = ai_client.Embedding.create(input=data.memories, model="text-embedding-ada")
-        
+
         # Prepare points for insertion into Qdrant
         points = [
             PointStruct(
@@ -117,40 +116,35 @@ async def add_embedding(data: EmbeddingData):
             )
             for idx, (entry, memory) in enumerate(zip(response['data'], data.memories))  # Renamed 'text' to 'memory'
         ]
-        
+
         # Insert all points into the specified collection in Qdrant
         qdrant_client.upsert(data.collection, points)
 
         return {"message": "Embeddings added successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-        
+
 @app.get("/search/", operation_id="retrieve")
-async def search_embeddings(data: SearchData, qdrant_client: QdrantClient = Depends(get_qdrant_client)):
-    # Generate embedding for the search query using the specified model and dimensions
+async def search_embeddings(data: SearchData):
     try:
         # Initialize the OpenAI client
-        client = OpenAI()
+        ai_client = OpenAI()
 
-        response = client.embeddings.create(
-            model="text-embedding-3-large",  # Your specified model
-            input=data.query,
-            encoding_format="float",
-            dimensions=128                    # Specified dimension
+        # Generate embedding for the query
+        query_embedding_response = ai_client.Embedding.create(input=data.query, model="text-embedding-ada")
+        query_vector = query_embedding_response['data'][0]['embedding']
+
+        # Perform the search using the query vector
+        search_results = qdrant_client.search(
+            data.collection,
+            search_params=models.SearchParams(hnsw_ef=128, exact=False),
+            query_vector=query_vector,
+            limit=5
         )
-        query_embedding = response.data
+
+        return search_results
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to generate embedding: {str(e)}")
-
-    # Retrieve and process text entries (this part needs actual implementation details)
-    text_entries = get_text_entries(data.collection, data.keywords)  # Assuming you have this function implemented
-
-    # Calculate similarity and prepare results
-    search_results = calculate_similarity_scores(text_entries, query_embedding)
-
-    # Sort and return top results
-    search_results.sort(key=lambda x: x["similarity_score"], reverse=True)
-    return {"results": search_results[:data.number_of_results]}
+        raise HTTPException(status_code=500, detail=str(e))
 
 # Root endpoint serving index.html directly
 @app.get("/", include_in_schema=False)
