@@ -124,9 +124,11 @@ async def add_embedding(data: EmbeddingData, qdrant_client: QdrantClient = Depen
             dimensions=128
         )
         embedding = response.data
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve embedding: {str(e)}")
 
         # Generate a unique identifier for the new point
-        point_id = some_unique_identifier()  # Ensure you have a method to generate unique IDs
+        point_id = generate_unique_identifier()  # Ensure you have a method to generate unique IDs
 
         # Metadata including timestamp, keywords
         metadata = {
