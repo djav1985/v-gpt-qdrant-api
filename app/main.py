@@ -17,8 +17,7 @@ from openai import OpenAI
 from typing import Optional, List
 
 # Importing local modules assuming they contain required functionalities
-from functions import load_configuration, get_text_entries, calculate_similarity_scores
-
+from functions import load_configuration
 
 # Load configuration on startup
 BASE_URL, API_KEY = load_configuration()
