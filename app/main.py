@@ -135,7 +135,7 @@ async def add_embedding(data: EmbeddingData):
 @app.get("/search/", operation_id="retrieve")
 async def search_embeddings(data: SearchData):
     try:
-        print("Received search request data:", data)  # Print received search request data for debugging
+        print("Received search request data:", data.query)  # Print received search request data for debugging
 
         # Initialize the OpenAI client
         ai_client = OpenAI(
