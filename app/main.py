@@ -48,8 +48,13 @@ class CollectionAction(BaseModel):
     name: str
 
 class KeywordModel(BaseModel):
-    # Define a common validator for keywords in a base class
     keywords: Optional[List[str]] = []
+
+    @validator('keywords', pre=True, each_item=False)
+    def split_str_to_list(cls, v):
+        if isinstance(v, str):
+            return v.split(", ")
+        return v
 
     @validator('keywords', each_item=True)
     def validate_keywords(cls, v):
@@ -57,17 +62,18 @@ class KeywordModel(BaseModel):
             raise ValueError("Keywords must be single words composed of alphanumeric characters and underscores.")
         return v
 
-class EmbeddingData(KeywordModel):
+class EmbeddingData(BaseModel):
     content: str
     collection: str
-    # Inherits the 'keywords' field with validator from KeywordModel
+    # Optional keywords field, defaults to None if not provided
+    keywords: Optional[List[str]] = None
 
-class SearchData(KeywordModel):
+class SearchData(BaseModel):
     collection: str
     number_of_results: int
     query: str
-    # Inherits the 'keywords' field with validator from KeywordModel and allows setting it via Query with default None
-    keywords: Optional[List[str]] = Query(None)
+    # Optional keywords field, defaults to None if not provided
+    keywords: Optional[List[str]] = None
 
 @app.post("/collections/", operation_id="manage_collections")
 async def manage_collection(data: CollectionAction):
