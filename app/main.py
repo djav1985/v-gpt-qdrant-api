@@ -22,15 +22,6 @@ from functions import load_configuration
 # Load configuration on startup
 BASE_URL, API_KEY = load_configuration()
 
-ai_client = OpenAI(
-    api_key=os.environ['OPENAI_API_KEY']
-)
-
-qdrant_client = QdrantClient(
-    url=f"http://qdrant:6333",
-    api_key=os.getenv("QDRANT_API_KEY")
-)
-
 # Setup the bearer token authentication scheme
 bearer_scheme = HTTPBearer(auto_error=False)
 
@@ -70,6 +61,10 @@ async def manage_collection(data: CollectionAction):
     try:
         if data.action == 'create':
             print(f"Preparing to create a collection named '{data.collection}'")
+            qdrant_client = QdrantClient(
+            url=f"http://qdrant:6333",
+            api_key=os.getenv("QDRANT_API_KEY")
+            )
 
             # Create or recreate the collection with the specified configuration
             response = qdrant_client.create_collection(
@@ -82,6 +77,11 @@ async def manage_collection(data: CollectionAction):
 
         elif data.action == 'delete':
             print(f"Preparing to delete a collection named '{data.collection}'")
+            qdrant_client = QdrantClient(
+            url=f"http://qdrant:6333",
+            api_key=os.getenv("QDRANT_API_KEY")
+            )
+
             response = qdrant_client.delete_collection(collection_name=data.collection)
             print(f"Collection '{data.collection}' successfully deleted with response: {response}")
             return {"message": f"Collection '{data.collection}' deleted successfully", "response": response}
@@ -98,7 +98,9 @@ async def manage_collection(data: CollectionAction):
 async def add_embedding(data: EmbeddingData):
     try:
         # Initialize the OpenAI client
-        ai_client = OpenAI()
+        ai_client = OpenAI(
+        api_key=os.environ['OPENAI_API_KEY']
+        )
 
         # Generate embeddings for all provided texts
         response = ai_client.Embedding.create(input=data.memories, model="text-embedding-ada")
@@ -116,6 +118,11 @@ async def add_embedding(data: EmbeddingData):
             for idx, (entry, memory) in enumerate(zip(response['data'], data.memories))  # Renamed 'text' to 'memory'
         ]
 
+        qdrant_client = QdrantClient(
+        url=f"http://qdrant:6333",
+        api_key=os.getenv("QDRANT_API_KEY")
+        )
+
         # Insert all points into the specified collection in Qdrant
         qdrant_client.upsert(data.collection, points)
 
@@ -127,11 +134,18 @@ async def add_embedding(data: EmbeddingData):
 async def search_embeddings(data: SearchData):
     try:
         # Initialize the OpenAI client
-        ai_client = OpenAI()
+        ai_client = OpenAI(
+        api_key=os.environ['OPENAI_API_KEY']
+        )
 
         # Generate embedding for the query
         query_embedding_response = ai_client.Embedding.create(input=data.query, model="text-embedding-ada")
         query_vector = query_embedding_response['data'][0]['embedding']
+
+        qdrant_client = QdrantClient(
+        url=f"http://qdrant:6333",
+        api_key=os.getenv("QDRANT_API_KEY")
+        )
 
         # Perform the search using the query vector
         search_results = qdrant_client.search(
