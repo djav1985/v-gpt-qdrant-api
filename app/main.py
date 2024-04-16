@@ -135,30 +135,38 @@ async def add_embedding(data: EmbeddingData):
 @app.get("/search/", operation_id="retrieve")
 async def search_embeddings(data: SearchData):
     try:
+        print("Received search request data:", data)  # Print received search request data for debugging
+
         # Initialize the OpenAI client
         ai_client = OpenAI(
-        api_key=os.environ['OPENAI_API_KEY']
+            api_key=os.environ['OPENAI_API_KEY']
         )
 
         # Generate embedding for the query
         response = ai_client.Embedding.create(input=data.query, model="text-embedding-3-small", dimensions=128)
+        print("Response from OpenAI:", response)  # Print response from OpenAI for debugging
 
         qdrant_client = QdrantClient(
-        url=f"http://gpt-qdrant:6333",
-        api_key=os.getenv("QDRANT_API_KEY")
+            url=f"http://gpt-qdrant:6333",
+            api_key=os.getenv("QDRANT_API_KEY")
         )
 
         # Perform the search using the query vector
+        query_vector = response['data'][0]['embedding']
+        print("Query vector:", query_vector)  # Print query vector for debugging
         search_results = qdrant_client.search(
             data.collection,
             search_params=models.SearchParams(hnsw_ef=128, exact=False),
-            query_vector=response['data'][0]['embedding'],
+            query_vector=query_vector,
             limit=5
         )
+        print("Search results:", search_results)  # Print search results for debugging
 
         return search_results
     except Exception as e:
+        print("Error occurred:", e)  # Print error for debugging
         raise HTTPException(status_code=500, detail=str(e))
+
 
 # Root endpoint serving index.html directly
 @app.get("/", include_in_schema=False)
