@@ -119,6 +119,10 @@ async def add_embedding(data: EmbeddingData, qdrant_client: QdrantClient = Depen
             encoding_format="float",
             dimensions=128
         )
+
+        print("Response object type:", type(response))
+        print("Response content:", response)
+
         embedding = response['data']  # Adjust according to the actual response structure
 
         # Generate a unique identifier for the new point
