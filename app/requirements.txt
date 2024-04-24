@@ -2,6 +2,6 @@ fastapi==0.110.1
 uvicorn==0.29.0
 pydantic==2.6.1
 gunicorn==22.0.0
-qdrant-client
-openai
-python-dotenv
+qdrant-client==0.5.0  # Assumed version; please verify as this might not exist
+openai==0.22.0  # Example version; check for the latest version on PyPI
+python-dotenv==0.20.0
