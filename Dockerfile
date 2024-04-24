@@ -1,26 +1,25 @@
-# Dockerfile for Python Application
 # Stage 1: Build environment
 FROM python:3.11-alpine AS build
 WORKDIR /app
 
-# Install build dependencies and Python packages in a single RUN command
-# Combining these commands reduces image layers and improves build performance
-RUN apk add --no-cache --virtual .build-deps gcc musl-dev linux-headers \
-    && pip install --no-cache-dir -r requirements.txt \
-    && apk del .build-deps
+# Copy the current directory contents into the container at /app
+COPY ./app /app
 
-# Copy application files into the WORKDIR
-COPY . .
+# Install build dependencies and Python packages in a single RUN command
+RUN apk update && \
+    apk add --no-cache --virtual .build-deps gcc musl-dev linux-headers \
+    && pip install --no-cache-dir -r /app/requirements.txt \
+    && apk del .build-deps
 
 # Stage 2: Runtime environment
 FROM python:3.11-alpine
 WORKDIR /app
 
-# Copy only necessary files from the build stage into the WORKDIR
+# Copy only the necessary files from the build stage
 COPY --from=build /app .
 
-# Expose port 8000 for the application
+# Expose port
 EXPOSE 8000
 
-# Command to run the application
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Run the application with Gunicorn using Uvicorn workers
+CMD ["gunicorn", "main:app", "--worker-class", "uvicorn.workers.UvicornWorker", "--workers", "4", "--bind", "0.0.0.0:8000"]
