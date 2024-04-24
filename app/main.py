@@ -22,9 +22,6 @@ qdrant_host = os.getenv("QDRANT_HOST")
 qdrant_api_key = os.getenv("QDRANT_API_KEY")
 base_url = os.getenv("BASE_URL")
 
-# Assigning the loaded environment variables
-openai.api_key = openai_api_key
-
 # Initialize Qdrant client
 client = QdrantClient(host=qdrant_host, api_key=qdrant_api_key)
 
