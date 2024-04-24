@@ -164,16 +164,21 @@ async def create_collection(params: CreateCollectionParams):
             "tags": {"type": "keyword"},  # Tags field of type keyword
         }
 
+        # Define vectors configuration for the collection
+        vectors_config = {
+            "size": 1536,  # Number of dimensions of the vectors
+            "distance": "cosine"  # Distance metric for vector comparison
+        }
+
         # Recreate the collection with the given parameters
         client.recreate_collection(
             collection_name=params.collection_name,
-            vector_size=1536,  # Set the vector size to 1536
-            distance="cosine",  # Use cosine distance for vector comparison
-            hnsw_config= {
+            vectors_config=vectors_config,  # Include vector configuration
+            payload_schema=payload_schema,  # Apply the defined payload schema
+            hnsw_config={
                 "M": 16,
                 "ef_construct": 100,
             },  # Configure HNSW (Hierarchical Navigable Small World) graph parameters
-            payload_schema=payload_schema,  # Apply the defined payload schema
         )
 
         # Return a success message if the collection is created successfully
