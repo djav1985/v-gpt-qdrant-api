@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import List, Optional
 
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, Field, validator
 from qdrant_client import QdrantClient
 
 # Configuration for vector size, distance, and HNSW
@@ -106,19 +106,6 @@ async def save_memory(data: MemoryData):
 
     return {"message": "Memory saved successfully"}
 
-class SearchParams(BaseModel):
-    query: str
-    entities: List[str]
-    tags: List[str]
-    sentiment: str
-    collection_name: str
-
-    @validator("entities", "tags", pre=True)
-    def split_str_values(cls, v):
-        if isinstance(v, str):
-            return v.split(",")
-        return v
-
 @app.post("/retrieve_memory")
 async def retrieve_memory(params: SearchParams):
     # Generate embedding vector for the query
@@ -172,9 +159,6 @@ async def retrieve_memory(params: SearchParams):
         for hit in search_result
     ]
     return {"results": results}
-
-class CreateCollectionParams(BaseModel):
-    collection_name: str
 
 @app.post("/collections")
 async def create_collection(params: CreateCollectionParams):
