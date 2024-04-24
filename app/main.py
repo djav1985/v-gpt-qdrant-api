@@ -19,10 +19,10 @@ client = QdrantClient(host=qdrant_host, api_key=qdrant_api_key)
 
 # FastAPI application instance
 app = FastAPI(
-    title="PDF Generation API",
+    title="AI Memory API",
     version="0.1.0",
     description="A FastAPI application to remember and recall things",
-    servers=[{"url": "base_url", "description": "Base API server"}]
+    servers=[{"url": base_url, "description": "Base API server"}]
 )
 
 # The MemoryData class is a Pydantic model that represents the data structure of a memory.
