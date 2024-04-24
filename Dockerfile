@@ -15,7 +15,9 @@ FROM python:3.11-alpine
 WORKDIR /app
 # Copy only the necessary files from the build stage
 COPY --from=build /app .
-# Expose port
+
+# Expose the port Uvicorn will run on
 EXPOSE 80
-# Run the application with Gunicorn using Uvicorn workers
-CMD ["gunicorn", "main:app", "--worker-class", "uvicorn.workers.UvicornWorker", "--workers", "4", "--bind", "0.0.0.0:80"]
+
+# Command to run the application using Uvicorn directly
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "80"]
