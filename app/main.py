@@ -7,14 +7,6 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field, validator
 from qdrant_client import QdrantClient
 
-# Configuration for vector size, distance, and HNSW
-VECTOR_SIZE = 1536  # Adjust based on your embedding dimensionality
-DISTANCE = "cosine"
-HNSW_CONFIG = {
-    "M": 16,
-    "ef_construct": 100,
-}
-
 # Loading environment variables
 openai_api_key = os.getenv("OPENAI_API_KEY")
 embeddings_model = os.getenv("EMBEDDINGS_MODEL")  # e.g., "text-embedding-ada-002"
@@ -30,7 +22,7 @@ app = FastAPI(
     title="PDF Generation API",
     version="0.1.0",
     description="A FastAPI application to remember and recall things",
-    servers=[{"url": "{base_url}", "description": "Base API server"}]
+    servers=[{"url": "base_url", "description": "Base API server"}]
 )
 
 # The MemoryData class is a Pydantic model that represents the data structure of a memory.
@@ -160,25 +152,32 @@ async def retrieve_memory(params: SearchParams):
     ]
     return {"results": results}
 
-@app.post("/collections")
+@app.post("/collections")  # Define a POST route at "/collections"
 async def create_collection(params: CreateCollectionParams):
     try:
-        # Define payload schema
+        # Define payload schema for the collection
         payload_schema = {
-            "memory": {"type": "text"},
-            "timestamp": {"type": "date"},
-            "sentiment": {"type": "keyword"},
-            "entities": {"type": "keyword"},
-            "tags": {"type": "keyword"},
+            "memory": {"type": "text"},  # Memory field of type text
+            "timestamp": {"type": "date"},  # Timestamp field of type date
+            "sentiment": {"type": "keyword"},  # Sentiment field of type keyword
+            "entities": {"type": "keyword"},  # Entities field of type keyword
+            "tags": {"type": "keyword"},  # Tags field of type keyword
         }
 
+        # Recreate the collection with the given parameters
         client.recreate_collection(
             collection_name=params.collection_name,
-            vector_size=VECTOR_SIZE,
-            distance=DISTANCE,
-            hnsw_config=HNSW_CONFIG,
-            payload_schema=payload_schema,
+            vector_size=1536,  # Set the vector size to 1536
+            distance="cosine",  # Use cosine distance for vector comparison
+            hnsw_config= {
+                "M": 16,
+                "ef_construct": 100,
+            },  # Configure HNSW (Hierarchical Navigable Small World) graph parameters
+            payload_schema=payload_schema,  # Apply the defined payload schema
         )
+
+        # Return a success message if the collection is created successfully
         return {"message": f"Collection '{params.collection_name}' created successfully"}
     except Exception as e:
+        # If there is an error in creating the collection, raise an HTTP exception with status code 500
         raise HTTPException(status_code=500, detail=f"Error creating collection: {e}")
