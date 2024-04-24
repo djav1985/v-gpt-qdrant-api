@@ -1,7 +1,3 @@
-fastapi==0.110.1
-uvicorn==0.29.0
-gunicorn==22.0.0
-pydantic==2.6.1
-qdrant-client==1.8.2
-openai==1.19.0
-scipy==1.13.0
+```fastapiuvicornqdrant-clientopenaipython-dotenv```
+**Explanation:**
+* **fastapi:** The web framework used for building the API.* **uvicorn:** An ASGI server for running FastAPI applications.* **qdrant-client:** The Python client library for interacting with the Qdrant vector database.* **openai:** The official OpenAI API client library for generating embeddings.* **python-dotenv:** For loading environment variables from a .env file.
