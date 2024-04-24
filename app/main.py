@@ -1,180 +1,63 @@
-# Import necessary libraries
-import os
+``
 
-from qdrant_client import QdrantClient, models
-from qdrant_client.models import PointStruct
+import uuidfrom datetime import datetimefrom typing import List, Optional
+from fastapi import FastAPI, HTTPExceptionfrom pydantic import BaseModel, validatorfrom qdrant_client import QdrantClient
+# Hardcoded configuration for vector size, distance, and HNSWVECTOR_SIZE = 1536  # Adjust based on your embedding dimensionalityDISTANCE = "cosine"HNSW_CONFIG = {    "M": 16,    "ef_construct": 100,}
 
-from fastapi import FastAPI, HTTPException, Depends, Query, Security, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from fastapi.responses import FileResponse
-from fastapi.staticfiles import StaticFiles
+# Replace with your actual valuesopenai.api_key = "{openai_api_key}"embeddings_model = "{embeddings_model}"  # e.g., "text-embedding-ada-002"qdrant_host = "{qdrant_host}"qdrant_api_key = "{qdrant_api_key}"
+# Initialize Qdrant clientclient = qdrant_client.QdrantClient(host=qdrant_host, api_key=qdrant_api_key)
+app = FastAPI()
 
-from pydantic import BaseModel, Field, validator
+class MemoryData(BaseModel):  # Changed class name    memory: str = Field(..., max_length=1024)    sentiment: str = Field(..., regex="^(positive|neutral|negative)$")    entities: List[str] = Field(..., min_items=1)    tags: List[str] = Field(..., min_items=1)    collection_name: str = Field(...)
+    @validator("entities", "tags", pre=True)    def split_str_values(cls, v):        if isinstance(v, str):            return v.split(",")        return v
 
-from scipy.spatial.distance import cosine
-from datetime import datetime
-from openai import OpenAI
-from typing import Optional, List
+@app.post("/save_memory")async def save_memory(data: MemoryData):  # Changed parameter name    # Generate embedding vector    response = openai.Embedding.create(        input=data.memory, engine=embeddings_model    )    vector = response['data'][0]['embedding']
+    # Create timestamp    timestamp = datetime.utcnow().isoformat()
+# Create UUID    unique_id = str(uuid.uuid4())  # Generate a UUID and convert it to a string
+    # Create Qdrant point    point = {        "id": unique_id,  # Use the generated UUID as the ID     "vector": vector,        "payload": {            "memory": data.memory,            "timestamp": timestamp,            "sentiment": data.sentiment,            "entities": data.entities,            "tags": data.tags,        },    }
+    # Upsert point to Qdrant collection (replace if exists)    try:        client.upsert(collection_name=data.collection_name, points=[point])    except Exception as e:        raise HTTPException(status_code=500, detail=f"Error saving to Qdrant: {e}")
+    return {"message": "Memory saved successfully"}```
 
-# Importing local modules assuming they contain required functionalities
-from functions import load_configuration
+```python# ... (previous code)
 
-# Load configuration on startup
-BASE_URL, API_KEY = load_configuration()
+class SearchParams(BaseModel):    query: str = Field(..., max_length=1024)    entities: List[str] = Field(default_factory=list)    tags: List[str] = Field(default_factory=list)    sentiment: str = Field(default=None, regex="^(positive|neutral|negative)?$")    collection_name: str = Field(...)  # Add collection_name to SearchParams
+    @validator("entities", "tags", pre=True)    def split_str_values(cls, v):        if isinstance(v, str):            return v.split(",")        return v
 
-# Setup the bearer token authentication scheme
-bearer_scheme = HTTPBearer(auto_error=False)
+@app.post("/retrieve_memory")async def retrieve_memory(params: SearchParams):    
 
-# Async function to get the API key from the request
-async def get_api_key(credentials: HTTPAuthorizationCredentials = Security(bearer_scheme)):
-    if API_KEY and (not credentials or credentials.credentials != API_KEY):
-        print("API key validation failed")
-        raise HTTPException(status_code=HTTP_403_FORBIDDEN, detail="Invalid or missing API key")
-    print("API key validated successfully")
-    return credentials.credentials if credentials else None
+    # Generate embedding vector for the query    response = openai.Embedding.create(input=params.query, engine=embeddings_model)    query_vector = response['data'][0]['embedding']
+    # Build search filter based on optional parameters    search_filter = {}    if params.entities:        search_filter["must"] = [            {"key": "entities", "match": {"value": entity}} for entity in params.entities        ]    if params.tags:        if "must" in search_filter:            search_filter["must"].extend(                [{"key": "tags", "match": {"value": tag}} for tag in params.tags]            )        else:            search_filter["must"] = [                {"key": "tags", "match": {"value": tag}} for tag in params.tags            ]    if params.sentiment:        if "must" in search_filter:            search_filter["must"].append(                {"key": "sentiment", "match": {"value": params.sentiment}}            )        else:            search_filter["must"] = [                {"key": "sentiment", "match": {"value": params.sentiment}}            ]
+    # Search Qdrant for similar vectors    search_result = client.search(        collection_name=params.collection_name,        query_vector=query_vector,        limit=5,        filter=search_filter if search_filter else None,    )
+# Extract results and return (including ID)    results = [        {            "id": hit.id,  # Include the ID in the results            "memory": hit.payload["memory"],            "timestamp": hit.payload["timestamp"],            "sentiment": hit.payload["sentiment"],            "entities": hit.payload["entities"],            "tags": hit.payload["tags"],            "score": hit.score,        }        for hit in search_result    ]    return {"results": results}
 
+class CreateCollectionParams(BaseModel):    collection_name: str
 
-# FastAPI application instance setup
-app = FastAPI(
-    title="Qdrant API",
-    version="0.1.0",
-    description="A FastAPI application for Qdrant",
-    servers=[{"url": BASE_URL, "description": "Base API server"}]
-)
+@app.post("/collections")  # Endpoint path without collection_nameasync def create_collection(params: CreateCollectionParams):    try:        client.recreate_collection(collection_name=params.collection_name)        return {"message": f"Collection '{params.collection_name}' created successfully"}    except Exception as e:        raise HTTPException(status_code=500, detail=f"Error creating collection: {e}")
 
-class CollectionAction(BaseModel):
-    action: str
-    collection: str
+@app.post("/collections")
+async def create_collection(params: CreateCollectionParams):
+try:
+# Define payload schema
+payload_schema = {
+"memory": {"type": "text"},
+"timestamp": {"type": "date"},
+"sentiment": {"type": "keyword"},
+"entities": {"type": "keyword"},
+"tags": {"type": "keyword"},
+}
 
-class EmbeddingData(BaseModel):
-    memories: str
-    collection: str
+```
+    client.recreate_collection(
+        collection_name=params.collection_name,
+        vector_size=VECTOR_SIZE,
+        distance=DISTANCE,
+        hnsw_config=HNSW_CONFIG,
+        payload_schema=payload_schema,
+    )
+    return {"message": f"Collection '{params.collection_name}' created successfully"}
+except Exception as e:
+    raise HTTPException(status_code=500, detail=f"Error creating collection: {e}")
 
-class SearchData(BaseModel):
-    query: str
-    collection: str
+```
 
-@app.post("/collections/", operation_id="manage_collections")
-async def manage_collection(data: CollectionAction):
-    print(f"Request to manage collection received with action: {data.action} and name: {data.collection}")
-
-    try:
-        if data.action == 'create':
-            print(f"Preparing to create a collection named '{data.collection}'")
-            qdrant_client = QdrantClient(
-            url=f"http://gpt-qdrant:6333",
-            api_key=os.getenv("QDRANT_API_KEY")
-            )
-
-            # Create or recreate the collection with the specified configuration
-            response = qdrant_client.create_collection(
-            collection_name=data.collection,
-            vectors_config=models.VectorParams(size=128, distance=models.Distance.COSINE)
-            )
-
-            print(f"Collection '{data.collection}' successfully created with response: {response}")
-            return {"message": f"Collection '{data.collection}' created successfully", "response": response}
-
-        elif data.action == 'delete':
-            print(f"Preparing to delete a collection named '{data.collection}'")
-            qdrant_client = QdrantClient(
-            url=f"http://gpt-qdrant:6333",
-            api_key=os.getenv("QDRANT_API_KEY")
-            )
-
-            response = qdrant_client.delete_collection(collection_name=data.collection)
-            print(f"Collection '{data.collection}' successfully deleted with response: {response}")
-            return {"message": f"Collection '{data.collection}' deleted successfully", "response": response}
-
-        else:
-            print(f"Invalid action specified: {data.action}")
-            raise HTTPException(status_code=400, detail="Invalid action specified")
-
-    except Exception as e:
-        print(f"Error handling the {data.action} action for the collection: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.post("/embeddings/", operation_id="save")
-async def add_embedding(data: EmbeddingData):
-    try:
-        # Initialize the OpenAI client
-        ai_client = OpenAI(
-        api_key=os.environ['OPENAI_API_KEY']
-        )
-
-        memories_list = data.memories.split(',')
-
-        # Generate embeddings for all provided texts
-        response = ai_client.embeddings.create(input=memories_list, model="text-embedding-3-small", dimensions=128)
-
-        # Prepare points for insertion into Qdrant
-        points = [
-            PointStruct(
-                id=idx,
-                vector=entry.embedding,
-                payload={
-                    "memory": memory,  # Using 'memory' instead of 'text'
-                    "timestamp": datetime.now().isoformat()
-                }
-            )
-            for idx, (entry, memory) in enumerate(zip(response.data, memories_list))
-        ]
-
-        qdrant_client = QdrantClient(
-        url=f"http://gpt-qdrant:6333",
-        api_key=os.getenv("QDRANT_API_KEY")
-        )
-
-        # Insert all points into the specified collection in Qdrant
-        qdrant_client.upsert(data.collection, points)
-
-        return {"message": "Embeddings added successfully"}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.post("/search/", operation_id="retrieve")
-async def search_embeddings(data: SearchData):
-    try:
-        print("Received search request data:")
-        print("Collection:", data.collection)
-        print("Query:", data.query)
-
-        # Initialize the OpenAI client
-        ai_client = OpenAI(
-            api_key=os.environ['OPENAI_API_KEY']
-        )
-
-        # Generate embedding for the query
-        response = ai_client.embeddings.create(input=data.query, model="text-embedding-3-small", dimensions=128)
-        print("Response from OpenAI:", response)
-
-        qdrant_client = QdrantClient(
-            url=f"http://gpt-qdrant:6333",
-            api_key=os.getenv("QDRANT_API_KEY")
-        )
-
-        # Perform the search using the query vector
-        query_vector = query_vector = response.data[0].embedding
-        print("Query vector:", query_vector)
-        search_results = qdrant_client.search(
-            data.collection,
-            search_params=models.SearchParams(hnsw_ef=128, exact=False),
-            query_vector=query_vector,
-            limit=5
-        )
-        print("Search results:", search_results)
-
-        return search_results
-    except Exception as e:
-        print("Error occurred:", e)
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-
-# Root endpoint serving index.html directly
-@app.get("/", include_in_schema=False)
-async def root():
-    return FileResponse("/app/public/index.html")
-
-# Serve static files (HTML, CSS, JS, images)
-app.mount("/static", StaticFiles(directory="/app/public"), name="static")
+[](https://www.notion.so/73839592da524c8d8e96491fbec3ad9c?pvs=21)
