@@ -71,7 +71,7 @@ class CreateCollectionParams(BaseModel):
 async def save_memory(data: MemoryData):
     # Generate embedding vector
     response = ai_client.embeddings.create(
-        input=data.memory, model=embeddings_model
+        input=data.memory, model=embeddings_model, dimensions=1536
     )
 
     # Extract vector from response
