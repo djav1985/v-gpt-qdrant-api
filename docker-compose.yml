@@ -3,7 +3,7 @@ version: '3.8'
 services:
   app:
     container_name: qdrant-api
-    image: vontainment/gpt-qdrant-api:latest  # Use your appropriate image
+    image: vontainment/gpt-qdrant-api:main # Use your appropriate image
     hostname: qdrant-api
     restart: unless-stopped
     network_mode: bridge
@@ -12,15 +12,16 @@ services:
     depends_on:
       - qdrant
     environment:
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      EMBEDDINGS_MODEL: text-embedding-3-large
       QDRANT_HOST: qdrant
-      QDRANT_PORT: 6333
-      QDRANT_API_KEY: YOUR_QDRANT_API_KEY
-      OPENAI_API_KEY: YOUR_OPENAI_API_KEY
+      QDRANT_API_KEY: xtfpouszukodiivuaucbgeozlzlwdwac
+      BASE_URL: http://qdrant-api
 
   qdrant:
     image: generall/qdrant
     environment:
-      API_KEY: YOUR_QDRANT_API_KEY
+      API_KEY: xtfpouszukodiivuaucbgeozlzlwdwac
 
 volumes:
   qdrant_data:

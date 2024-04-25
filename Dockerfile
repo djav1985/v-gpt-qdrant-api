@@ -7,17 +7,12 @@ WORKDIR /app
 # Copy the current directory contents into the container at /app
 COPY ./app /app
 
-# Install necessary system dependencies and Python packages in one RUN command
-RUN apk add --no-cache \
-    gcc \
-    musl-dev \
-    python3-dev \
-    libffi-dev \
-    openssl-dev && \
+# Install system dependencies required for Python packages and optimize install process
+RUN apk add --no-cache gcc musl-dev python3-dev libffi-dev openssl-dev && \
     pip install --no-cache-dir -r /app/requirements.txt
 
 # Expose port 80 to the outside world
 EXPOSE 80
 
-# Run the FastAPI application using Gunicorn with Uvicorn workers
-CMD ["gunicorn", "main:app", "-k", "uvicorn.workers.UvicornWorker", "--bind", "0.0.0.0:80"]
+# Run the application with Gunicorn using Uvicorn workers
+CMD ["gunicorn", "main:app", "--worker-class", "uvicorn.workers.UvicornWorker", "--workers", "4", "--bind", "0.0.0.0:80"]
