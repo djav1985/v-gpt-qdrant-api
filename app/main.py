@@ -120,28 +120,20 @@ async def retrieve_memory(params: SearchParams):
 
     # Build search filter based on optional parameters
     search_filter = {}
-    if params.entities:
-        search_filter["must"] = [
-            {"key": "entities", "match": {"value": entity}} for entity in params.entities
-        ]
-    if params.tags:
+    if params.entity:
+        search_filter["must"] = [{"key": "entities", "match": {"value": params.entity}}]
+    if params.tag:
         if "must" in search_filter:
-            search_filter["must"].extend(
-                [{"key": "tags", "match": {"value": tag}} for tag in params.tags]
-            )
+            search_filter["must"].append({"key": "tags", "match": {"value": params.tag}})
         else:
-            search_filter["must"] = [
-                {"key": "tags", "match": {"value": tag}} for tag in params.tags
-            ]
+            search_filter["must"] = [{"key": "tags", "match": {"value": params.tag}}]
     if params.sentiment:
         if "must" in search_filter:
             search_filter["must"].append(
                 {"key": "sentiment", "match": {"value": params.sentiment}}
             )
         else:
-            search_filter["must"] = [
-                {"key": "sentiment", "match": {"value": params.sentiment}}
-            ]
+            search_filter["must"] = [{"key": "sentiment", "match": {"value": params.sentiment}}]
 
     # Search Qdrant for similar vectors
     search_result = db_client.search(
