@@ -153,7 +153,7 @@ async def recall_memory(params: SearchParams):
     return {"results": results}
 
 
-@app.post("/collections", operation_id="create_collection")  # Define a POST route at "/collections"
+@app.post("/collections", operation_id="collection")  # Define a POST route at "/collections"
 async def create_collection(params: CreateCollectionParams):
     try:
         # Recreate the collection with specified vector parameters
