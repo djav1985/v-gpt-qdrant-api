@@ -153,16 +153,15 @@ async def retrieve_memory(params: SearchParams):
     ]
     return {"results": results}
 
-# Define a POST route at "/collections"
-@app.post("/collections")
+@app.post("/collections")  # Define a POST route at "/collections"
 async def create_collection(params: CreateCollectionParams):
     try:
-
         # Recreate the collection with specified vector parameters
         client.recreate_collection(
-            collection_name=params.collection_name,
-            vectors_config=VectorParams(size=1536, distance=Distance.COSINE),
+            collection_name=params.collection_name,  # Name of the new collection
+            vectors_config=VectorParams(size=1536, distance=Distance.COSINE),  # Vector configuration for the new collection
         )
+
         # Return a success message if the collection is created successfully
         return {"message": f"Collection '{params.collection_name}' created successfully"}
     except Exception as e:
