@@ -1,5 +1,6 @@
 import os
 import uuid
+import openai
 from datetime import datetime
 from typing import List, Optional
 
