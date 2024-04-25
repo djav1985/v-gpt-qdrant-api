@@ -117,7 +117,7 @@ from qdrant_client.models import Filter, FieldCondition, Range
 @app.post("/recall_memory", operation_id="recall_memory")
 async def recall_memory(params: SearchParams):
     # Generate embedding vector for the query
-    response = ai_client.embeddings.create(input=params.query, model=embeddings_model)
+    response = ai_client.embeddings.create(input=params.query, model=embeddings_model, dimensions=512)
     query_vector = response.data[0].embedding  # Assuming the embedding is nested within the 'data' attribute
 
     # Build search filter based on optional parameters
