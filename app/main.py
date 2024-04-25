@@ -30,6 +30,8 @@ app = FastAPI(
 # The MemoryData class is a Pydantic model that represents the data structure of a memory.
 # It includes fields for the content of the memory, its associated sentiment, identified entities, and associated tags.
 class MemoryData(BaseModel):
+    # The name of the collection to be created.
+    collection_name: str = Field(..., description="The name of the collection to be created.")
     # The content of the memory to be stored.
     memory: str = Field(..., description="The content of the memory to be stored.")
 
