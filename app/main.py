@@ -29,7 +29,7 @@ app = FastAPI(
 
 # The MemoryData class is a Pydantic model that represents the data structure of a memory.
 # It includes fields for the content of the memory, its associated sentiment, identified entities, and associated tags.
-class MemoryData(BaseModel):
+class MemoryParams(BaseModel):
     # The name of the collection to be created.
     collection_name: str = Field(..., description="The name of the collection to be created.")
     # The content of the memory to be stored.
@@ -75,11 +75,11 @@ class CreateCollectionParams(BaseModel):
     # The name of the collection to be created.
     collection_name: str = Field(..., description="The name of the collection to be created.")
 
-@app.post("/save_memory")
-async def save_memory(data: MemoryData):
+@app.post("/save_memory", operation_id="save_memory")
+async def save_memory(Params: MemoryParams):
     # Generate embedding vector
     response = ai_client.embeddings.create(
-        input=data.memory, model=embeddings_model, dimensions=512
+        input=Params.memory, model=embeddings_model, dimensions=512
     )
 
     # Extract vector from response
@@ -96,17 +96,17 @@ async def save_memory(data: MemoryData):
         "id": unique_id,
         "vector": vector,
         "payload": {
-            "memory": data.memory,
+            "memory": Params.memory,
             "timestamp": timestamp,
-            "sentiment": data.sentiment,
-            "entities": data.entities,
-            "tags": data.tags,
+            "sentiment": Params.sentiment,
+            "entities": Params.entities,
+            "tags": Params.tags,
         },
     }
 
     # Upsert point to Qdrant collection (replace if exists)
     try:
-        db_client.upsert(collection_name=data.collection_name, points=[point])
+        db_client.upsert(collection_name=Params.collection_name, points=[point])
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error saving to Qdrant: {e}")
 
@@ -114,8 +114,8 @@ async def save_memory(data: MemoryData):
 
 from qdrant_client.models import Filter, FieldCondition, Range
 
-@app.post("/retrieve_memory")
-async def retrieve_memory(params: SearchParams):
+@app.post("/recall_memory", operation_id="recall_memory")
+async def recall_memory(params: SearchParams):
     # Generate embedding vector for the query
     response = ai_client.embeddings.create(input=params.query, model=embeddings_model)
     query_vector = response.data[0].embedding  # Assuming the embedding is nested within the 'data' attribute
@@ -153,7 +153,7 @@ async def retrieve_memory(params: SearchParams):
     return {"results": results}
 
 
-@app.post("/collections")  # Define a POST route at "/collections"
+@app.post("/collections", operation_id="create_collection")  # Define a POST route at "/collections"
 async def create_collection(params: CreateCollectionParams):
     try:
         # Recreate the collection with specified vector parameters
