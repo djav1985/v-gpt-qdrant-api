@@ -1,24 +1,24 @@
 import os
 import uuid
-import openai
 from datetime import datetime
 from typing import List, Optional
 
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field, validator
+from openai import OpenAI
 from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, VectorParams
 
 # Loading environment variables
-openai_api_key = os.getenv("OPENAI_API_KEY")
 embeddings_model = os.getenv("EMBEDDINGS_MODEL")  # e.g., "text-embedding-ada-002"
 qdrant_host = os.getenv("QDRANT_HOST")
 qdrant_api_key = os.getenv("QDRANT_API_KEY")
 base_url = os.getenv("BASE_URL")
 
-# Initialize Qdrant client
-client = QdrantClient(url=qdrant_host, api_key=qdrant_api_key)
-
+# Initialize clients
+db_client = QdrantClient(url=qdrant_host, api_key=qdrant_api_key)
+ai_client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"),
+)
 # FastAPI application instance
 app = FastAPI(
     title="AI Memory API",
@@ -68,8 +68,8 @@ class CreateCollectionParams(BaseModel):
 @app.post("/save_memory")
 async def save_memory(data: MemoryData):
     # Generate embedding vector
-    response = openai.Embedding.create(
-        input=data.memory, engine=embeddings_model
+    response = ai_client.embeddings.create(
+        input=data.memory, model=embeddings_model
     )
     vector = response['data'][0]['embedding']
 
@@ -94,7 +94,7 @@ async def save_memory(data: MemoryData):
 
     # Upsert point to Qdrant collection (replace if exists)
     try:
-        client.upsert(collection_name=data.collection_name, points=[point])
+        db_client.upsert(collection_name=data.collection_name, points=[point])
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error saving to Qdrant: {e}")
 
@@ -103,7 +103,7 @@ async def save_memory(data: MemoryData):
 @app.post("/retrieve_memory")
 async def retrieve_memory(params: SearchParams):
     # Generate embedding vector for the query
-    response = openai.Embedding.create(input=params.query, engine=embeddings_model)
+    response = ai_client.embeddings.create(input=params.query, model=embeddings_model)
     query_vector = response['data'][0]['embedding']
 
     # Build search filter based on optional parameters
@@ -132,7 +132,7 @@ async def retrieve_memory(params: SearchParams):
             ]
 
     # Search Qdrant for similar vectors
-    search_result = client.search(
+    search_result = db_client.search(
         collection_name=params.collection_name,
         query_vector=query_vector,
         limit=5,
@@ -158,7 +158,7 @@ async def retrieve_memory(params: SearchParams):
 async def create_collection(params: CreateCollectionParams):
     try:
         # Recreate the collection with specified vector parameters
-        client.recreate_collection(
+        db_client.recreate_collection(
             collection_name=params.collection_name,  # Name of the new collection
             vectors_config=VectorParams(size=1536, distance=Distance.COSINE),  # Vector configuration for the new collection
         )
