@@ -79,7 +79,7 @@ class CreateCollectionParams(BaseModel):
 async def save_memory(Params: MemoryParams):
     # Generate embedding vector
     response = ai_client.embeddings.create(
-        input=Params.memory, model=embeddings_model, dimensions=512
+        input=Params.memory, model=embeddings_model, dimensions=3072
     )
 
     # Extract vector from response
@@ -159,7 +159,7 @@ async def create_collection(params: CreateCollectionParams):
         # Recreate the collection with specified vector parameters
         db_client.recreate_collection(
             collection_name=params.collection_name,  # Name of the new collection
-            vectors_config=VectorParams(size=512, distance=Distance.COSINE),  # Vector configuration for the new collection
+            vectors_config=VectorParams(size=3072, distance=Distance.COSINE),  # Vector configuration for the new collection
         )
 
         # Return a success message if the collection is created successfully
