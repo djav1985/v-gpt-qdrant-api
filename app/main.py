@@ -16,7 +16,7 @@ qdrant_api_key = os.getenv("QDRANT_API_KEY")
 base_url = os.getenv("BASE_URL")
 
 # Initialize Qdrant client
-client = QdrantClient(host=qdrant_host, api_key=qdrant_api_key)
+client = QdrantClient(url=qdrant_host, api_key=qdrant_api_key)
 
 # FastAPI application instance
 app = FastAPI(
