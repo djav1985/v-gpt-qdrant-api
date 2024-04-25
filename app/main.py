@@ -6,6 +6,7 @@ from typing import List, Optional
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field, validator
 from qdrant_client import QdrantClient
+from qdrant_client.models import Distance, VectorParams
 
 # Loading environment variables
 openai_api_key = os.getenv("OPENAI_API_KEY")
@@ -152,35 +153,16 @@ async def retrieve_memory(params: SearchParams):
     ]
     return {"results": results}
 
-@app.post("/collections")  # Define a POST route at "/collections"
+# Define a POST route at "/collections"
+@app.post("/collections")
 async def create_collection(params: CreateCollectionParams):
     try:
-        # Define payload schema for the collection
-        payload_schema = {
-            "memory": {"type": "text"},  # Memory field of type text
-            "timestamp": {"type": "date"},  # Timestamp field of type date
-            "sentiment": {"type": "keyword"},  # Sentiment field of type keyword
-            "entities": {"type": "keyword"},  # Entities field of type keyword
-            "tags": {"type": "keyword"},  # Tags field of type keyword
-        }
 
-        # Define vectors configuration for the collection
-        vectors_config = {
-            "size": 1536,  # Number of dimensions of the vectors
-            "distance": "cosine"  # Distance metric for vector comparison
-        }
-
-        # Recreate the collection with the given parameters
+        # Recreate the collection with specified vector parameters
         client.recreate_collection(
             collection_name=params.collection_name,
-            vectors_config=vectors_config,  # Include vector configuration
-            payload_schema=payload_schema,  # Apply the defined payload schema
-            hnsw_config={
-                "M": 16,
-                "ef_construct": 100,
-            },  # Configure HNSW (Hierarchical Navigable Small World) graph parameters
+            vectors_config=VectorParams(size=1536, distance=Distance.COSINE),
         )
-
         # Return a success message if the collection is created successfully
         return {"message": f"Collection '{params.collection_name}' created successfully"}
     except Exception as e:
