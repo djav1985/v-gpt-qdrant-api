@@ -52,7 +52,7 @@ class MemoryData(BaseModel):
         return v
 
 # The SearchParams class is a Pydantic model representing the search parameters.
-# It includes fields for the search query and the number of most similar memories to return.
+# It includes fields for the search query, the number of most similar memories to return, collection name, and optional search filters.
 class SearchParams(BaseModel):
     # The search query used to retrieve similar memories.
     query: str = Field(..., description="The search query used to retrieve similar memories.")
@@ -60,12 +60,20 @@ class SearchParams(BaseModel):
     # The number of most similar memories to return.
     top_k: int = Field(..., description="The number of most similar memories to return.")
 
+    # The name of the collection to search in.
+    collection_name: str = Field(..., description="The name of the collection to search in.")
+
+    # Optional search filters
+    entity: Optional[str] = Field(None, description="An entity to filter the search.")
+    tag: Optional[str] = Field(None, description="A tag to filter the search.")
+    sentiment: Optional[str] = Field(None, description="The sentiment to filter the search.")
+
+
 # The CreateCollectionParams class is a Pydantic model representing the parameters for creating a collection.
 # It includes a field for the name of the collection to be created.
 class CreateCollectionParams(BaseModel):
     # The name of the collection to be created.
     collection_name: str = Field(..., description="The name of the collection to be created.")
-
 
 @app.post("/save_memory")
 async def save_memory(data: MemoryData):
@@ -108,7 +116,7 @@ async def save_memory(data: MemoryData):
 async def retrieve_memory(params: SearchParams):
     # Generate embedding vector for the query
     response = ai_client.embeddings.create(input=params.query, model=embeddings_model)
-    query_vector = response['data'][0]['embedding']
+    query_vector = response.data[0].embedding  # Assuming the embedding is nested within the 'data' attribute
 
     # Build search filter based on optional parameters
     search_filter = {}
