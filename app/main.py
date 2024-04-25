@@ -71,7 +71,9 @@ async def save_memory(data: MemoryData):
     response = ai_client.embeddings.create(
         input=data.memory, model=embeddings_model
     )
-    vector = response['data'][0]['embedding']
+
+    # Extract vector from response
+    vector = response.data[0].embedding  # Use dot notation to access data and embedding attributes
 
     # Create timestamp
     timestamp = datetime.utcnow().isoformat()
@@ -81,7 +83,7 @@ async def save_memory(data: MemoryData):
 
     # Create Qdrant point
     point = {
-        "id": unique_id,  # Use the generated UUID as the ID
+        "id": unique_id,
         "vector": vector,
         "payload": {
             "memory": data.memory,
