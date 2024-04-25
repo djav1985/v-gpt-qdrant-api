@@ -5,7 +5,6 @@ services:
     image: vontainment/v-gpt-qdrant-api:main # Use your appropriate image
     hostname: qdrant-api
     restart: unless-stopped
-    network_mode: bridge
     ports:
       - "8077:80"
     depends_on:
