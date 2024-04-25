@@ -7,7 +7,7 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field, validator
 from openai import OpenAI
 from qdrant_client import QdrantClient
-from qdrant_client.models import Distance, VectorParams
+from qdrant_client.models import Distance, VectorParams, Filter, FieldCondition, Range
 
 # Loading environment variables
 embeddings_model = os.getenv("EMBEDDINGS_MODEL")  # e.g., "text-embedding-ada-002"
@@ -54,14 +54,14 @@ class MemoryData(BaseModel):
 # The SearchParams class is a Pydantic model representing the search parameters.
 # It includes fields for the search query, the number of most similar memories to return, collection name, and optional search filters.
 class SearchParams(BaseModel):
+    # The name of the collection to search in.
+    collection_name: str = Field(..., description="The name of the collection to search in.")
+
     # The search query used to retrieve similar memories.
     query: str = Field(..., description="The search query used to retrieve similar memories.")
 
     # The number of most similar memories to return.
-    top_k: int = Field(..., description="The number of most similar memories to return.")
-
-    # The name of the collection to search in.
-    collection_name: str = Field(..., description="The name of the collection to search in.")
+    top_k: int = Field(5, description="The number of most similar memories to return.")
 
     # Optional search filters
     entity: Optional[str] = Field(None, description="An entity to filter the search.")
@@ -79,7 +79,7 @@ class CreateCollectionParams(BaseModel):
 async def save_memory(data: MemoryData):
     # Generate embedding vector
     response = ai_client.embeddings.create(
-        input=data.memory, model=embeddings_model, dimensions=1536
+        input=data.memory, model=embeddings_model, dimensions=512
     )
 
     # Extract vector from response
@@ -112,6 +112,8 @@ async def save_memory(data: MemoryData):
 
     return {"message": "Memory saved successfully"}
 
+from qdrant_client.models import Filter, FieldCondition, Range
+
 @app.post("/retrieve_memory")
 async def retrieve_memory(params: SearchParams):
     # Generate embedding vector for the query
@@ -121,26 +123,18 @@ async def retrieve_memory(params: SearchParams):
     # Build search filter based on optional parameters
     search_filter = {}
     if params.entity:
-        search_filter["must"] = [{"key": "entities", "match": {"value": params.entity}}]
+        search_filter["must"] = [FieldCondition(key="entities", match={"value": params.entity})]
     if params.tag:
-        if "must" in search_filter:
-            search_filter["must"].append({"key": "tags", "match": {"value": params.tag}})
-        else:
-            search_filter["must"] = [{"key": "tags", "match": {"value": params.tag}}]
+        search_filter["must"] = [FieldCondition(key="tags", match={"value": params.tag})]
     if params.sentiment:
-        if "must" in search_filter:
-            search_filter["must"].append(
-                {"key": "sentiment", "match": {"value": params.sentiment}}
-            )
-        else:
-            search_filter["must"] = [{"key": "sentiment", "match": {"value": params.sentiment}}]
+        search_filter["must"] = [FieldCondition(key="sentiment", match={"value": params.sentiment})]
 
-    # Search Qdrant for similar vectors
-    search_result = db_client.search(
+    # Search Qdrant for similar vectors with filtering condition
+    hits = db_client.search(
         collection_name=params.collection_name,
         query_vector=query_vector,
-        limit=5,
-        filter=search_filter if search_filter else None,
+        query_filter=Filter(must=search_filter["must"]) if search_filter else None,
+        limit=params.top_k,
     )
 
     # Extract results and return (including ID)
@@ -154,9 +148,10 @@ async def retrieve_memory(params: SearchParams):
             "tags": hit.payload["tags"],
             "score": hit.score,
         }
-        for hit in search_result
+        for hit in hits
     ]
     return {"results": results}
+
 
 @app.post("/collections")  # Define a POST route at "/collections"
 async def create_collection(params: CreateCollectionParams):
@@ -164,7 +159,7 @@ async def create_collection(params: CreateCollectionParams):
         # Recreate the collection with specified vector parameters
         db_client.recreate_collection(
             collection_name=params.collection_name,  # Name of the new collection
-            vectors_config=VectorParams(size=1536, distance=Distance.COSINE),  # Vector configuration for the new collection
+            vectors_config=VectorParams(size=512, distance=Distance.COSINE),  # Vector configuration for the new collection
         )
 
         # Return a success message if the collection is created successfully
