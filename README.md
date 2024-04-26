@@ -16,6 +16,18 @@ This repository contains a FastAPI application for interacting with Qdrant, a ve
 - Collection Name: Use `nxs-assistant` for all memory functions.
 ~~~
 
+You can use multible collections to offer a general and user memory for shared chatbots. Just change the instructions a bit.
+
+For Dify:
+~~~
+- Collection Name: Use `shared-memories01` for memory related to ORGINIZATION_NAME and '{{USENAME}}' for memory realted to the specific user.
+~~~
+
+For GPTs:
+~~~
+- Collection Name: Use `shared-memories01` for memory related to ORGINIZATION_NAME and ask the user for thier "name" and use it for memory realted to the specific user.
+~~~
+
 ## Setup
 
 Install the required dependencies by running:
