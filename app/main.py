@@ -149,10 +149,10 @@ async def authenticate_api(request: Request):
     }
     
 @app.post("/endpoint")
-async def handle_request(params: EmbeddingParams):
-    data = params.input_value
+async def handle_request(request: Request):
+    data = await request.json()  # Asynchronously get the JSON data from the request
     print(data)  # Print the raw data to the console
-    params = OpenaiParams(**data)  # Validate and parse data using Pydantic model
+    params = EmbeddingParams(**data)  # Validate and parse data using Pydantic model
     return {
         "model": params.model
     }
