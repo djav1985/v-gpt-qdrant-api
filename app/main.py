@@ -3,28 +3,34 @@ import uuid
 from datetime import datetime
 from typing import List, Optional
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, Security
+from fastapi.staticfiles import StaticFiles
+from fastapi.security.http import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, Field, validator
+from starlette.responses import FileResponse
+
 from openai import OpenAI
 from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, VectorParams, Filter, FieldCondition, Range
 
-# Loading environment variables
-embeddings_model = os.getenv("EMBEDDINGS_MODEL")  # e.g., "text-embedding-ada-002"
-qdrant_host = os.getenv("QDRANT_HOST")
-qdrant_api_key = os.getenv("QDRANT_API_KEY")
-base_url = os.getenv("BASE_URL")
-
 # Initialize clients
-db_client = QdrantClient(url=qdrant_host, api_key=qdrant_api_key)
-ai_client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"),
-)
+db_client = QdrantClient(url=os.getenv("QDRANT_HOST"), api_key=os.getenv("QDRANT_API_KEY"))
+ai_client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+
+# Setup the bearer token authentication scheme
+bearer_scheme = HTTPBearer(auto_error=False)
+
+async def get_api_key(credentials: HTTPAuthorizationCredentials = Security(bearer_scheme)):
+    if os.getenv("API_KEY") and (not credentials or credentials.credentials != os.getenv("API_KEY")):
+        raise HTTPException(status_code=403, detail="Invalid or missing API key")
+    return credentials.credentials if credentials else None
+
 # FastAPI application instance
 app = FastAPI(
     title="AI Memory API",
     version="0.1.0",
     description="A FastAPI application to remember and recall things",
-    servers=[{"url": base_url, "description": "Base API server"}]
+    servers=[{"url": os.getenv("BASE_URL"), "description": "Base API server"}]
 )
 
 # The MemoryData class is a Pydantic model that represents the data structure of a memory.
@@ -76,10 +82,10 @@ class CreateCollectionParams(BaseModel):
     collection_name: str = Field(..., description="The name of the collection to be created.")
 
 @app.post("/save_memory", operation_id="save_memory")
-async def save_memory(Params: MemoryParams):
+async def save_memory(Params: MemoryParams, api_key: str = Depends(get_api_key)):
     # Generate embedding vector
     response = ai_client.embeddings.create(
-        input=Params.memory, model=embeddings_model, dimensions=512
+        input=Params.memory, model=os.getenv("EMBEDDINGS_MODEL"), dimensions=512
     )
 
     # Extract vector from response
@@ -115,9 +121,9 @@ async def save_memory(Params: MemoryParams):
 from qdrant_client.models import Filter, FieldCondition, Range
 
 @app.post("/recall_memory", operation_id="recall_memory")
-async def recall_memory(params: SearchParams):
+async def recall_memory(params: SearchParams, api_key: str = Depends(get_api_key)):
     # Generate embedding vector for the query
-    response = ai_client.embeddings.create(input=params.query, model=embeddings_model, dimensions=512)
+    response = ai_client.embeddings.create(input=params.query, model=os.getenv("EMBEDDINGS_MODEL"), dimensions=512)
     query_vector = response.data[0].embedding  # Assuming the embedding is nested within the 'data' attribute
 
     # Build search filter based on optional parameters
@@ -153,8 +159,8 @@ async def recall_memory(params: SearchParams):
     return {"results": results}
 
 
-@app.post("/collections", operation_id="collection")  # Define a POST route at "/collections"
-async def create_collection(params: CreateCollectionParams):
+@app.post("/collections", operation_id="collection")
+async def create_collection(params: CreateCollectionParams, api_key: str = Depends(get_api_key)):
     try:
         # Recreate the collection with specified vector parameters
         db_client.recreate_collection(
@@ -167,3 +173,11 @@ async def create_collection(params: CreateCollectionParams):
     except Exception as e:
         # If there is an error in creating the collection, raise an HTTP exception with status code 500
         raise HTTPException(status_code=500, detail=f"Error creating collection: {e}")
+
+# Root endpoint serving index.html directly
+@app.get("/", include_in_schema=False)
+async def root():
+    return FileResponse("/app/public/index.html")
+
+# Serve static files (HTML, CSS, JS, images)
+app.mount("/static", StaticFiles(directory="/app/public"), name="static")
