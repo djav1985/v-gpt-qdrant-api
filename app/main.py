@@ -142,14 +142,14 @@ class EmbeddingParams(BaseModel):
     class Config:
         populate_by_name = True  # Updated configuration for Pydantic V2
 
-@app.post("/v1", response_model=dict)
+@app.post("/v1")
 async def authenticate_api(request: OpenaiParams):
     return {
         "model": request.model,
         "credentials": request.credentials
     }
     
-@app.post("/v1/embeddings", response_model=dict)
+@app.post("/v1/embeddings")
 async def generate_embeddings(request: EmbeddingParams):
         return {
         "model": request.model,
