@@ -132,7 +132,7 @@ async def create_collection(params: CreateCollectionParams, api_key: str = Depen
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error creating collection: {str(e)}")
 
-@app.post("/v1/embeddings", response_model=EmbeddingParams)
+@app.post("/embeddings", response_model=EmbeddingParams)
 async def generate_embeddings(request: EmbeddingParams):
     try:
         embeddings = embeddings_model.embed([request.input])[0]  # Assuming 'input' field in EmbeddingParams and indexing correctly
