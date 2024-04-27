@@ -13,6 +13,8 @@ from qdrant_client.models import Distance, VectorParams, Filter, FieldCondition,
 embeddings_model = os.getenv("EMBEDDINGS_MODEL")  # e.g., "text-embedding-ada-002"
 qdrant_host = os.getenv("QDRANT_HOST")
 qdrant_api_key = os.getenv("QDRANT_API_KEY")
+memories_api_key = os.getenv("MEMORIES_API_KEY")
+embeddings_api_key = os.getenv("EMBEDDINGS_API_KEY")
 base_url = os.getenv("BASE_URL")
 
 # Initialize clients
@@ -117,7 +119,7 @@ from qdrant_client.models import Filter, FieldCondition, Range
 @app.post("/recall_memory", operation_id="recall_memory")
 async def recall_memory(params: SearchParams):
     # Generate embedding vector for the query
-    response = ai_client.embeddings.create(input=params.query, model=embeddings_model)
+    response = ai_client.embeddings.create(input=params.query, model=embeddings_model, dimensions=512)
     query_vector = response.data[0].embedding  # Assuming the embedding is nested within the 'data' attribute
 
     # Build search filter based on optional parameters
