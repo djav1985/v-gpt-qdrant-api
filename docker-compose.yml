@@ -12,8 +12,7 @@ services:
     environment:
       QDRANT_HOST: qdrant
       QDRANT_API_KEY: xtfpouszusdsdsozlzlwdwac
-      MEMORY_API_KEY:
-      EMBEDDING_API_KEY:
+      MEMORIES_API_KEY:
       BASE_URL: http://qdrant-api
     volumes:
       - embedding-model:/app/model
