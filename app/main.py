@@ -64,14 +64,6 @@ class SearchParams(BaseModel):
 class CreateCollectionParams(BaseModel):
     collection_name: str = Field(..., description="The name of the collection to be created.")
 
-class EmbeddingParams(BaseModel):
-    object: str = Field(..., description="The type of object, typically 'embedding'")
-    data: List[Dict[str, str]] = Field(..., description="A list of embedding data")
-    model: str = Field(..., description="The model identifier used to generate the embeddings")
-    usage: Dict[str, int] = Field(..., description="Usage statistics for the API, such as request counts and quotas")
-    encoding_format: Optional[str] = Field("float", description="The format to return the embeddings in.")
-    dimensions: Optional[int] = Field(None, description="The number of dimensions of the output embeddings.")
-    user: Optional[str] = Field(None, description="A unique identifier for the end-user.")
 
 @app.post("/save_memory", operation_id="save_memory")
 async def save_memory(Params: MemoryParams, api_key: str = Depends(get_api_key)):
@@ -132,6 +124,18 @@ async def create_collection(params: CreateCollectionParams, api_key: str = Depen
         return {"message": f"Collection '{params.collection_name}' created successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error creating collection: {str(e)}")
+
+from typing import List, Dict, Optional
+from pydantic import BaseModel, Field
+
+class EmbeddingParams(BaseModel):
+    object: str = Field(..., description="The type of object, typically 'embedding'")
+    data: List[Dict[str, str]] = Field(..., description="A list of embedding data, each containing a key 'text' with the text to be embedded")
+    model: str = Field(..., description="The model identifier used to generate the embeddings")
+    usage: Dict[str, int] = Field(..., description="Usage statistics for the API, such as request counts and quotas, structured as a dictionary")
+    encoding_format: Optional[str] = Field("float", description="The format to return the embeddings in, e.g., 'float'")
+    dimensions: Optional[int] = Field(None, description="The number of dimensions of the output embeddings, if applicable")
+    user: Optional[str] = Field(None, description="A unique identifier for the end-user, used for tracking or customization purposes")
 
 @app.post("/embeddings", response_model=EmbeddingParams)
 async def generate_embeddings(request: EmbeddingParams):
