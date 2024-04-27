@@ -136,11 +136,7 @@ class OpenaiParams(BaseModel):
         populate_by_name = True  # Updated configuration for Pydantic V2
 
 class EmbeddingParams(BaseModel):
-    input: str
-    model: str
-
-    class Config:
-        populate_by_name = True  # Updated configuration for Pydantic V2
+    input_value: Dict[str, str]
 
 @app.post("/v1")
 async def authenticate_api(request: Request):
@@ -152,9 +148,9 @@ async def authenticate_api(request: Request):
         "credentials": params.credentials
     }
     
-@app.post("/v1/embeddings")
-async def generate_embeddings(request: Request):
-    data = await request.json()  # Asynchronously get the JSON data from the request
+@app.post("/endpoint")
+async def handle_request(params: EmbeddingParams):
+    data = params.input_value
     print(data)  # Print the raw data to the console
     params = OpenaiParams(**data)  # Validate and parse data using Pydantic model
     return {
