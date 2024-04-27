@@ -3,10 +3,11 @@ import uuid
 from datetime import datetime
 from typing import List, Optional, Dict
 
-from fastapi import FastAPI, HTTPException, Security, Depends, FileResponse
+from fastapi import FastAPI, HTTPException, Security, Depends
 from fastapi.staticfiles import StaticFiles
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, Field, validator
+from starlette.responses import FileResponse
 
 from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, VectorParams, Filter, FieldCondition
