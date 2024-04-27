@@ -127,35 +127,27 @@ async def create_collection(params: CreateCollectionParams, api_key: str = Depen
 
 
 class EmbeddingParams(BaseModel):
-    object: Optional[str] = Field(None, description="The type of object, typically 'embedding'")
-    data: Optional[List[Dict[str, str]]] = Field(None, description="A list of embedding data, each containing a key 'text' with the text to be embedded")
-    model: Optional[str] = Field(None, description="The model identifier used to generate the embeddings")
-    usage: Optional[Dict[str, int]] = Field(None, description="Usage statistics for the API, such as request counts and quotas, structured as a dictionary")
-    encoding_format: Optional[str] = Field("float", description="The format to return the embeddings in, e.g., 'float'")
-    dimensions: Optional[int] = Field(None, description="The number of dimensions of the output embeddings, if applicable")
-    user: Optional[str] = Field(None, description="A unique identifier for the end-user, used for tracking or customization purposes")
+    model: str
+    model_type: str
+    credentials: Dict[str, str]
+    texts: Optional[List[str]]
 
-@app.post("/v1/embeddings", response_model=EmbeddingParams)
+@app.post("/v1/embeddings", response_model=dict)
 async def generate_embeddings(request: EmbeddingParams):
     try:
-        # Assuming `data` contains the text items in a list of dictionaries with key 'text'
-        input_texts = [item['text'] for item in request.data]
-        embeddings = embeddings_model.embed(input_texts)
-        response_data = [{
-            "object": "embedding",
-            "index": idx,
-            "embedding": emb.tolist()
-        } for idx, emb in enumerate(embeddings)]
-        return {
-            "object": request.object,
-            "data": response_data,
-            "model": request.model,
-            "usage": request.usage
-        }
+        # Check if texts are provided
+        if request.texts:
+            embeddings = embeddings_model.embed(request.texts)
+            response_data = [{
+                "embedding": emb.tolist(),
+                "index": idx
+            } for idx, emb in enumerate(embeddings)]
+            return {"embeddings": response_data}
+        else:
+            return {"message": "No texts provided for embedding."}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to generate embeddings: {str(e)}")
-
-
+        
 @app.get("/", include_in_schema=False)
 async def root():
     return FileResponse("/app/public/index.html")
