@@ -1,25 +1,30 @@
 version: '3.8'
 services:
   app:
-    container_name: qdrant-api
+  memories-api:
+    container_name: memories-api
     image: vontainment/v-gpt-qdrant-api:main # Use your appropriate image
-    hostname: qdrant-api
-    restart: unless-stopped
+    restart: always
+    depends_on:
+      - memories-db
     ports:
       - "8077:80"
-    depends_on:
-      - qdrant
     environment:
-      OPENAI_API_KEY: ${OPENAI_API_KEY}
-      EMBEDDINGS_MODEL: text-embedding-3-small
       QDRANT_HOST: qdrant
       QDRANT_API_KEY: xtfpouszusdsdsozlzlwdwac
       BASE_URL: http://qdrant-api
-
-  qdrant:
-    image: qdrant/qdrant
+    volumes:
+      - embedding-model:/app/model
+      
+  memories-db:
+    image: qdrant/qdrant:latest
+    container_name: memories-db
+    restart: always
     environment:
-      API_KEY: xtfpouszukodiivuaucbgeozlzlwdwac
+      QDRANT_API_KEY: xtfpouszusdsdsozlzlwdwac
+    volumes:
+      - memories-data:/qdrant/storage
 
 volumes:
-  qdrant_data:
+  embedding-model:
+  memories-data:
