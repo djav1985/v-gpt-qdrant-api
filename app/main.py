@@ -129,7 +129,7 @@ async def create_collection(params: CreateCollectionParams, api_key: str = Depen
 class EmbeddingParams(BaseModel):
     model: str
     model_type: str
-    credentials: Dict[str, str]
+    credentials: Dict[str, str, str]
     texts: Optional[List[str]] = Field(None, description="Text to be vectorized")
 
 @app.post("/v1/embeddings", response_model=dict)
