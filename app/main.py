@@ -66,9 +66,9 @@ class CreateCollectionParams(BaseModel):
 
 class EmbeddingParams(BaseModel):
     object: str = Field(..., description="The type of object, typically 'embedding'")
-    data: List = Field(..., description="A list of embedding data")
+    data: List[Dict[str, str]] = Field(..., description="A list of embedding data")
     model: str = Field(..., description="The model identifier used to generate the embeddings")
-    usage: Dict = Field(..., description="Usage statistics for the API, such as request counts and quotas")
+    usage: Dict[str, int] = Field(..., description="Usage statistics for the API, such as request counts and quotas")
     encoding_format: Optional[str] = Field("float", description="The format to return the embeddings in.")
     dimensions: Optional[int] = Field(None, description="The number of dimensions of the output embeddings.")
     user: Optional[str] = Field(None, description="A unique identifier for the end-user.")
@@ -136,25 +136,23 @@ async def create_collection(params: CreateCollectionParams, api_key: str = Depen
 @app.post("/embeddings", response_model=EmbeddingParams)
 async def generate_embeddings(request: EmbeddingParams):
     try:
-        embeddings = embeddings_model.embed([request.input])[0]  # Assuming 'input' field in EmbeddingParams and indexing correctly
+        # Assuming `data` contains the text items in a list of dictionaries with key 'text'
+        input_texts = [item['text'] for item in request.data]
+        embeddings = embeddings_model.embed(input_texts)
+        response_data = [{
+            "object": "embedding",
+            "index": idx,
+            "embedding": emb.tolist()
+        } for idx, emb in enumerate(embeddings)]
+        return {
+            "object": request.object,
+            "data": response_data,
+            "model": request.model,
+            "usage": request.usage
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to generate embeddings: {str(e)}")
 
-    response_data = [{
-        "object": "embedding",
-        "index": 0,
-        "embedding": embeddings.tolist()  # Assuming the model returns a list of embeddings
-    }]
-    usage_info = {
-        "prompt_tokens": len(request.input.split()),
-        "total_tokens": len(request.input.split())
-    }
-    return EmbeddingParams(
-        object="list",
-        data=response_data,
-        model="nomic-ai/nomic-embed-text-v1.5",
-        usage=usage_info
-    )
 
 @app.get("/", include_in_schema=False)
 async def root():
