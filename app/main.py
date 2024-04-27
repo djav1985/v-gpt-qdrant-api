@@ -128,22 +128,24 @@ async def create_collection(params: CreateCollectionParams, api_key: str = Depen
 
 class OpenaiParams(BaseModel):
     model: str
-    type: str = Field(..., alias='model_type', description="Type of the model such as 'text-embedding'")
-    credentials: Dict[str, str]
+    m_type: str = Field(..., alias='model_type', description="Type of the model such as 'text-embedding'")
+    credentials: Dict
 
     class Config:
         populate_by_name = True  # Updated configuration for Pydantic V2
 
 class EmbeddingParams(BaseModel):
     model: str
-    type: str = Field(..., alias='model_type', description="Type of the model such as 'text-embedding'")
-    credentials: Dict[str, str]
+    m_type: str = Field(..., alias='model_type', description="Type of the model such as 'text-embedding'")
+    credentials: Dict
 
     class Config:
         populate_by_name = True  # Updated configuration for Pydantic V2
 
 @app.post("/v1")
 async def authenticate_api(request: OpenaiParams):
+    data = await request.json()  # Asynchronously get the JSON data from the request
+    print(data)  # Print the data to the console
     return {
         "model": request.model,
         "credentials": request.credentials
@@ -151,7 +153,9 @@ async def authenticate_api(request: OpenaiParams):
     
 @app.post("/v1/embeddings")
 async def generate_embeddings(request: EmbeddingParams):
-        return {
+    data = await request.json()  # Asynchronously get the JSON data from the request
+    print(data)  # Print the data to the console
+    return {
         "model": request.model,
         "credentials": request.credentials
     }
