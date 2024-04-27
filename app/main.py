@@ -130,7 +130,7 @@ class EmbeddingParams(BaseModel):
     model: str
     model_type: str
     credentials: Dict[str, str]
-    texts: Optional[List[str]]
+    texts: Optional[List[str]] = Field(None, description="Text to be vectorized")
 
 @app.post("/v1/embeddings", response_model=dict)
 async def generate_embeddings(request: EmbeddingParams):
@@ -145,7 +145,7 @@ async def generate_embeddings(request: EmbeddingParams):
             } for idx, emb in enumerate(embeddings)]
             return {"embeddings": response_data}
         else:
-            return {"embeddings": []}  # Return empty embeddings if no texts provided
+            return {'result': 'success'}  # Return empty embeddings if no texts provided
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to generate embeddings: {str(e)}")
 
