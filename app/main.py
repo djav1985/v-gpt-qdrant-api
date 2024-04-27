@@ -134,21 +134,8 @@ class EmbeddingParams(BaseModel):
 
 @app.post("/v1/embeddings", response_model=dict)
 async def generate_embeddings(request: EmbeddingParams):
-    try:
-        print("Received request:", request.json())  # Print the received request
-        # Check if texts are provided
-        if request.texts:
-            embeddings = embeddings_model.embed(request.texts)
-            response_data = [{
-                "embedding": emb.tolist(),
-                "index": idx
-            } for idx, emb in enumerate(embeddings)]
-            return {"embeddings": response_data}
-        else:
-            return {'result': 'success'}  # Return empty embeddings if no texts provided
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to generate embeddings: {str(e)}")
-
+    return {'result': 'success'}
+    
 @app.get("/", include_in_schema=False)
 async def root():
     return FileResponse("/app/public/index.html")
