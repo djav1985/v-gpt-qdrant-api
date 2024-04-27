@@ -135,6 +135,7 @@ class EmbeddingParams(BaseModel):
 @app.post("/v1/embeddings", response_model=dict)
 async def generate_embeddings(request: EmbeddingParams):
     try:
+        print("Received request:", request.json())  # Print the received request
         # Check if texts are provided
         if request.texts:
             embeddings = embeddings_model.embed(request.texts)
