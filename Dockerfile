@@ -9,7 +9,7 @@ COPY ./app /app
 
 # Install system dependencies required for Python packages and optimize install process
 RUN apk add --no-cache gcc musl-dev python3-dev libffi-dev openssl-dev && \
-    pip install --no-cache-dir -r /app/requirements.txt
+    pip3 install --no-cache-dir -r /app/requirements.txt
     
 # Set an environment variable for the cache directory
 ENV TRANSFORMERS_CACHE=/app/models
