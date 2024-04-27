@@ -138,8 +138,6 @@ class OpenaiParams(BaseModel):
 class EmbeddingParams(BaseModel):
     input: str
     model: str
-    m_type: str = Field(..., alias='model_type', description="Type of the model such as 'text-embedding'")
-    credentials: Dict
 
     class Config:
         populate_by_name = True  # Updated configuration for Pydantic V2
@@ -160,8 +158,7 @@ async def generate_embeddings(request: Request):
     print(data)  # Print the raw data to the console
     params = OpenaiParams(**data)  # Validate and parse data using Pydantic model
     return {
-        "model": params.model,
-        "credentials": params.credentials
+        "model": params.model
     }
     
 @app.get("/", include_in_schema=False)
