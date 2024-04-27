@@ -144,11 +144,11 @@ class EmbeddingParams(BaseModel):
 
 @app.post("/v1", response_model=dict)
 async def authenticate_api(request: OpenaiParams):
-    return {'result': 'success'}
+    return {"model": "nomic-ai/nomic-embed-text-v1.53", "result": "success"}
     
 @app.post("/v1/embeddings", response_model=dict)
 async def generate_embeddings(request: EmbeddingParams):
-    return {'result': 'success'}
+    return {"model": "nomic-ai/nomic-embed-text-v1.5", "result": "success"}
     
 @app.get("/", include_in_schema=False)
 async def root():
