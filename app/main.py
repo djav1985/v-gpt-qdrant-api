@@ -145,10 +145,10 @@ async def generate_embeddings(request: EmbeddingParams):
             } for idx, emb in enumerate(embeddings)]
             return {"embeddings": response_data}
         else:
-            return {"message": "No texts provided for embedding."}
+            return {"embeddings": []}  # Return empty embeddings if no texts provided
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to generate embeddings: {str(e)}")
-        
+
 @app.get("/", include_in_schema=False)
 async def root():
     return FileResponse("/app/public/index.html")
