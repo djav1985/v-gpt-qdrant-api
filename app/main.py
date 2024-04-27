@@ -128,7 +128,7 @@ async def create_collection(params: CreateCollectionParams, api_key: str = Depen
 
 class OpenaiParams(BaseModel):
     model: str
-    model_type: str = model_type: str = Field(..., alias='model_type', description="Type of the model such as 'text-embedding'")
+    model_type: str = Field(..., alias='model_type', description="Type of the model such as 'text-embedding'")
     credentials: Dict
 
     class Config:
@@ -136,7 +136,7 @@ class OpenaiParams(BaseModel):
 
 class EmbeddingParams(BaseModel):
     model: str
-    model_type: str = model_type: str = Field(..., alias='model_type', description="Type of the model such as 'text-embedding'")
+    model_type: str = Field(..., alias='model_type', description="Type of the model such as 'text-embedding'")
     credentials: Dict
 
     class Config:
@@ -144,11 +144,17 @@ class EmbeddingParams(BaseModel):
 
 @app.post("/v1", response_model=dict)
 async def authenticate_api(request: OpenaiParams):
-    return {"model": "nomic-ai/nomic-embed-text-v1.53", "result": "success"}
+    return {
+        "model": request.model,
+        "credentials": request.credentials
+    }
     
 @app.post("/v1/embeddings", response_model=dict)
 async def generate_embeddings(request: EmbeddingParams):
-    return {"model": "nomic-ai/nomic-embed-text-v1.5", "result": "success"}
+        return {
+        "model": request.model,
+        "credentials": request.credentials
+    }
     
 @app.get("/", include_in_schema=False)
 async def root():
