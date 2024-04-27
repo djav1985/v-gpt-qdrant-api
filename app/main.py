@@ -23,6 +23,8 @@ base_url = os.getenv("BASE_URL")
 db_client = QdrantClient(url=qdrant_host, api_key=qdrant_api_key)
 embeddings_model = TextEmbedding("nomic-ai/nomic-embed-text-v1.5")
 
+model_config['protected_namespaces'] = ()
+
 # Setup the bearer token authentication scheme
 bearer_scheme = HTTPBearer(auto_error=False)
 
