@@ -135,7 +135,7 @@ class OpenaiParams(BaseModel):
 class EmmbeddingParams(BaseModel):
     model: str
     model_type: str
-    credentials: Dict[str, str, str]
+    credentials: Dict[str, str]
     texts: Optional[List[str]] = Field(None, description="Text to be vectorized")
 
 @app.post("/v1", response_model=dict)
