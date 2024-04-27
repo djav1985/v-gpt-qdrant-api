@@ -23,7 +23,9 @@ base_url = os.getenv("BASE_URL")
 db_client = QdrantClient(url=qdrant_host, api_key=qdrant_api_key)
 embeddings_model = TextEmbedding("nomic-ai/nomic-embed-text-v1.5")
 
-model_config['protected_namespaces'] = ()
+# Define model_config as an empty dictionary if not already configured
+model_config = {}  # Make sure this is the correct place and way to initialize it
+model_config['protected_namespaces'] = ()  # Set protected namespaces or any other configuration
 
 # Setup the bearer token authentication scheme
 bearer_scheme = HTTPBearer(auto_error=False)
