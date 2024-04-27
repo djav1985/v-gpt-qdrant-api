@@ -13,6 +13,8 @@ from qdrant_client.models import Distance, VectorParams, Filter, FieldCondition,
 embeddings_model = os.getenv("EMBEDDINGS_MODEL")  # e.g., "text-embedding-ada-002"
 qdrant_host = os.getenv("QDRANT_HOST")
 qdrant_api_key = os.getenv("QDRANT_API_KEY")
+memories_api_key = os.getenv("MEMORIES_API_KEY")
+embeddings_api_key = os.getenv("EMBEDDINGS_API_KEY")
 base_url = os.getenv("BASE_URL")
 
 # Initialize clients
