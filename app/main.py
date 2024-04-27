@@ -148,7 +148,7 @@ async def authenticate_api(request: Request):
         "credentials": params.credentials
     }
     
-@app.post("/embeddings")
+@app.post("/v1/embeddings")
 async def embedding_request(request: Request):
     data = await request.json()  # Asynchronously get the JSON data from the request
     print(data)  # Print the raw data to the console
