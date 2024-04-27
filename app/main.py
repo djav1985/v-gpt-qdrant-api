@@ -132,7 +132,7 @@ class OpenaiParams(BaseModel):
     credentials: Dict[str, str]
     texts: Optional[List[str]] = Field(None, description="Text to be vectorized")
 
-class EmmbeddingParams(BaseModel):
+class EmbeddingParams(BaseModel):
     model: str
     model_type: str
     credentials: Dict[str, str]
