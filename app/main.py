@@ -127,6 +127,7 @@ async def create_collection(params: CreateCollectionParams, api_key: str = Depen
 
 
 class OpenaiParams(BaseModel):
+    input: str
     model: str
     m_type: str = Field(..., alias='model_type', description="Type of the model such as 'text-embedding'")
     credentials: Dict
@@ -135,6 +136,7 @@ class OpenaiParams(BaseModel):
         populate_by_name = True  # Updated configuration for Pydantic V2
 
 class EmbeddingParams(BaseModel):
+    input: str
     model: str
     m_type: str = Field(..., alias='model_type', description="Type of the model such as 'text-embedding'")
     credentials: Dict
