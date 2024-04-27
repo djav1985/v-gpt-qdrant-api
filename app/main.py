@@ -137,14 +137,14 @@ class OpenaiParams(BaseModel):
 
 class EmbeddingParams(BaseModel):
     input: str
-    credentials: Dict[str, str]
+    model: str
     
 @app.post("/v1/embeddings")
 async def embedding_request(request: EmbeddingParams):
     print(request.dict())  # Print the parsed data to the console
     return {
-        "model": params.model
-    }
+        "model": request.model  # Return the 'model' field from EmbeddingParams
+}
     
 @app.get("/", include_in_schema=False)
 async def root():
