@@ -132,15 +132,19 @@ async def create_collection(params: CreateCollectionParams, api_key: str = Depen
 
 class OpenaiParams(BaseModel):
     model: str
-    model_type: str
-    credentials: Dict[str, str]
-    texts: Optional[List[str]] = Field(None, description="Text to be vectorized")
+    model_type: str = model_type: str = Field(..., alias='model_type', description="Type of the model such as 'text-embedding'")
+    credentials: Dict
+
+    class Config:
+        allow_population_by_field_name = True
 
 class EmbeddingParams(BaseModel):
     model: str
-    model_type: str
-    credentials: Dict[str, str]
-    texts: Optional[List[str]] = Field(None, description="Text to be vectorized")
+    model_type: str = model_type: str = Field(..., alias='model_type', description="Type of the model such as 'text-embedding'")
+    credentials: Dict
+
+    class Config:
+        allow_population_by_field_name = True
 
 @app.post("/v1", response_model=dict)
 async def authenticate_api(request: OpenaiParams):
