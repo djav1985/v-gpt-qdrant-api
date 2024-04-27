@@ -139,7 +139,7 @@ class EmmbeddingParams(BaseModel):
     texts: Optional[List[str]] = Field(None, description="Text to be vectorized")
 
 @app.post("/v1", response_model=dict)
-async def generate_embeddings(request: OpenaiParams):
+async def authenticate_api(request: OpenaiParams):
     return {'result': 'success'}
     
 @app.post("/v1/embeddings", response_model=dict)
