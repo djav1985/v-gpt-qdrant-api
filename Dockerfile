@@ -22,7 +22,7 @@ ENV TRANSFORMERS_CACHE=/app/models
 
 # Assuming 'fastembed' is the correct library and 'FastEmbed' is the right class to use
 # Adjust these commands according to the actual library and class names
-RUN python -c "from fastembed import FastEmbed; FastEmbed(model_name='all-MiniLM-L6-v2')"
+RUN python -c "from fastembed import TextEmbedding; TextEmbedding('all-MiniLM-L6-v2')"
 
 # Expose port 80 to the outside world
 EXPOSE 80
