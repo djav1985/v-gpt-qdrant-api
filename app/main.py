@@ -126,12 +126,22 @@ async def create_collection(params: CreateCollectionParams, api_key: str = Depen
         raise HTTPException(status_code=500, detail=f"Error creating collection: {str(e)}")
 
 
-class EmbeddingParams(BaseModel):
+class OpenaiParams(BaseModel):
     model: str
     model_type: str
     credentials: Dict[str, str, str]
     texts: Optional[List[str]] = Field(None, description="Text to be vectorized")
 
+class EmmbeddingParams(BaseModel):
+    model: str
+    model_type: str
+    credentials: Dict[str, str, str]
+    texts: Optional[List[str]] = Field(None, description="Text to be vectorized")
+
+@app.post("/v1", response_model=dict)
+async def generate_embeddings(request: OpenaiParams):
+    return {'result': 'success'}
+    
 @app.post("/v1/embeddings", response_model=dict)
 async def generate_embeddings(request: EmbeddingParams):
     return {'result': 'success'}
