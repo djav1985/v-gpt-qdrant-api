@@ -148,8 +148,8 @@ async def authenticate_api(request: Request):
         "credentials": params.credentials
     }
     
-@app.post("/endpoint")
-async def handle_request(request: Request):
+@app.post("/embeddings")
+async def embedding_request(request: Request):
     data = await request.json()  # Asynchronously get the JSON data from the request
     print(data)  # Print the raw data to the console
     params = EmbeddingParams(**data)  # Validate and parse data using Pydantic model
