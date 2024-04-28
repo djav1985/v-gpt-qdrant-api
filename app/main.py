@@ -240,7 +240,7 @@ async def embedding_request(params: EmbeddingParams):
     try:
         # Generate an embedding from the memory text
         embeddings_generator = embeddings_model.embed(params.input)
-
+        print("Converted Vector List:", embeddings_generator)
         # Extract the single vector from the generator
         vector = next(embeddings_generator)  # This fetches the first item from the generator
 
@@ -249,9 +249,6 @@ async def embedding_request(params: EmbeddingParams):
             print("Converted Vector List:", vector_list)
         else:
             raise ValueError("The embedding is not in the expected format (np.ndarray)")
-
-        # Initialize list to store embedding objects
-        embedding_objects = []
 
         # Convert NumPy array to list for JSON serialization
         embedding_objects=({
@@ -270,7 +267,7 @@ async def embedding_request(params: EmbeddingParams):
             "model": params.model,
             "usage": {
                 "prompt_tokens": len(params.input.split()),
-                "total_tokens": len(vector_list.split(','))
+                "total_tokens": sum(len(text.split()) for text in vector_list)
             }
         }
 
