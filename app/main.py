@@ -67,17 +67,16 @@ class CreateCollectionParams(BaseModel):
 
 @app.post("/save_memory", operation_id="save_memory")
 async def save_memory(Params: MemoryParams, api_key: str = Depends(get_api_key)):
-    vector = embeddings_model.embed(Params.memory)
+    # Parse the string representation of the vector into a list of floats
+    vector = [float(num_str) for num_str in Params.vector.split(',')]
     print("Created Vector:", vector)
-    vector_list = list(vector)  # Convert generator to list
-    print("Created Vector:", vector_list)
 
     timestamp = datetime.utcnow().isoformat()
     unique_id = str(uuid.uuid4())
     try:
         db_client.upsert(collection_name=Params.collection_name, points=[{
             "id": unique_id,
-            "vector": vector_list,
+            "vector": vector,
             "payload": {
                 "memory": Params.memory,
                 "timestamp": timestamp,
