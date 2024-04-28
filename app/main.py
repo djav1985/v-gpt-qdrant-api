@@ -267,7 +267,7 @@ async def embedding_request(params: EmbeddingParams):
             "model": params.model,
             "usage": {
                 "prompt_tokens": len(params.input.split()),
-                "total_tokens": sum(len(text.split()) for text in vector_list)
+                "total_tokens": len(vector_list)
             }
         }
 
