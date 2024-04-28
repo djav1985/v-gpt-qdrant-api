@@ -67,7 +67,8 @@ class CreateCollectionParams(BaseModel):
 
 @app.post("/save_memory", operation_id="save_memory")
 async def save_memory(Params: MemoryParams, api_key: str = Depends(get_api_key)):
-    # Parse the string representation of the vector into a list of floats
+    vector = embeddings_model.embed(Params.memory)
+    print("Created Vector:", vector)
     vector = [float(num_str) for num_str in Params.vector.split(',')]
     print("Created Vector:", vector)
 
