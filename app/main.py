@@ -75,7 +75,7 @@ class EmbeddingParams(BaseModel):
 async def save_memory(params: MemoryParams, api_key: str = Depends(get_api_key)):
     try:
         # Generate an embedding from the memory text
-        embeddings_generator = embedding_model.embed(params.memory)
+        embeddings_generator = embeddings_model.embed(params.memory)
 
         # Extract the single vector from the generator
         vector = next(embeddings_generator)  # This fetches the first item from the generator
