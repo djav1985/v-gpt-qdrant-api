@@ -2,7 +2,7 @@ import os
 import uuid
 import numpy as np
 from datetime import datetime
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Union
 
 from fastapi import FastAPI, HTTPException, Security, Depends, Request
 from fastapi.staticfiles import StaticFiles
@@ -127,26 +127,67 @@ async def create_collection(params: CreateCollectionParams, api_key: str = Depen
         raise HTTPException(status_code=500, detail=f"Error creating collection: {str(e)}")
 
 class EmbeddingParams(BaseModel):
-    inputs: str
+    input: Union[List[str], str]
     model: str
     user: Optional[str] = "unassigned"
     encoding_format: Optional[str] = "float"
-
+    
 @app.post("/v1/embeddings")
 async def embedding_request(request: EmbeddingParams):
-    print(request.dict())  # Print the parsed data to the console
-  #  vectors = embeddings_model.embed(request.input)
-  #  for index, vector in enumerate(vectors):
-   #     embedding_objects.append({
-   #         "object": "embedding",
-   #         "embedding": vector.tolist(),
-   #         "index": index
-   #     })
+    try:
+        # Print the received request
+        print("Received request:", request.dict())
+    except Exception as e:
+        # If there's any error in printing the request, catch and print the error
+        print("Error printing request:", e)
+
+    # Normalize input to always be a list
+    if isinstance(request.inputs, str):
+        input_texts = [request.input]  # Convert single string to list
+    else:
+        input_texts = request.input  # It's already a list
+
+    # Print the normalized input texts
+    print("Normalized input texts:", input_texts)
+
+    try:
+        # Assuming embeddings_model is initialized and available globally or injected
+        # Convert each input text to embeddings
+        print("Generating embeddings...")
+        embeddings = [embedding_model.embed(text) for text in input_texts]
+        print("Embeddings generated:", embeddings)
+    except Exception as e:
+        # If there's any error in generating embeddings, catch and print the error
+        print("Error generating embeddings:", e)
+        embeddings = []
+
+    # Initialize list to store embedding objects
+    embedding_objects = []
+
+    # Iterate over each set of embeddings
+    for index, vectors in enumerate(embeddings):
+        for vector in vectors:
+            # Convert NumPy array to list for JSON serialization
+            embedding_objects.append({
+                "object": "embedding",
+                "embedding": vector.tolist(),
+                "index": index
+            })
+
+    # Print the constructed embedding objects
+    print("Embedding objects constructed:", embedding_objects)
+
+    # Construct the response data
     response_data = {
-      #  "object": "list",
-      #  "data": embedding_objects,
-        "model": request.model
+        "object": "list",
+        "data": embedding_objects,
+        "model": request.model,
+        "user": request.user
     }
+
+    # Print the response data
+    print("Response data:", response_data)
+
     return response_data
     
 @app.get("/", include_in_schema=False)
