@@ -17,10 +17,6 @@ RUN apt-get update && apt-get install -y \
 # Install Python packages from requirements.txt
 RUN pip install --no-cache-dir -r /app/requirements.txt
 
-# Assuming 'fastembed' is the correct library and 'FastEmbed' is the right class to use
-# Adjust these commands according to the actual library and class names
-RUN python -c "from fastembed import TextEmbedding; TextEmbedding('nomic-ai/nomic-embed-text-v1.5')"
-
 # Expose port 80 to the outside world
 EXPOSE 80
 
