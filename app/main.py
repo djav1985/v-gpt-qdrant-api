@@ -238,9 +238,10 @@ async def create_collection(params: CreateCollectionParams, api_key: str = Depen
 @app.post("/v1/embeddings")
 async def embedding_request(params: EmbeddingParams):
     try:
+        print("Request Made:", params.input)
         # Generate an embedding from the memory text
         embeddings_generator = embeddings_model.embed(params.input)
-        print("Vector:", embeddings_generator)
+
         # Extract the single vector from the generator
         vector = next(embeddings_generator)  # This fetches the first item from the generator
 
