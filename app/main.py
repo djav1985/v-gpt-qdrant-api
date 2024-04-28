@@ -254,7 +254,7 @@ async def embedding_request(params: EmbeddingParams):
             "object": "list",
             "data": [{
                 "object": "embedding",
-                "embedding": vector_list,
+                "embedding": [vector_list],
                 "index": 0
             }],
             "model": params.model,
