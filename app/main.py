@@ -263,7 +263,7 @@ async def embedding_request(params: EmbeddingParams):
         # Construct the response data with usage details
         response_data = {
             "object": "list",
-            "data": embedding_objects,
+            "data": [embedding_objects],
             "model": params.model,
             "usage": {
                 "prompt_tokens": len(params.input.split()),
