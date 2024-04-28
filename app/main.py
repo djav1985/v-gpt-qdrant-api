@@ -103,18 +103,18 @@ async def save_memory(params: MemoryParams, api_key: str = Depends(get_api_key))
         db_client.upsert(
             collection_name=params.collection_name,
             points=[
-                models.PointStruct(
-                    id=unique_id,
-                    payload={
-                        "memory": params.memory,
-                        "timestamp": timestamp,
-                        "sentiment": params.sentiment,
-                        "entities": params.entities,
-                        "tags": params.tags,
+                {
+                    "id": unique_id,
+                    "payload": {
+                    "memory": params.memory,
+                    "timestamp": timestamp,
+                    "sentiment": params.sentiment,
+                    "entities": params.entities,
+                    "tags": params.tags,
                     },
-                    vectors=vector_list,
-                ),
-            ],
+                "vectors": vector_list,
+                }
+            ]
         )
 
     except Exception as e:
