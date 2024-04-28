@@ -187,6 +187,13 @@ async def recall_memory(params: SearchParams, api_key: str = Depends(get_api_key
             query_filter=search_filter,
             with_payload=True,
             limit=params.top_k,
+            search_params=models.SearchParams(
+                quantization=models.QuantizationSearchParams(
+                    ignore=False,
+                    rescore=True,
+                    oversampling=2.0,
+                )
+            ),
         )
 
         # Format the results
