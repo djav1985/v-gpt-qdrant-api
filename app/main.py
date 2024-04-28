@@ -142,7 +142,7 @@ async def embedding_request(request: EmbeddingParams):
         print("Error printing request:", e)
 
     # Normalize input to always be a list
-    if isinstance(request.inputs, str):
+    if isinstance(request.input, str):
         input_texts = [request.input]  # Convert single string to list
     else:
         input_texts = request.input  # It's already a list
