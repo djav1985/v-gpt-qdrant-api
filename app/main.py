@@ -142,7 +142,7 @@ async def embedding_request(request: EmbeddingParams):
         print("Error printing request:", e)
 
     # Normalize input to always be a list
-    if isinstance(request.input, str):
+    if isinstance(request.input, str):  # Fixed to request.input
         input_texts = [request.input]  # Convert single string to list
     else:
         input_texts = request.input  # It's already a list
@@ -177,17 +177,14 @@ async def embedding_request(request: EmbeddingParams):
     # Print the constructed embedding objects
     print("Embedding objects constructed:", embedding_objects)
 
-    # Construct the response data with usage details
+    # Construct the response data
     response_data = {
         "object": "list",
         "data": embedding_objects,
         "model": request.model,
-        "usage": {
-            "prompt_tokens": 8,  # Example token count for the prompt
-            "total_tokens": 8    # Example total token count used
-        }
+        "user": request.user
     }
-    
+
     # Print the response data
     print("Response data:", response_data)
 
