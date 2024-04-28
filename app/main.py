@@ -135,15 +135,20 @@ class EmbeddingParams(BaseModel):
 @app.post("/v1/embeddings")
 async def embedding_request(request: EmbeddingParams):
     print(request.dict())  # Print the parsed data to the console
-    vectors = embeddings_model.embed(request.input)  # Remove the list wrapper around request.input
+    vectors = embeddings_model.embed(request.input)
     embedding_objects = []
     for index, vector in enumerate(vectors):
         embedding_objects.append({
             "object": "embedding",
-            "embedding": vector.tolist(),  # Convert numpy array to list
+            "embedding": vector.tolist(),
             "index": index
         })
-    return embedding_objects
+    response_data = {
+        "object": "list",
+        "data": embedding_objects,
+        "model": request.model
+    }
+    return response_data
     
 @app.get("/", include_in_schema=False)
 async def root():
