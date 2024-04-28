@@ -110,7 +110,14 @@ async def save_memory(params: MemoryParams, api_key: str = Depends(get_api_key))
 @app.post("/recall_memory", operation_id="recall_memory")
 async def recall_memory(params: SearchParams, api_key: str = Depends(get_api_key)):
     try:
-        query_vector = embeddings_model.embed(params.query)
+        embeddings_generator = embeddings_model.embed(params.query)
+        # Extract the single vector from the generator
+        vector = next(embeddings_generator)  # This fetches the first item from the generator
+
+        if isinstance(vector, np.ndarray):
+            vector_list = vector.tolist()  # Convert numpy array to list
+            print("Converted Vector List:", vector_list)
+        
         search_filter = []
 
         # Add entity filter if provided
@@ -131,7 +138,7 @@ async def recall_memory(params: SearchParams, api_key: str = Depends(get_api_key
         # Perform the search with the specified filters
         hits = db_client.search(
             collection_name=params.collection_name,
-            query_vector=query_vector,
+            query_vector=vector_list,
             query_filter=filter_query,
             limit=params.top_k,
         )
@@ -152,7 +159,6 @@ async def recall_memory(params: SearchParams, api_key: str = Depends(get_api_key
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error processing request: {str(e)}")
-
 
 @app.post("/collections", operation_id="collection")
 async def create_collection(params: CreateCollectionParams, api_key: str = Depends(get_api_key)):
