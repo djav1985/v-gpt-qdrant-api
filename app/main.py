@@ -66,28 +66,31 @@ class CreateCollectionParams(BaseModel):
     collection_name: str = Field(..., description="The name of the collection to be created.")
 
 @app.post("/save_memory", operation_id="save_memory")
-async def save_memory(Params: MemoryParams, api_key: str = Depends(get_api_key)):
-    vector = embeddings_model.embed(Params.memory)
-    print("Created Vector:", vector)
-    vector = [float(num_str) for num_str in Params.vector.split(',')]
-    print("Created Vector:", vector)
-
-    timestamp = datetime.utcnow().isoformat()
-    unique_id = str(uuid.uuid4())
+async def save_memory(params: MemoryParams, api_key: str = Depends(get_api_key)):
     try:
-        db_client.upsert(collection_name=Params.collection_name, points=[{
+        # Generate vector from memory text
+        vector = embeddings_model.embed(params.memory)
+        vector_list = vector.tolist()  # Properly convert numpy array to list
+        print("Created Vector:", vector_list)
+
+        timestamp = datetime.utcnow().isoformat()
+        unique_id = str(uuid.uuid4())
+
+        # Upsert the memory into the Qdrant collection
+        db_client.upsert(collection_name=params.collection_name, points=[{
             "id": unique_id,
-            "vector": vector,
+            "vector": vector_list,
             "payload": {
-                "memory": Params.memory,
+                "memory": params.memory,
                 "timestamp": timestamp,
-                "sentiment": Params.sentiment,
-                "entities": Params.entities,
-                "tags": Params.tags,
+                "sentiment": params.sentiment,
+                "entities": params.entities,
+                "tags": params.tags,
             },
         }])
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error saving to Qdrant: {str(e)}")
+        # Provide more detailed error messaging
+        raise HTTPException(status_code=500, detail=f"Error processing request: {str(e)}")
 
     return {"message": "Memory saved successfully"}
 
