@@ -242,7 +242,7 @@ async def create_collection(params: CreateCollectionParams, api_key: str = Depen
 
 # Endpoint for embedding request
 @app.post("/v1/embeddings")
-async def embedding_request(params: EmbeddingParams):
+async def embedding_request(params: EmbeddingParams, api_key: str = Depends(get_api_key)):
     try:
         print("Request Made:", params.input)
         # Generate an embedding from the memory text
