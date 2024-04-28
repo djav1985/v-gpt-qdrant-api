@@ -21,4 +21,4 @@ RUN pip install --no-cache-dir -r /app/requirements.txt
 EXPOSE 80
 
 # Command to run the app using Gunicorn with Uvicorn workers
-CMD ["gunicorn", "main:app", "--worker-class", "uvicorn.workers.UvicornWorker", "--workers", "2", "--bind", "0.0.0.0:80"]
+CMD ["gunicorn", "main:app", "--worker-class", "uvicorn.workers.UvicornWorker", "--workers", "3", "--bind", "0.0.0.0:80", "--preload"]
