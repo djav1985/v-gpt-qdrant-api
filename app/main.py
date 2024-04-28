@@ -236,42 +236,64 @@ async def create_collection(params: CreateCollectionParams, api_key: str = Depen
 
 # Endpoint for embedding request
 @app.post("/v1/embeddings")
-async def embedding_request(request: EmbeddingParams, api_key: str = Depends(get_api_key)):
+async def embedding_request(request: EmbeddingParams):
+    try:
+        # Print the received request
+        print("Received request:", request.dict())
+    except Exception as e:
+        # If there's any error in printing the request, catch and print the error
+        print("Error printing request:", e)
+
     # Normalize input to always be a list
-    if isinstance(request.input, str):  # Fixed to request.input
+    if isinstance(request.input, str):
         input_texts = [request.input]  # Convert single string to list
     else:
         input_texts = request.input  # It's already a list
+
+    # Print the normalized input texts
+    print("Normalized input texts:", input_texts)
+
     try:
         # Assuming embeddings_model is initialized and available globally or injected
-        embeddings = [embeddings_model.embed(text) for text in input_texts]
-        embeddings = []
-        embedding_objects = []
-
-        # Iterate over each set of embeddings
-        for index, vectors in enumerate(embeddings):
-            for vector in vectors:
-                # Convert NumPy array to list for JSON serialization
-                embedding_objects.append({
-                    "object": "embedding",
-                    "embedding": vector.tolist(),
-                    "index": index
-                })
-
-        # Construct the response data
-        response_data = {
-            "object": "list",
-            "data": embedding_objects,
-            "model": request.model,
-            "usage": {
-                "prompt_tokens": 8,  # Total tokens processed in all inputs
-                "total_tokens": 8   # Assuming no additional tokens were used
-            }
-        }
-
+        # Convert each input text to embeddings
+        print("Generating embeddings...")
+        embeddings = [embedding_model.embed(text) for text in input_texts]
+        print("Embeddings generated:", embeddings)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error creating embedding: {str(e)}")
+        # If there's any error in generating embeddings, catch and print the error
+        print("Error generating embeddings:", e)
+        embeddings = []
+
+    # Initialize list to store embedding objects
+    embedding_objects = []
+
+    # Iterate over each set of embeddings
+    for index, vectors in enumerate(embeddings):
+        for vector in vectors:
+            # Convert NumPy array to list for JSON serialization
+            embedding_objects.append({
+                "object": "embedding",
+                "embedding": vector.tolist(),
+                "index": index
+            })
+
+    # Print the constructed embedding objects
+    print("Embedding objects constructed:", embedding_objects)
+
+    # Construct the response data with usage details
+    response_data = {
+        "object": "list",
+        "data": embedding_objects,
+        "model": request.model,
+        "usage": {
+            "prompt_tokens": 8,  # Example token count for the prompt
+            "total_tokens": 8    # Example total token count used
+        }
+    }
+
+    # Print the response data
     print("Response data:", response_data)
+
     return response_data
 
 # Root endpoint
