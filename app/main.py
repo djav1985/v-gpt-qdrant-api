@@ -74,7 +74,7 @@ class CreateCollectionParams(BaseModel):
 
 # Class for embedding parameters
 class EmbeddingParams(BaseModel):
-    input: str
+    input: Union[str, List[str]]
     model: str
     user: Optional[str] = "unassigned"
     encoding_format: Optional[str] = "float"
