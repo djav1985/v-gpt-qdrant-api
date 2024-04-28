@@ -126,7 +126,7 @@ async def create_collection(params: CreateCollectionParams, api_key: str = Depen
         raise HTTPException(status_code=500, detail=f"Error creating collection: {str(e)}")
 
 class EmbeddingParams(BaseModel):
-    input: List[str]
+    input: str
     model: str
     encoding_format: Optional[str] = "float"
     dimensions: Optional[int] = 768
