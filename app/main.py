@@ -112,7 +112,7 @@ async def save_memory(params: MemoryParams, api_key: str = Depends(get_api_key))
                     "entities": params.entities,
                     "tags": params.tags,
                     },
-                "vectors": vector_list,
+                "vector": vector_list,
                 }
             ]
         )
