@@ -22,7 +22,7 @@ base_url = os.getenv("BASE_URL")
 
 # Initialize clients for database and AI
 db_client = QdrantClient(url=qdrant_host, api_key=qdrant_api_key)
-embeddings_model = TextEmbedding("nomic-ai/nomic-embed-text-v1.5")
+embeddings_model = TextEmbedding("nomic-ai/nomic-embed-text-v1.5", dimensions=128)
 
 # Setup the bearer token authentication scheme
 bearer_scheme = HTTPBearer(auto_error=False)
@@ -68,10 +68,14 @@ class CreateCollectionParams(BaseModel):
 @app.post("/save_memory", operation_id="save_memory")
 async def save_memory(params: MemoryParams, api_key: str = Depends(get_api_key)):
     try:
-        # Generate vector from memory text
-        vector_generator = embeddings_model.embed(params.memory)
-        vector_list = list(vector_generator)  # Convert generator to list
-        print("Created Vector:", vector_list)
+        # Generate an embedding from the memory text
+        embeddings_list = embedding_model.embed(params.memory)
+
+        # Assuming embeddings_list[0] is the numpy array we need
+        embeddings_list and isinstance(embeddings_list[0], np.ndarray)
+        vector = embeddings_list[0]  # Extract the numpy array
+        vector_list = vector.tolist()  # Convert numpy array to list
+        print("Converted Vector List:", vector_list)
 
         timestamp = datetime.utcnow().isoformat()
         unique_id = str(uuid.uuid4())
