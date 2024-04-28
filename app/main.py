@@ -100,17 +100,23 @@ async def save_memory(params: MemoryParams, api_key: str = Depends(get_api_key))
         unique_id = str(uuid.uuid4())
 
         # Upsert the memory into the Qdrant collection
-        db_client.upsert(collection_name=params.collection_name, points=[{
-            "id": unique_id,
-            "vector": vector_list,
-            "payload": {
-                "memory": params.memory,
-                "timestamp": timestamp,
-                "sentiment": params.sentiment,
-                "entities": params.entities,
-                "tags": params.tags,
-            },
-        }])
+        db_client.upsert(
+            collection_name=params.collection_name,
+            points=[
+                models.PointStruct(
+                    id=unique_id,
+                    payload={
+                        "memory": params.memory,
+                        "timestamp": timestamp,
+                        "sentiment": params.sentiment,
+                        "entities": params.entities,
+                        "tags": params.tags,
+                    },
+                    vectors=vector_list,
+                ),
+            ],
+        )
+
     except Exception as e:
         # Provide more detailed error messaging
         raise HTTPException(status_code=500, detail=f"Error processing request: {str(e)}")
