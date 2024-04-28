@@ -125,26 +125,25 @@ async def create_collection(params: CreateCollectionParams, api_key: str = Depen
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error creating collection: {str(e)}")
 
-
-class OpenaiParams(BaseModel):
-    input: str
-    model: str
-    m_type: str = Field(..., alias='model_type', description="Type of the model such as 'text-embedding'")
-    credentials: Dict
-
-    class Config:
-        populate_by_name = True  # Updated configuration for Pydantic V2
-
 class EmbeddingParams(BaseModel):
-    input: str
+    input: List[str]
     model: str
+    encoding_format: Optional[str] = "float"
+    dimensions: Optional[int] = 768
+    user: Optional[str] = None
     
 @app.post("/v1/embeddings")
 async def embedding_request(request: EmbeddingParams):
     print(request.dict())  # Print the parsed data to the console
-    return {
-        "model": request.model  # Return the 'model' field from EmbeddingParams
-}
+    vectors = embeddings_model.embed(request.input)  # Remove the list wrapper around request.input
+    embedding_objects = []
+    for index, vector in enumerate(vectors):
+        embedding_objects.append({
+            "object": "embedding",
+            "embedding": vector.tolist(),  # Convert numpy array to list
+            "index": index
+        })
+    return embedding_objects
     
 @app.get("/", include_in_schema=False)
 async def root():
