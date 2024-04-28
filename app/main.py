@@ -240,30 +240,23 @@ async def embedding_request(params: EmbeddingParams):
     try:
         # Generate an embedding from the memory text
         embeddings_generator = embeddings_model.embed(params.input)
-        print("Converted Vector List:", embeddings_generator)
+        print("Vector:", embeddings_generator)
         # Extract the single vector from the generator
         vector = next(embeddings_generator)  # This fetches the first item from the generator
 
         if isinstance(vector, np.ndarray):
             vector_list = vector.tolist()  # Convert numpy array to list
-            print("Converted Vector List:", vector_list)
         else:
             raise ValueError("The embedding is not in the expected format (np.ndarray)")
-
-        # Convert NumPy array to list for JSON serialization
-        embedding_objects=({
-            "object": "embedding",
-            "embedding": vector_list,
-            "index": 0
-        })
-
-        #Print the constructed embedding objects
-        print("Embedding objects constructed:", embedding_objects)
 
         # Construct the response data with usage details
         response_data = {
             "object": "list",
-            "data": [embedding_objects],
+            "data": [{
+                "object": "embedding",
+                "embedding": vector_list,
+                "index": 0
+            }],
             "model": params.model,
             "usage": {
                 "prompt_tokens": len(params.input.split()),
