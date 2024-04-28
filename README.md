@@ -4,7 +4,7 @@
 
 ## Description
 
-This repository contains a FastAPI application for interacting with Qdrant, a vector database, and OpenAI's API for embeddings. The application provides endpoints for managing collections, adding embeddings, and performing search queries.  penapi spec at /openapi.json. This is meant for use with custom GPTs or other AI platforms. It can be used to store conversation history (marked AI or User). It can also store custom (Info) entries. Each entry can be marked with metadata. Context: ai, user or info. Keywords: one or more comma separated words that tag entry. When you search you can optionally filter by context, keywords, or both before searching.
+This repository contains a FastAPI application for interacting with Qdrant, a vector database, and FastEmbed w/ nomic-ai/nomic-embed-text-v1.5 for embeddings. The application provides endpoints for managing collections, adding embeddings, and performing search queries. Openapi spec at /openapi.json. This is meant for use with custom GPTs or other AI platforms. It can be used to store conversation history (marked AI or User). It can also store custom (Info) entries. Each entry can be marked with metadata. Context: ai, user or info. Keywords: one or more comma separated words that tag entry. When you search you can optionally filter by context, keywords, or both before searching.
 
 ## Example System Prompt
 ~~~
@@ -39,6 +39,7 @@ Use docker-compose.yml
 - POST `/collections/`: Create or delete collections in Qdrant.
 - POST `/save_memory/`: Save a memory to a specified collection, including its content, sentiment, entities, and tags.
 - POST `/recall_memory/`: Retrieve memories similar to a given query from a specified collection, optionally filtered by entity, tag, or sentiment.
+- POST `/v1/embeddings/`: OpenAI Drop in replacement for embeddings. Usesnomic-ai/nomic-embed-text-v1.5 with dimensions of 768. Will run fast on low-end boxes.
 
 ### Usage
 
