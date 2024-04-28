@@ -22,7 +22,7 @@ base_url = os.getenv("BASE_URL")
 
 # Initialize clients for database and AI
 db_client = QdrantClient(url=qdrant_host, api_key=qdrant_api_key)
-embeddings_model = TextEmbedding("nomic-ai/nomic-embed-text-v1.5", dim=128)
+embeddings_model = TextEmbedding("nomic-ai/nomic-embed-text-v1.5")
 
 # Setup the bearer token authentication scheme
 bearer_scheme = HTTPBearer(auto_error=False)
@@ -144,7 +144,7 @@ async def create_collection(params: CreateCollectionParams, api_key: str = Depen
     try:
         db_client.recreate_collection(
             collection_name=params.collection_name,
-            vectors_config=VectorParams(size=786, distance=Distance.COSINE),
+            vectors_config=VectorParams(size=768, distance=Distance.COSINE),
         )
         print("Collection {params.collection_name} created successfully")
         return {"message": f"Collection '{params.collection_name}' created successfully"}
