@@ -65,7 +65,6 @@ class SearchParams(BaseModel):
 class CreateCollectionParams(BaseModel):
     collection_name: str = Field(..., description="The name of the collection to be created.")
 
-
 @app.post("/save_memory", operation_id="save_memory")
 async def save_memory(Params: MemoryParams, api_key: str = Depends(get_api_key)):
     vector = embeddings_model.embed([Params.memory])[0]  # Corrected to index into the list of embeddings
@@ -182,7 +181,10 @@ async def embedding_request(request: EmbeddingParams):
         "object": "list",
         "data": embedding_objects,
         "model": request.model,
-        "user": request.user
+        "usage": {
+            "prompt_tokens": token_usage,  # Total tokens processed in all inputs
+            "total_tokens": token_usage   # Assuming no additional tokens were used
+        }
     }
 
     # Print the response data
