@@ -22,7 +22,7 @@ base_url = os.getenv("BASE_URL")
 
 # Initialize clients for database and AI
 db_client = QdrantClient(url=qdrant_host, api_key=qdrant_api_key)
-embeddings_model = TextEmbedding("nomic-ai/nomic-embed-text-v1.5", dimensions=128)
+embeddings_model = TextEmbedding("nomic-ai/nomic-embed-text-v1.5")
 
 # Setup the bearer token authentication scheme
 bearer_scheme = HTTPBearer(auto_error=False)
@@ -75,7 +75,7 @@ class EmbeddingParams(BaseModel):
 async def save_memory(params: MemoryParams, api_key: str = Depends(get_api_key)):
     try:
         # Generate an embedding from the memory text
-        embeddings_generator = embeddings_model.embed(params.memory)
+        embeddings_generator = embeddings_model.embed(params.memory, dimensionality=128)
 
         # Extract the single vector from the generator
         vector = next(embeddings_generator)  # This fetches the first item from the generator
