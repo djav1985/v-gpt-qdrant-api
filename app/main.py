@@ -277,10 +277,13 @@ async def embedding_request(request: EmbeddingParams):
             }
         }
 
+    except Exception as e:
+        # Provide more detailed error messaging
+        raise HTTPException(status_code=500, detail=f"Error processing request: {str(e)}")
         # Print the response data
         print("Response data:", response_data)
 
-    return response_data
+        return response_data
 
 # Root endpoint
 @app.get("/", include_in_schema=False)
