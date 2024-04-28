@@ -1,7 +1,7 @@
 import os
 import uuid
 from datetime import datetime
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Union
 
 from fastapi import FastAPI, HTTPException, Security, Depends, Request
 from fastapi.staticfiles import StaticFiles
@@ -126,11 +126,10 @@ async def create_collection(params: CreateCollectionParams, api_key: str = Depen
         raise HTTPException(status_code=500, detail=f"Error creating collection: {str(e)}")
 
 class EmbeddingParams(BaseModel):
-    input: str
+    inputs: Union[List[str], str]
     model: str
+    user: Optional[str] = "unassigned"
     encoding_format: Optional[str] = "float"
-    dimensions: Optional[int] = 768
-    user: Optional[str] = None
     
 @app.post("/v1/embeddings")
 async def embedding_request(request: EmbeddingParams):
