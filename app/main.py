@@ -134,21 +134,31 @@ class EmbeddingParams(BaseModel):
     
 @app.post("/v1/embeddings")
 async def embedding_request(request: EmbeddingParams):
+    # Normalize input to always be a list
+    if isinstance(request.inputs, str):
+        input_texts = [request.inputs]  # Convert single string to list
+    else:
+        input_texts = request.inputs  # It's already a list
+
     # Assuming embeddings_model is initialized and available globally or injected
-    embeddings = list(embedding_model.embed(request.input))
+    # Convert each input text to embeddings
+    embeddings = [embedding_model.embed(text) for text in input_texts]
     embedding_objects = []
 
-    for index, vector in enumerate(embeddings):
-        embedding_objects.append({
-            "object": "embedding",
-            "embedding": vector.tolist(),  # Ensure the NumPy array is converted to list
-            "index": index
-        })
+    # Iterate over each set of embeddings (assuming each call to embed returns a NumPy array of embeddings)
+    for index, vectors in enumerate(embeddings):
+        for vector in vectors:  # Assuming embed function might return multiple vectors per input
+            embedding_objects.append({
+                "object": "embedding",
+                "embedding": vector.tolist(),  # Convert NumPy array to list for JSON serialization
+                "index": index
+            })
 
     response_data = {
         "object": "list",
         "data": embedding_objects,
-        "model": request.model
+        "model": request.model,
+        "user": request.user
     }
 
     return response_data
