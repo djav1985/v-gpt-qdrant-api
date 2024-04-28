@@ -167,6 +167,14 @@ async def create_collection(params: CreateCollectionParams, api_key: str = Depen
             collection_name=params.collection_name,
             vectors_config=VectorParams(size=768, distance=Distance.COSINE),
         )
+        
+        db_client.create_payload_index(
+            collection_name=params.collection_name,
+            field_name="sentiment", field_schema="keyword",
+            field_name="entities", field_schema="keyword",
+            field_name="tags", field_schema="keyword"
+        )
+        
         print("Collection {params.collection_name} created successfully")
         return {"message": f"Collection '{params.collection_name}' created successfully"}
     except Exception as e:
