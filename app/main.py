@@ -214,15 +214,15 @@ async def recall_memory(params: SearchParams, api_key: str = Depends(get_api_key
         raise HTTPException(status_code=500, detail=f"Error processing request: {str(e)}")
 
 
-# Endpoint for creating a new collection
+# This is the endpoint that handles requests to create a new collection
 @app.post("/collections", operation_id="create_collection")
 async def create_collection(params: CreateCollectionParams, api_key: str = Depends(get_api_key)):
     try:
         # Recreate the collection with specified parameters
         db_client.create_collection(
             collection_name=params.collection_name,
-            vectors_config=VectorParams(size=768, distance=Distance.COSINE),
-            quantization_config=models.ScalarQuantization(
+            vectors_config=VectorParams(size=768, distance=Distance.COSINE),  # Configure vector parameters
+            quantization_config=models.ScalarQuantization(  # Configure scalar quantization
                 scalar=models.ScalarQuantizationConfig(
                     type=models.ScalarType.INT8,
                     quantile=0.99,
@@ -234,43 +234,44 @@ async def create_collection(params: CreateCollectionParams, api_key: str = Depen
         # Create payload index for sentiment
         db_client.create_payload_index(
             collection_name=params.collection_name,
-            field_name="sentiment", field_schema="keyword"
+            field_name="sentiment", field_schema="keyword"  # Index for sentiment
         )
 
         # Create payload index for entities
         db_client.create_payload_index(
             collection_name=params.collection_name,
-            field_name="entities", field_schema="keyword"
+            field_name="entities", field_schema="keyword"  # Index for entities
         )
 
         # Create payload index for tags
         db_client.create_payload_index(
             collection_name=params.collection_name,
-            field_name="tags", field_schema="keyword"
+            field_name="tags", field_schema="keyword"  # Index for tags
         )
 
-        print(f"Collection {params.collection_name} created successfully")
-        return {"message": f"Collection '{params.collection_name}' created successfully"}
+        print(f"Collection {params.collection_name} created successfully")  # Log the successful creation of the collection
+        return {"message": f"Collection '{params.collection_name}' created successfully"}  # Return a success message
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error creating collection: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error creating collection: {str(e)}")  # Raise an exception if there's an error in creating the collection
 
-# Endpoint for embedding request
+# This is the endpoint that handles embedding requests
 @app.post("/v1/embeddings", operation_id="create_embedding")
 async def embedding_request(params: EmbeddingParams, api_key: str = Depends(get_api_key)):
     try:
-        print("Request Made:", params.input)
+        print("Request Made:", params.input)  # Log the input request
+
         # Generate an embedding from the memory text
         embeddings_generator = embeddings_model.embed(params.input)
 
         # Extract the single vector from the generator
         vector = next(embeddings_generator)  # This fetches the first item from the generator
 
-        print("Vector Made:", vector)
+        print("Vector Made:", vector)  # Log the generated vector
 
         if isinstance(vector, np.ndarray):
             vector_list = vector.tolist()  # Convert numpy array to list
         else:
-            raise ValueError("The embedding is not in the expected format (np.ndarray)")
+            raise ValueError("The embedding is not in the expected format (np.ndarray)")  # Exception handling for unexpected formats
 
         # Construct the response data with usage details
         response_data = {
@@ -282,24 +283,31 @@ async def embedding_request(params: EmbeddingParams, api_key: str = Depends(get_
             }],
             "model": params.model,
             "usage": {
-                "prompt_tokens": len(params.input.split()),
-                "total_tokens": len(vector_list)
+                "prompt_tokens": len(params.input.split()),  # Count of tokens in the input prompt
+                "total_tokens": len(vector_list)  # Count of tokens in the generated vector
             }
         }
 
-                # Print the response data
-        print("Response data:", response_data)
+        print("Response data:", response_data)  # Log the response data
 
-        return response_data
+        return response_data  # Return the response data
     except Exception as e:
         # Provide more detailed error messaging
-        raise HTTPException(status_code=500, detail=f"Error processing request: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error processing request: {str(e)}")  # Raise an exception if there's an error in processing the request
 
-
-# Root endpoint
+# This is the root endpoint that serves the main page of your web application
 @app.get("/", include_in_schema=False)
 async def root():
+    # Returns the index.html file found in the specified directory
+    return FileResponse("/app/public/index.html")
+
+# This is the v1 endpoint that serves the main page of your web application
+# It could be used for versioning of the API
+@app.get("/v1", include_in_schema=False)
+async def v1():
+    # Returns the index.html file found in the specified directory
     return FileResponse("/app/public/index.html")
 
 # Mounting static files
+# This makes all the files in the /app/public directory accessible under the /static path
 app.mount("/static", StaticFiles(directory="/app/public"), name="static")
