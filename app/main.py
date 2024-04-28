@@ -79,6 +79,12 @@ class EmbeddingParams(BaseModel):
     user: Optional[str] = "unassigned"
     encoding_format: Optional[str] = "float"
 
+    @validator('input', pre=True)
+    def flatten_input(cls, v):
+        if isinstance(v, list):
+            # Join list into a single string without altering the content
+            return ' '.join(v)
+        return v
 
 # Endpoint for saving memory
 @app.post("/save_memory", operation_id="save_memory")
@@ -244,6 +250,8 @@ async def embedding_request(params: EmbeddingParams):
 
         # Extract the single vector from the generator
         vector = next(embeddings_generator)  # This fetches the first item from the generator
+
+        print("Vector Made:", vector)
 
         if isinstance(vector, np.ndarray):
             vector_list = vector.tolist()  # Convert numpy array to list
