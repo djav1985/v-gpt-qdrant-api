@@ -212,9 +212,16 @@ async def recall_memory(params: SearchParams, api_key: str = Depends(get_api_key
 async def create_collection(params: CreateCollectionParams, api_key: str = Depends(get_api_key)):
     try:
         # Recreate the collection with specified parameters
-        db_client.recreate_collection(
+        db_client.create_collection(
             collection_name=params.collection_name,
             vectors_config=VectorParams(size=768, distance=Distance.COSINE),
+            quantization_config=models.ScalarQuantization(
+                scalar=models.ScalarQuantizationConfig(
+                    type=models.ScalarType.INT8,
+                    quantile=0.99,
+                    always_ram=False,
+                ),
+            ),
         )
 
         # Create payload index for sentiment
