@@ -236,7 +236,7 @@ async def create_collection(params: CreateCollectionParams, api_key: str = Depen
 
 # Endpoint for embedding request
 @app.post("/v1/embeddings")
-async def embedding_request(request: EmbeddingParams):
+async def embedding_request(params: EmbeddingParams):
     try:
         # Generate an embedding from the memory text
         embeddings_generator = embeddings_model.embed(params.input)
@@ -259,7 +259,7 @@ async def embedding_request(request: EmbeddingParams):
         # Convert NumPy array to list for JSON serialization
         embedding_objects=({
             "object": "embedding",
-            "embedding": input_texts,
+            "embedding": vector_list,
             "index": 0
         })
 
@@ -270,20 +270,21 @@ async def embedding_request(request: EmbeddingParams):
         response_data = {
             "object": "list",
             "data": embedding_objects,
-            "model": request.model,
+            "model": params.model,
             "usage": {
-                "prompt_tokens": sum(len(text.split()) for text in input_texts),
-                "total_tokens": sum(len(text.split()) for text in input_texts)
+                "prompt_tokens": len(params.input.split()),
+                "total_tokens": len(input_texts.split(','))
             }
         }
 
-    except Exception as e:
-        # Provide more detailed error messaging
-        raise HTTPException(status_code=500, detail=f"Error processing request: {str(e)}")
-        # Print the response data
+                # Print the response data
         print("Response data:", response_data)
 
         return response_data
+    except Exception as e:
+        # Provide more detailed error messaging
+        raise HTTPException(status_code=500, detail=f"Error processing request: {str(e)}")
+
 
 # Root endpoint
 @app.get("/", include_in_schema=False)
