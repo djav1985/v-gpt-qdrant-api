@@ -69,9 +69,8 @@ class CreateCollectionParams(BaseModel):
 async def save_memory(params: MemoryParams, api_key: str = Depends(get_api_key)):
     try:
         # Generate vector from memory text
-        vector = embeddings_model.embed(params.memory)
-        print("Created Vector:", vector)
-        vector_list = vector.tolist()  # Properly convert numpy array to list
+        vector_generator = embeddings_model.embed(params.memory)
+        vector_list = list(vector_generator)  # Convert generator to list
         print("Created Vector:", vector_list)
 
         timestamp = datetime.utcnow().isoformat()
