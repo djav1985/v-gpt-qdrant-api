@@ -16,11 +16,13 @@ services:
       BASE_URL: http://qdrant-api
     volumes:
       - embedding-model:/app/model
-      
+
   memories-db:
     image: qdrant/qdrant:latest
     container_name: memories-db
     restart: always
+    #ports:
+       #- "6333:6333"
     environment:
       QDRANT_API_KEY: xtfpouszusdsdsozlzlwdwac
     volumes:
