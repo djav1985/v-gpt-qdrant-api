@@ -255,7 +255,7 @@ async def create_collection(params: CreateCollectionParams, api_key: str = Depen
         raise HTTPException(status_code=500, detail=f"Error creating collection: {str(e)}")
 
 # Endpoint for embedding request
-@app.post("/v1/embeddings")
+@app.post("/v1/embeddings", operation_id="create_embedding")
 async def embedding_request(params: EmbeddingParams, api_key: str = Depends(get_api_key)):
     try:
         print("Request Made:", params.input)
