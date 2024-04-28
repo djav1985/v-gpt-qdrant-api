@@ -144,7 +144,7 @@ async def create_collection(params: CreateCollectionParams, api_key: str = Depen
     try:
         db_client.recreate_collection(
             collection_name=params.collection_name,
-            vectors_config=VectorParams(size=512, distance=Distance.COSINE),
+            vectors_config=VectorParams(size=786, distance=Distance.COSINE),
         )
         print("Collection {params.collection_name} created successfully")
         return {"message": f"Collection '{params.collection_name}' created successfully"}
