@@ -177,14 +177,17 @@ async def embedding_request(request: EmbeddingParams):
     # Print the constructed embedding objects
     print("Embedding objects constructed:", embedding_objects)
 
-    # Construct the response data
+    # Construct the response data with usage details
     response_data = {
         "object": "list",
         "data": embedding_objects,
         "model": request.model,
-        "user": request.user
+        "usage": {
+            "prompt_tokens": 8,  # Example token count for the prompt
+            "total_tokens": 8    # Example total token count used
+        }
     }
-
+    
     # Print the response data
     print("Response data:", response_data)
 
