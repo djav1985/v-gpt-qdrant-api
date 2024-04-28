@@ -165,7 +165,7 @@ async def recall_memory(params: SearchParams, api_key: str = Depends(get_api_key
 
         # Define the search filter with the specified conditions
         search_filter = models.Filter(
-            should=filter_conditions
+            must=filter_conditions
         )
 
         # Perform the search with the specified filters
