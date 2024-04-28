@@ -68,6 +68,7 @@ class CreateCollectionParams(BaseModel):
 @app.post("/save_memory", operation_id="save_memory")
 async def save_memory(Params: MemoryParams, api_key: str = Depends(get_api_key)):
     vector = embeddings_model.embed(Params.memory)
+    print("Created Vector:", vector)
     timestamp = datetime.utcnow().isoformat()
     unique_id = str(uuid.uuid4())
     try:
