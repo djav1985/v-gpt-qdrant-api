@@ -89,7 +89,7 @@ async def save_memory(Params: MemoryParams, api_key: str = Depends(get_api_key))
 
 @app.post("/recall_memory", operation_id="recall_memory")
 async def recall_memory(Params: SearchParams, api_key: str = Depends(get_api_key)):
-    query_vector = embeddings_model.embed([Params.query])[0]  # Corrected to index into the list of embeddings
+    query_vector = embeddings_model.embed(Params.query)
     search_filter = {}
     if Params.entity:
         search_filter["must"] = [FieldCondition(key="entities", match={"value": Params.entity})]
