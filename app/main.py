@@ -1,3 +1,4 @@
+# Importing necessary libraries and modules
 import os
 import uuid
 import numpy as np
@@ -10,7 +11,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, Field, validator
 from starlette.responses import FileResponse
 
-from qdrant_client import QdrantClient
+from qdrant_client import QdrantClient, models
 from qdrant_client.models import Distance, VectorParams, Filter, FieldCondition
 from fastembed import TextEmbedding
 
@@ -21,13 +22,16 @@ memories_api_key = os.getenv("MEMORIES_API_KEY")
 base_url = os.getenv("BASE_URL")
 
 # Initialize clients for database and AI
+# QdrantClient for database interaction
 db_client = QdrantClient(url=qdrant_host, api_key=qdrant_api_key)
+# TextEmbedding for AI operations
 embeddings_model = TextEmbedding("nomic-ai/nomic-embed-text-v1.5")
 
 # Setup the bearer token authentication scheme
 bearer_scheme = HTTPBearer(auto_error=False)
 
 # Function to get API key
+# This function checks if the provided API key is valid or not
 async def get_api_key(credentials: HTTPAuthorizationCredentials = Security(bearer_scheme)):
     if memories_api_key and (not credentials or credentials.credentials != memories_api_key):
         raise HTTPException(status_code=403, detail="Invalid or missing API key")
@@ -41,6 +45,7 @@ app = FastAPI(
     servers=[{"url": base_url, "description": "Base API server"}]
 )
 
+# Class for memory parameters
 class MemoryParams(BaseModel):
     collection_name: str = Field(..., description="The name of the collection to be created.")
     memory: str = Field(..., description="The content of the memory to be stored.")
@@ -54,6 +59,7 @@ class MemoryParams(BaseModel):
             return v.split(",")
         return v
 
+# Class for search parameters
 class SearchParams(BaseModel):
     collection_name: str = Field(..., description="The name of the collection to search in.")
     query: str = Field(..., description="The search query used to retrieve similar memories.")
@@ -62,15 +68,19 @@ class SearchParams(BaseModel):
     tag: Optional[str] = Field(None, description="A tag to filter the search.")
     sentiment: Optional[str] = Field(None, description="The sentiment to filter the search.")
 
+# Class for creating a new collection
 class CreateCollectionParams(BaseModel):
     collection_name: str = Field(..., description="The name of the collection to be created.")
 
+# Class for embedding parameters
 class EmbeddingParams(BaseModel):
     input: Union[List[str], str]
     model: str
     user: Optional[str] = "unassigned"
     encoding_format: Optional[str] = "float"
 
+
+# Endpoint for saving memory
 @app.post("/save_memory", operation_id="save_memory")
 async def save_memory(params: MemoryParams, api_key: str = Depends(get_api_key)):
     try:
@@ -104,42 +114,66 @@ async def save_memory(params: MemoryParams, api_key: str = Depends(get_api_key))
     except Exception as e:
         # Provide more detailed error messaging
         raise HTTPException(status_code=500, detail=f"Error processing request: {str(e)}")
-    print("Saved Memory: {params.memory}")
+    print(f"Saved Memory: {params.memory}")
     return {"message": "Memory saved successfully"}
 
+
+# Endpoint for recalling memory
 @app.post("/recall_memory", operation_id="recall_memory")
 async def recall_memory(params: SearchParams, api_key: str = Depends(get_api_key)):
     try:
+        # Generate an embedding from the query text
         embeddings_generator = embeddings_model.embed(params.query)
+
         # Extract the single vector from the generator
         vector = next(embeddings_generator)  # This fetches the first item from the generator
 
         if isinstance(vector, np.ndarray):
             vector_list = vector.tolist()  # Convert numpy array to list
             print("Converted Vector List:", vector_list)
+        else:
+            raise ValueError("The embedding is not in the expected format (np.ndarray)")
 
-        search_filter = []
+        filter_conditions = []
 
-        # Add entity filter if provided
+        # Create a filter condition for entity if it exists in params
         if params.entity:
-            search_filter.append(FieldCondition(key="entities", match=MatchValue(value=params.entity)))
+            filter_conditions.append(
+                models.FieldCondition(
+                    key="entities",
+                    match=models.MatchValue(value=params.entity)  # Direct value match
+                )
+            )
 
-        # Add tag filter if provided
-        if params.tag:
-            search_filter.append(FieldCondition(key="tags", match=MatchValue(value=params.tag)))
-
-        # Add sentiment filter if provided
+        # Create a filter condition for sentiment if it exists in params
         if params.sentiment:
-            search_filter.append(FieldCondition(key="sentiment", match=MatchValue(value=params.sentiment)))
+            filter_conditions.append(
+                models.FieldCondition(
+                    key="sentiment",
+                    match=models.MatchAny(any=[params.sentiment])  # Using list for MatchAny
+                )
+            )
 
-        # Construct the filter query with all specified conditions
-        filter_query = Filter(must=search_filter) if search_filter else None
+        # Create a filter condition for tag if it exists in params
+        if params.tag:
+            filter_conditions.append(
+                models.FieldCondition(
+                    key="tags",
+                    match=models.MatchAny(any=[params.tag])  # Using list for MatchAny
+                )
+            )
+
+        # Define the search filter with the specified conditions
+        search_filter = models.Filter(
+            should=filter_conditions
+        )
 
         # Perform the search with the specified filters
         hits = db_client.search(
             collection_name=params.collection_name,
             query_vector=vector_list,
-            query_filter=filter_query,
+            query_filter=search_filter,
+            with_payload=True,
             limit=params.top_k,
         )
 
@@ -160,34 +194,41 @@ async def recall_memory(params: SearchParams, api_key: str = Depends(get_api_key
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error processing request: {str(e)}")
 
+
+# Endpoint for creating a new collection
 @app.post("/collections", operation_id="collection")
 async def create_collection(params: CreateCollectionParams, api_key: str = Depends(get_api_key)):
     try:
+        # Recreate the collection with specified parameters
         db_client.recreate_collection(
             collection_name=params.collection_name,
             vectors_config=VectorParams(size=768, distance=Distance.COSINE),
         )
 
+        # Create payload index for sentiment
         db_client.create_payload_index(
             collection_name=params.collection_name,
             field_name="sentiment", field_schema="keyword"
         )
 
+        # Create payload index for entities
         db_client.create_payload_index(
             collection_name=params.collection_name,
             field_name="entities", field_schema="keyword"
         )
 
+        # Create payload index for tags
         db_client.create_payload_index(
             collection_name=params.collection_name,
             field_name="tags", field_schema="keyword"
         )
 
-        print("Collection {params.collection_name} created successfully")
+        print(f"Collection {params.collection_name} created successfully")
         return {"message": f"Collection '{params.collection_name}' created successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error creating collection: {str(e)}")
 
+# Endpoint for embedding request
 @app.post("/v1/embeddings")
 async def embedding_request(request: EmbeddingParams):
     try:
@@ -228,8 +269,10 @@ async def embedding_request(request: EmbeddingParams):
     print("Response data:", response_data)
     return response_data
 
+# Root endpoint
 @app.get("/", include_in_schema=False)
 async def root():
     return FileResponse("/app/public/index.html")
 
+# Mounting static files
 app.mount("/static", StaticFiles(directory="/app/public"), name="static")
