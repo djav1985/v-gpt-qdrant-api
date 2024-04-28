@@ -75,13 +75,16 @@ class EmbeddingParams(BaseModel):
 async def save_memory(params: MemoryParams, api_key: str = Depends(get_api_key)):
     try:
         # Generate an embedding from the memory text
-        embeddings_list = embeddings_model.embed(params.memory)
+        embeddings_generator = embedding_model.embed(params.memory)
 
-        # Assuming embeddings_list[0] is the numpy array we need
-        embeddings_list and isinstance(embeddings_list[0], np.ndarray)
-        vector = embeddings_list[0]  # Extract the numpy array
-        vector_list = vector.tolist()  # Convert numpy array to list
-        print("Converted Vector List:", vector_list)
+        # Extract the single vector from the generator
+        vector = next(embeddings_generator)  # This fetches the first item from the generator
+
+        if isinstance(vector, np.ndarray):
+            vector_list = vector.tolist()  # Convert numpy array to list
+            print("Converted Vector List:", vector_list)
+        else:
+            raise ValueError("The embedding is not in the expected format (np.ndarray)")
 
         timestamp = datetime.utcnow().isoformat()
         unique_id = str(uuid.uuid4())
@@ -101,35 +104,40 @@ async def save_memory(params: MemoryParams, api_key: str = Depends(get_api_key))
     except Exception as e:
         # Provide more detailed error messaging
         raise HTTPException(status_code=500, detail=f"Error processing request: {str(e)}")
-
+    print("Saved Memory: {params.memory}")
     return {"message": "Memory saved successfully"}
 
 @app.post("/recall_memory", operation_id="recall_memory")
 async def recall_memory(Params: SearchParams, api_key: str = Depends(get_api_key)):
-    query_vector = embeddings_model.embed(Params.query)
-    search_filter = {}
-    if Params.entity:
-        search_filter["must"] = [FieldCondition(key="entities", match={"value": Params.entity})]
-    if Params.tag:
-        search_filter["must"] = [FieldCondition(key="tags", match={"value": Params.tag})]
-    if Params.sentiment:
-        search_filter["must"] = [FieldCondition(key="sentiment", match={"value": Params.sentiment})]
-    hits = db_client.search(
-        collection_name=Params.collection_name,
-        query_vector=query_vector,
-        query_filter=Filter(must=search_filter["must"]) if search_filter else None,
-        limit=Params.top_k,
-    )
-    results = [{
-        "id": hit.id,
-        "memory": hit.payload["memory"],
-        "timestamp": hit.payload["timestamp"],
-        "sentiment": hit.payload["sentiment"],
-        "entities": hit.payload["entities"],
-        "tags": hit.payload["tags"],
-        "score": hit.score,
-    } for hit in hits]
+    try:
+        query_vector = embeddings_model.embed(Params.query)
+        search_filter = {}
+        if Params.entity:
+            search_filter["must"] = [FieldCondition(key="entities", match={"value": Params.entity})]
+        if Params.tag:
+            search_filter["must"] = [FieldCondition(key="tags", match={"value": Params.tag})]
+        if Params.sentiment:
+            search_filter["must"] = [FieldCondition(key="sentiment", match={"value": Params.sentiment})]
+        hits = db_client.search(
+            collection_name=Params.collection_name,
+            query_vector=query_vector,
+            query_filter=Filter(must=search_filter["must"]) if search_filter else None,
+            limit=Params.top_k,
+        )
+        results = [{
+            "id": hit.id,
+            "memory": hit.payload["memory"],
+            "timestamp": hit.payload["timestamp"],
+            "sentiment": hit.payload["sentiment"],
+            "entities": hit.payload["entities"],
+            "tags": hit.payload["tags"],
+            "score": hit.score,
+        } for hit in hits]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error processing request: {str(e)}")
+    print("Recalled Memories: {results}")
     return {"results": results}
+
 
 @app.post("/collections", operation_id="collection")
 async def create_collection(params: CreateCollectionParams, api_key: str = Depends(get_api_key)):
@@ -178,11 +186,10 @@ async def embedding_request(request: EmbeddingParams):
             }
         }
 
-        # Print the response data
-        print("Response data:", response_data)
-        return response_data
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error creating embedding: {str(e)}")
+    print("Response data:", response_data)
+    return response_data
 
 @app.get("/", include_in_schema=False)
 async def root():
