@@ -236,7 +236,7 @@ async def create_collection(params: CreateCollectionParams, api_key: str = Depen
 
 # Endpoint for embedding request
 @app.post("/v1/embeddings")
-async def embedding_request(request: EmbeddingParams):
+async def embedding_request(request: EmbeddingParams, api_key: str = Depends(get_api_key)):
     try:
         # Normalize input to always be a list
         if isinstance(request.input, str):  # Fixed to request.input
