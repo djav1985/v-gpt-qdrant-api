@@ -250,9 +250,6 @@ async def embedding_request(params: EmbeddingParams):
         else:
             raise ValueError("The embedding is not in the expected format (np.ndarray)")
 
-        # Print the normalized input texts
-        print("Normalized input texts:", input_texts)
-
         # Initialize list to store embedding objects
         embedding_objects = []
 
@@ -273,7 +270,7 @@ async def embedding_request(params: EmbeddingParams):
             "model": params.model,
             "usage": {
                 "prompt_tokens": len(params.input.split()),
-                "total_tokens": len(input_texts.split(','))
+                "total_tokens": len(vector_list.split(','))
             }
         }
 
