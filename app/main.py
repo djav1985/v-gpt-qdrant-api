@@ -1,5 +1,6 @@
 import os
 import uuid
+import numpy as np
 from datetime import datetime
 from typing import List, Optional, Dict, Union
 
@@ -133,20 +134,23 @@ class EmbeddingParams(BaseModel):
     
 @app.post("/v1/embeddings")
 async def embedding_request(request: EmbeddingParams):
-    print(request.dict())  # Print the parsed data to the console
-    vectors = embeddings_model.embed(request.input)
+    # Assuming embeddings_model is initialized and available globally or injected
+    embeddings = list(embedding_model.embed(request.input))
     embedding_objects = []
-    for index, vector in enumerate(vectors):
+
+    for index, vector in enumerate(embeddings):
         embedding_objects.append({
             "object": "embedding",
-            "embedding": vector.tolist(),
+            "embedding": vector.tolist(),  # Ensure the NumPy array is converted to list
             "index": index
         })
+
     response_data = {
         "object": "list",
         "data": embedding_objects,
         "model": request.model
     }
+
     return response_data
     
 @app.get("/", include_in_schema=False)
