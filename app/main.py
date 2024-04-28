@@ -126,9 +126,6 @@ async def create_collection(params: CreateCollectionParams, api_key: str = Depen
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error creating collection: {str(e)}")
 
-from typing import List, Union, Optional
-from pydantic import BaseModel
-
 class EmbeddingParams(BaseModel):
     inputs: Union[List[str], str]
     model: str
@@ -137,8 +134,12 @@ class EmbeddingParams(BaseModel):
     
 @app.post("/v1/embeddings")
 async def embedding_request(request: EmbeddingParams):
-    # Print the received request
-    print("Received request:", request.dict())
+    try:
+        # Print the received request
+        print("Received request:", request.dict())
+    except Exception as e:
+        # If there's any error in printing the request, catch and print the error
+        print("Error printing request:", e)
 
     # Normalize input to always be a list
     if isinstance(request.inputs, str):
@@ -149,11 +150,16 @@ async def embedding_request(request: EmbeddingParams):
     # Print the normalized input texts
     print("Normalized input texts:", input_texts)
 
-    # Assuming embeddings_model is initialized and available globally or injected
-    # Convert each input text to embeddings
-    print("Generating embeddings...")
-    embeddings = [embedding_model.embed(text) for text in input_texts]
-    print("Embeddings generated:", embeddings)
+    try:
+        # Assuming embeddings_model is initialized and available globally or injected
+        # Convert each input text to embeddings
+        print("Generating embeddings...")
+        embeddings = [embedding_model.embed(text) for text in input_texts]
+        print("Embeddings generated:", embeddings)
+    except Exception as e:
+        # If there's any error in generating embeddings, catch and print the error
+        print("Error generating embeddings:", e)
+        embeddings = []
 
     # Initialize list to store embedding objects
     embedding_objects = []
