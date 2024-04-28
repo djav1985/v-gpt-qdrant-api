@@ -215,7 +215,7 @@ async def recall_memory(params: SearchParams, api_key: str = Depends(get_api_key
 
 
 # Endpoint for creating a new collection
-@app.post("/collections", operation_id="collection")
+@app.post("/collections", operation_id="create_collection")
 async def create_collection(params: CreateCollectionParams, api_key: str = Depends(get_api_key)):
     try:
         # Recreate the collection with specified parameters
