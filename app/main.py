@@ -126,6 +126,9 @@ async def create_collection(params: CreateCollectionParams, api_key: str = Depen
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error creating collection: {str(e)}")
 
+from typing import List, Union, Optional
+from pydantic import BaseModel
+
 class EmbeddingParams(BaseModel):
     inputs: Union[List[str], str]
     model: str
@@ -134,32 +137,50 @@ class EmbeddingParams(BaseModel):
     
 @app.post("/v1/embeddings")
 async def embedding_request(request: EmbeddingParams):
+    # Print the received request
+    print("Received request:", request.dict())
+
     # Normalize input to always be a list
     if isinstance(request.inputs, str):
         input_texts = [request.inputs]  # Convert single string to list
     else:
         input_texts = request.inputs  # It's already a list
 
+    # Print the normalized input texts
+    print("Normalized input texts:", input_texts)
+
     # Assuming embeddings_model is initialized and available globally or injected
     # Convert each input text to embeddings
+    print("Generating embeddings...")
     embeddings = [embedding_model.embed(text) for text in input_texts]
+    print("Embeddings generated:", embeddings)
+
+    # Initialize list to store embedding objects
     embedding_objects = []
 
-    # Iterate over each set of embeddings (assuming each call to embed returns a NumPy array of embeddings)
+    # Iterate over each set of embeddings
     for index, vectors in enumerate(embeddings):
-        for vector in vectors:  # Assuming embed function might return multiple vectors per input
+        for vector in vectors:
+            # Convert NumPy array to list for JSON serialization
             embedding_objects.append({
                 "object": "embedding",
-                "embedding": vector.tolist(),  # Convert NumPy array to list for JSON serialization
+                "embedding": vector.tolist(),
                 "index": index
             })
 
+    # Print the constructed embedding objects
+    print("Embedding objects constructed:", embedding_objects)
+
+    # Construct the response data
     response_data = {
         "object": "list",
         "data": embedding_objects,
         "model": request.model,
         "user": request.user
     }
+
+    # Print the response data
+    print("Response data:", response_data)
 
     return response_data
     
