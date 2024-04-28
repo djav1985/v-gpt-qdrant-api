@@ -108,22 +108,35 @@ async def save_memory(params: MemoryParams, api_key: str = Depends(get_api_key))
     return {"message": "Memory saved successfully"}
 
 @app.post("/recall_memory", operation_id="recall_memory")
-async def recall_memory(Params: SearchParams, api_key: str = Depends(get_api_key)):
+async def recall_memory(params: SearchParams, api_key: str = Depends(get_api_key)):
     try:
-        query_vector = embeddings_model.embed(Params.query)
-        search_filter = {}
-        if Params.entity:
-            search_filter["must"] = [FieldCondition(key="entities", match={"value": Params.entity})]
-        if Params.tag:
-            search_filter["must"] = [FieldCondition(key="tags", match={"value": Params.tag})]
-        if Params.sentiment:
-            search_filter["must"] = [FieldCondition(key="sentiment", match={"value": Params.sentiment})]
+        query_vector = embeddings_model.embed(params.query)
+        search_filter = []
+
+        # Add entity filter if provided
+        if params.entity:
+            search_filter.append(FieldCondition(key="entities", match=MatchValue(value=params.entity)))
+
+        # Add tag filter if provided
+        if params.tag:
+            search_filter.append(FieldCondition(key="tags", match=MatchValue(value=params.tag)))
+
+        # Add sentiment filter if provided
+        if params.sentiment:
+            search_filter.append(FieldCondition(key="sentiment", match=MatchValue(value=params.sentiment)))
+
+        # Construct the filter query with all specified conditions
+        filter_query = Filter(must=search_filter) if search_filter else None
+
+        # Perform the search with the specified filters
         hits = db_client.search(
-            collection_name=Params.collection_name,
+            collection_name=params.collection_name,
             query_vector=query_vector,
-            query_filter=Filter(must=search_filter["must"]) if search_filter else None,
-            limit=Params.top_k,
+            query_filter=filter_query,
+            limit=params.top_k,
         )
+
+        # Format the results
         results = [{
             "id": hit.id,
             "memory": hit.payload["memory"],
@@ -133,10 +146,12 @@ async def recall_memory(Params: SearchParams, api_key: str = Depends(get_api_key
             "tags": hit.payload["tags"],
             "score": hit.score,
         } for hit in hits]
+
+        print("Recalled Memories:", results)
+        return {"results": results}
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error processing request: {str(e)}")
-    print("Recalled Memories: {results}")
-    return {"results": results}
 
 
 @app.post("/collections", operation_id="collection")
