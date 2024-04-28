@@ -130,7 +130,7 @@ class EmbeddingParams(BaseModel):
     model: str
     user: Optional[str] = "unassigned"
     encoding_format: Optional[str] = "float"
-    
+
 @app.post("/v1/embeddings")
 async def embedding_request(request: EmbeddingParams):
     try:
@@ -153,7 +153,7 @@ async def embedding_request(request: EmbeddingParams):
         # Assuming embeddings_model is initialized and available globally or injected
         # Convert each input text to embeddings
         print("Generating embeddings...")
-        embeddings = [embedding_model.embed(text) for text in input_texts]
+        embeddings = [embeddings_model.embed(text) for text in input_texts]
         print("Embeddings generated:", embeddings)
     except Exception as e:
         # If there's any error in generating embeddings, catch and print the error
@@ -191,7 +191,7 @@ async def embedding_request(request: EmbeddingParams):
     print("Response data:", response_data)
 
     return response_data
-    
+
 @app.get("/", include_in_schema=False)
 async def root():
     return FileResponse("/app/public/index.html")
