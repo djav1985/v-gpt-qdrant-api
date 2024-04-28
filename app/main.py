@@ -74,7 +74,7 @@ class CreateCollectionParams(BaseModel):
 
 # Class for embedding parameters
 class EmbeddingParams(BaseModel):
-    input: Union[List[str], str]
+    input: str
     model: str
     user: Optional[str] = "unassigned"
     encoding_format: Optional[str] = "float"
@@ -238,61 +238,47 @@ async def create_collection(params: CreateCollectionParams, api_key: str = Depen
 @app.post("/v1/embeddings")
 async def embedding_request(request: EmbeddingParams):
     try:
-        # Print the received request
-        print("Received request:", request.dict())
-    except Exception as e:
-        # If there's any error in printing the request, catch and print the error
-        print("Error printing request:", e)
+        # Generate an embedding from the memory text
+        embeddings_generator = embeddings_model.embed(params.input)
 
-    # Normalize input to always be a list
-    if isinstance(request.input, str):
-        input_texts = [request.input]  # Convert single string to list
-    else:
-        input_texts = request.input  # It's already a list
+        # Extract the single vector from the generator
+        vector = next(embeddings_generator)  # This fetches the first item from the generator
 
-    # Print the normalized input texts
-    print("Normalized input texts:", input_texts)
+        if isinstance(vector, np.ndarray):
+            vector_list = vector.tolist()  # Convert numpy array to list
+            print("Converted Vector List:", vector_list)
+        else:
+            raise ValueError("The embedding is not in the expected format (np.ndarray)")
 
-    try:
-        # Assuming embeddings_model is initialized and available globally or injected
-        # Convert each input text to embeddings
-        print("Generating embeddings...")
-        embeddings = [embedding_model.embed(text) for text in input_texts]
-        print("Embeddings generated:", embeddings)
-    except Exception as e:
-        # If there's any error in generating embeddings, catch and print the error
-        print("Error generating embeddings:", e)
-        embeddings = []
+        # Print the normalized input texts
+        print("Normalized input texts:", input_texts)
 
-    # Initialize list to store embedding objects
-    embedding_objects = []
+        # Initialize list to store embedding objects
+        embedding_objects = []
 
-    # Iterate over each set of embeddings
-    for index, vectors in enumerate(embeddings):
-        for vector in vectors:
-            # Convert NumPy array to list for JSON serialization
-            embedding_objects.append({
-                "object": "embedding",
-                "embedding": vector.tolist(),
-                "index": index
-            })
+        # Convert NumPy array to list for JSON serialization
+        embedding_objects=({
+            "object": "embedding",
+            "embedding": input_texts,
+            "index": 0
+        })
 
-    # Print the constructed embedding objects
-    print("Embedding objects constructed:", embedding_objects)
+        #Print the constructed embedding objects
+        print("Embedding objects constructed:", embedding_objects)
 
-    # Construct the response data with usage details
-    response_data = {
-        "object": "list",
-        "data": embedding_objects,
-        "model": request.model,
-        "usage": {
-            "prompt_tokens": 8,  # Example token count for the prompt
-            "total_tokens": 8    # Example total token count used
+        # Construct the response data with usage details
+        response_data = {
+            "object": "list",
+            "data": embedding_objects,
+            "model": request.model,
+            "usage": {
+                "prompt_tokens": sum(len(text.split()) for text in input_texts),
+                "total_tokens": sum(len(text.split()) for text in input_texts)
+            }
         }
-    }
 
-    # Print the response data
-    print("Response data:", response_data)
+        # Print the response data
+        print("Response data:", response_data)
 
     return response_data
 
