@@ -98,7 +98,6 @@ async def save_memory(params: MemoryParams, api_key: str = Depends(get_api_key))
 
         if isinstance(vector, np.ndarray):
             vector_list = vector.tolist()  # Convert numpy array to list
-            print("Converted Vector List:", vector_list)
         else:
             raise ValueError("The embedding is not in the expected format (np.ndarray)")
 
@@ -142,7 +141,6 @@ async def recall_memory(params: SearchParams, api_key: str = Depends(get_api_key
 
         if isinstance(vector, np.ndarray):
             vector_list = vector.tolist()  # Convert numpy array to list
-            print("Converted Vector List:", vector_list)
         else:
             raise ValueError("The embedding is not in the expected format (np.ndarray)")
 
@@ -258,15 +256,11 @@ async def create_collection(params: CreateCollectionParams, api_key: str = Depen
 @app.post("/v1/embeddings", operation_id="create_embedding")
 async def embedding_request(params: EmbeddingParams, api_key: str = Depends(get_api_key)):
     try:
-        print("Request Made:", params.input)  # Log the input request
-
         # Generate an embedding from the memory text
         embeddings_generator = embeddings_model.embed(params.input)
 
         # Extract the single vector from the generator
         vector = next(embeddings_generator)  # This fetches the first item from the generator
-
-        print("Vector Made:", vector)  # Log the generated vector
 
         if isinstance(vector, np.ndarray):
             vector_list = vector.tolist()  # Convert numpy array to list
@@ -288,7 +282,7 @@ async def embedding_request(params: EmbeddingParams, api_key: str = Depends(get_
             }
         }
 
-        print("Response data:", response_data)  # Log the response data
+        print("Created Embedding Successfully")  # Log the response data
 
         return response_data  # Return the response data
     except Exception as e:
