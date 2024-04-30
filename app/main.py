@@ -122,11 +122,13 @@ async def save_memory(params: MemoryParams, api_key: str = Depends(get_api_key))
             ]
         )
 
+        print(f"Saved Memory: {params.memory}")
+        return {"message": "Memory saved successfully"}
+
     except Exception as e:
+        print(f"An error occurred: {e}")
         # Provide more detailed error messaging
         raise HTTPException(status_code=500, detail=f"Error processing request: {str(e)}")
-    print(f"Saved Memory: {params.memory}")
-    return {"message": "Memory saved successfully"}
 
 
 # Endpoint for recalling memory
@@ -209,6 +211,7 @@ async def recall_memory(params: SearchParams, api_key: str = Depends(get_api_key
         return {"results": results}
 
     except Exception as e:
+        print(f"An error occurred: {e}")
         raise HTTPException(status_code=500, detail=f"Error processing request: {str(e)}")
 
 
@@ -250,6 +253,7 @@ async def create_collection(params: CreateCollectionParams, api_key: str = Depen
         print(f"Collection {params.collection_name} created successfully")  # Log the successful creation of the collection
         return {"message": f"Collection '{params.collection_name}' created successfully"}  # Return a success message
     except Exception as e:
+        print(f"An error occurred: {e}")
         raise HTTPException(status_code=500, detail=f"Error creating collection: {str(e)}")  # Raise an exception if there's an error in creating the collection
 
 # This is the endpoint that handles embedding requests
@@ -286,6 +290,7 @@ async def embedding_request(params: EmbeddingParams, api_key: str = Depends(get_
 
         return response_data  # Return the response data
     except Exception as e:
+        print(f"An error occurred: {e}")
         # Provide more detailed error messaging
         raise HTTPException(status_code=500, detail=f"Error processing request: {str(e)}")  # Raise an exception if there's an error in processing the request
 
