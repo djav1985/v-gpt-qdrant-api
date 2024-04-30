@@ -253,7 +253,7 @@ async def create_collection(params: CreateCollectionParams, api_key: str = Depen
         raise HTTPException(status_code=500, detail=f"Error creating collection: {str(e)}")  # Raise an exception if there's an error in creating the collection
 
 # This is the endpoint that handles embedding requests
-@app.post("/v1/embeddings", operation_id="create_embedding")
+@app.get("/v1/embeddings", operation_id="create_embedding")
 async def embedding_request(params: EmbeddingParams, api_key: str = Depends(get_api_key)):
     try:
         # Generate an embedding from the memory text
