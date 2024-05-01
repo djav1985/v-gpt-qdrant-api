@@ -2,34 +2,34 @@ version: '3.8'
 services:
   memories-api:
     container_name: memories-api
-    image: vontainment/v-gpt-qdrant-api:main # Use your appropriate image
+    image: vontainment/v-gpt-qdrant-api:dev # Use your appropriate image
     restart: always
     depends_on:
-      - memories-db
+      - qdrant
     ports:
       - "8060:8060"
     environment:
-      QDRANT_HOST: http://memories-db:6333
+      QDRANT_HOST: http://qdrant:6333
       QDRANT_API_KEY:
       #MEMORIES_API_KEY:
       BASE_URL: http://memories-api
-      UVICORN_WORKERS: 3
+      UVICORN_WORKERS: 2
     volumes:
       - embedding-model:/tmp/fastembed_cache
 
-  memories-db:
+  qdrant:
     image: langgenius/qdrant:latest
-    container_name: memories-db
+    container_name: qdrant
     restart: always
     #ports:
        #- "8060:6333"
     environment:
       QDRANT_API_KEY:
     volumes:
-      - memories-data:/qdrant/storage
+      - qdrant-data:/qdrant/storage
       - qdrant-config:/qdrant/config/
 
 volumes:
   embedding-model:
-  memories-data:
+  qdrant-data:
   qdrant-config:

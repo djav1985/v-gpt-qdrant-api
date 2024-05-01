@@ -21,7 +21,7 @@ RUN pip install --no-cache-dir -r /app/requirements.txt
 EXPOSE 8060
 
 # Set an environment variable for workers with a default value
-ENV UVICORN_WORKERS=3
+ENV WORKERS=2
 
 # Command to run the app using Uvicorn
-CMD sh -c "uvicorn main:app --host 0.0.0.0 --port 8060 --workers ${UVICORN_WORKERS}"
+CMD sh -c  "gunicorn main:app --worker-class uvicorn.workers.UvicornWorker --workers ${WORKERS} --bind 0.0.0.0:8060"
