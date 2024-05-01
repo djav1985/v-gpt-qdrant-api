@@ -14,6 +14,7 @@ services:
       QDRANT_API_KEY:
       #MEMORIES_API_KEY:
       BASE_URL: http://memories-api
+      UVICORN_WORKERS: 3
     volumes:
       - embedding-model:/tmp/fastembed_cache
 

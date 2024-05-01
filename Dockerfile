@@ -20,5 +20,8 @@ RUN pip install --no-cache-dir -r /app/requirements.txt
 # Expose port 80 to the outside world
 EXPOSE 80
 
-# Command to run the app using Gunicorn with Uvicorn workers
-CMD ["gunicorn", "main:app", "--worker-class", "uvicorn.workers.UvicornWorker", "--workers", "5", "--bind", "0.0.0.0:80", "--preload"]
+# Set an environment variable for workers with a default value
+ENV UVICORN_WORKERS=3
+
+# Command to run the app using Uvicorn
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "80", "--workers", "${UVICORN_WORKERS}"]
