@@ -7,7 +7,7 @@ services:
     depends_on:
       - memories-db
     ports:
-      - "8060:80"
+      - "8060:8060"
     environment:
       QDRANT_HOST: http://memories-db:6333
       QDRANT_API_KEY:
