@@ -293,20 +293,3 @@ async def embedding_request(params: EmbeddingParams, api_key: str = Depends(get_
         print(f"An error occurred: {e}")
         # Provide more detailed error messaging
         raise HTTPException(status_code=500, detail=f"Error processing request: {str(e)}")  # Raise an exception if there's an error in processing the request
-
-# This is the root endpoint that serves the main page of your web application
-@app.get("/", include_in_schema=False)
-async def root():
-    # Returns the index.html file found in the specified directory
-    return FileResponse("/app/public/index.html")
-
-# This is the v1 endpoint that serves the main page of your web application
-# It could be used for versioning of the API
-@app.get("/v1", include_in_schema=False)
-async def v1():
-    # Returns the index.html file found in the specified directory
-    return FileResponse("/app/public/index.html")
-
-# Mounting static files
-# This makes all the files in the /app/public directory accessible under the /static path
-app.mount("/static", StaticFiles(directory="/app/public"), name="static")
