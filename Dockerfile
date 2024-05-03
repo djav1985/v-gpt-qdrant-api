@@ -23,9 +23,8 @@ EXPOSE 8060
 # Define environment variable
 ENV WORKERS=1
 ENV MAX_REQUESTS=128
-ENV MAX_REQUESTS_JITTER=16
 ENV LIMIT_CONCURRENCY=5
-ENV LIMIT_CONCURRENCY_JITTER=3
+ENV BACKLOG=64
 
 # Set the command to run your FastAPI application with Uvicorn and environment variables
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers $WORKERS --limit-max-requests $MAX_REQUESTS --max-requests-jitter $MAX_REQUESTS_JITTER --limit-concurrency $LIMIT_CONCURRENCY --limit-concurrency-jitter $LIMIT_CONCURRENCY_JITTER"]
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers $WORKERS --limit-max-requests $MAX_REQUESTS --limit-concurrency $LIMIT_CONCURRENCY --backlog $BACKLOG"]

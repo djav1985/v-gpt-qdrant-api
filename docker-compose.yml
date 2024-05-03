@@ -15,9 +15,8 @@ services:
       BASE_URL: http://memories-api
       WORKERS: 1
       MAX_REQUESTS: 128
-      MAX_REQUESTS_JITTER: 16
       LIMIT_CONCURRENCY: 5
-      LIMIT_CONCURRENCY_JITTER: 3
+      BACKLOG: 64
     volumes:
       - embedding-model:/tmp/fastembed_cache
 
