@@ -47,7 +47,7 @@ async def delayed_response(background_task: BackgroundTasks):
     # Use the semaphore to control the flow
     async with semaphore:
         # Get the current count of connections waiting in the queue
-        waiting_connections = semaphore._value - semaphore._semaphore._value
+        waiting_connections = semaphore._value
         # Add your background task to introduce a delay
         print(f"Connection in query of: {waiting_connections}")
 

@@ -22,7 +22,7 @@ EXPOSE 8060
 
 # Define environment variable
 ENV WORKERS=2
-ENV MAX_REQUESTS=128
+ENV MAX_REQUESTS=32
 ENV LIMIT_CONCURRENCY=32
 
 # Set the command to run your FastAPI application with Uvicorn and environment variables
