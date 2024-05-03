@@ -19,21 +19,12 @@ from qdrant_client import QdrantClient, models
 from qdrant_client.models import Distance, VectorParams, Filter, FieldCondition
 from fastembed import TextEmbedding
 
-# Initialize clients for database and AI
 # QdrantClient for database interaction
-db_client = QdrantClient(url=os.getenv("QDRANT_HOST"), api_key=os.getenv("QDRANT_API_KEY"))
+db_client = QdrantClient.AsyncQdrantClient(url=os.getenv("QDRANT_HOST"), api_key=os.getenv("QDRANT_API_KEY"))
 # TextEmbedding for AI operations
 embeddings_model = TextEmbedding("nomic-ai/nomic-embed-text-v1.5")
-
 # Setup the bearer token authentication scheme
 bearer_scheme = HTTPBearer(auto_error=False)
-
-# Function to get API key
-# This function checks if the provided API key is valid or not
-async def get_api_key(credentials: HTTPAuthorizationCredentials = Security(bearer_scheme)):
-    if os.getenv("MEMORIES_API_KEY") and (not credentials or credentials.credentials != os.getenv("MEMORIES_API_KEY")):
-        raise HTTPException(status_code=403, detail="Invalid or missing API key")
-    return credentials.credentials if credentials else None
 
 # FastAPI application instance
 app = FastAPI(
@@ -43,6 +34,12 @@ app = FastAPI(
     servers=[{"url": os.getenv("BASE_URL"), "description": "Base API server"}]
 )
 
+# This function checks if the provided API key is valid or not
+async def get_api_key(credentials: HTTPAuthorizationCredentials = Security(bearer_scheme)):
+    if os.getenv("MEMORIES_API_KEY") and (not credentials or credentials.credentials != os.getenv("MEMORIES_API_KEY")):
+        raise HTTPException(status_code=403, detail="Invalid or missing API key")
+    return credentials.credentials if credentials else None
+    
 class LoggingSemaphore(asyncio.Semaphore):
     def __init__(self, value: int):
         super().__init__(value)
@@ -140,7 +137,7 @@ async def save_memory(params: MemoryParams, api_key: str = Depends(get_api_key))
         unique_id = str(uuid.uuid4())
 
         # Upsert the memory into the Qdrant collection
-        db_client.upsert(
+        await db_client.upsert(
             collection_name=params.collection_name,
             points=[
                 {
@@ -216,7 +213,7 @@ async def recall_memory(params: SearchParams, api_key: str = Depends(get_api_key
         )
 
         # Perform the search with the specified filters
-        hits = db_client.search(
+        hits = await db_client.search(
             collection_name=params.collection_name,
             query_vector=vector_list,
             query_filter=search_filter,
@@ -255,7 +252,7 @@ async def recall_memory(params: SearchParams, api_key: str = Depends(get_api_key
 async def create_collection(params: CreateCollectionParams, api_key: str = Depends(get_api_key)):
     try:
         # Recreate the collection with specified parameters
-        db_client.create_collection(
+        await db_client.create_collection(
             collection_name=params.collection_name,
             vectors_config=VectorParams(size=768, distance=Distance.COSINE),  # Configure vector parameters
             quantization_config=models.ScalarQuantization(  # Configure scalar quantization
@@ -268,19 +265,19 @@ async def create_collection(params: CreateCollectionParams, api_key: str = Depen
         )
 
         # Create payload index for sentiment
-        db_client.create_payload_index(
+        await db_client.create_payload_index(
             collection_name=params.collection_name,
             field_name="sentiment", field_schema="keyword"  # Index for sentiment
         )
 
         # Create payload index for entities
-        db_client.create_payload_index(
+        await db_client.create_payload_index(
             collection_name=params.collection_name,
             field_name="entities", field_schema="keyword"  # Index for entities
         )
 
         # Create payload index for tags
-        db_client.create_payload_index(
+        await db_client.create_payload_index(
             collection_name=params.collection_name,
             field_name="tags", field_schema="keyword"  # Index for tags
         )
