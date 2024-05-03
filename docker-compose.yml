@@ -13,7 +13,11 @@ services:
       QDRANT_API_KEY:
       #MEMORIES_API_KEY:
       BASE_URL: http://memories-api
-      UVICORN_WORKERS: 2
+      WORKERS: 1
+      MAX_REQUESTS: 128
+      MAX_REQUESTS_JITTER: 16
+      LIMIT_CONCURRENCY: 5
+      LIMIT_CONCURRENCY_JITTER: 3
     volumes:
       - embedding-model:/tmp/fastembed_cache
 

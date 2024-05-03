@@ -21,7 +21,11 @@ RUN pip install --no-cache-dir -r /app/requirements.txt
 EXPOSE 8060
 
 # Define environment variable
-ENV WORKERS 2
+ENV WORKERS=1
+ENV MAX_REQUESTS=128
+ENV MAX_REQUESTS_JITTER=16
+ENV LIMIT_CONCURRENCY=5
+ENV LIMIT_CONCURRENCY_JITTER=3
 
-# Run app.py when the container launches with preload enabled
-CMD ["sh", "-c", "gunicorn main:app --worker-class uvicorn.workers.UvicornWorker --workers ${WORKERS} --bind 0.0.0.0:8060 --preload"]
+# Set the command to run your Gunicorn server with Uvicorn workers
+CMD ["sh", "-c", "gunicorn -k uvicorn.workers.UvicornWorker app.main:app -b 0.0.0.0:8000 --workers ${WORKERS} --max-requests ${MAX_REQUESTS} --max-requests-jitter ${MAX_REQUESTS_JITTER} --limit-concurrency ${LIMIT_CONCURRENCY} --limit-concurrency-jitter ${LIMIT_CONCURRENCY_JITTER}"]

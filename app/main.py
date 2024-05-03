@@ -5,7 +5,7 @@ import numpy as np
 from datetime import datetime
 from typing import List, Optional, Dict, Union
 
-from fastapi import FastAPI, HTTPException, Security, Depends, Request
+from fastapi import FastAPI, HTTPException, Security, Depends, Request, BackgroundTasks
 from fastapi.staticfiles import StaticFiles
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, Field, validator
@@ -15,15 +15,9 @@ from qdrant_client import QdrantClient, models
 from qdrant_client.models import Distance, VectorParams, Filter, FieldCondition
 from fastembed import TextEmbedding
 
-# Load environment variables for model, host and API keys
-qdrant_host = os.getenv("QDRANT_HOST")
-qdrant_api_key = os.getenv("QDRANT_API_KEY")
-memories_api_key = os.getenv("MEMORIES_API_KEY")
-base_url = os.getenv("BASE_URL")
-
 # Initialize clients for database and AI
 # QdrantClient for database interaction
-db_client = QdrantClient(url=qdrant_host, api_key=qdrant_api_key)
+db_client = QdrantClient(url=os.getenv("QDRANT_HOST"), api_key=os.getenv("QDRANT_API_KEY"))
 # TextEmbedding for AI operations
 embeddings_model = TextEmbedding("nomic-ai/nomic-embed-text-v1.5")
 
@@ -33,7 +27,7 @@ bearer_scheme = HTTPBearer(auto_error=False)
 # Function to get API key
 # This function checks if the provided API key is valid or not
 async def get_api_key(credentials: HTTPAuthorizationCredentials = Security(bearer_scheme)):
-    if memories_api_key and (not credentials or credentials.credentials != memories_api_key):
+    if os.getenv("MEMORIES_API_KEY") and (not credentials or credentials.credentials != os.getenv("MEMORIES_API_KEY")):
         raise HTTPException(status_code=403, detail="Invalid or missing API key")
     return credentials.credentials if credentials else None
 
@@ -42,8 +36,17 @@ app = FastAPI(
     title="AI Memory API",
     version="0.1.0",
     description="A FastAPI application to remember and recall things",
-    servers=[{"url": base_url, "description": "Base API server"}]
+    servers=[{"url": os.getenv("BASE_URL"), "description": "Base API server"}]
 )
+
+async def delayed_response(background_task: BackgroundTasks):
+    # Add your background task to introduce a delay
+    async def delayed_task():
+        await asyncio.sleep(5)  # Delay response by 5 seconds
+        # Add your actual response logic here
+        print("Delayed response logic here")
+
+    background_task.add_task(delayed_task)
 
 # Class for memory parameters
 class MemoryParams(BaseModel):
@@ -88,7 +91,8 @@ class EmbeddingParams(BaseModel):
 
 # Endpoint for saving memory
 @app.post("/save_memory", operation_id="save_memory")
-async def save_memory(params: MemoryParams, api_key: str = Depends(get_api_key)):
+async def save_memory(params: MemoryParams, background_tasks: BackgroundTasks, api_key: str = Depends(get_api_key)):
+    await delayed_response(background_tasks)
     try:
         # Generate an embedding from the memory text
         embeddings_generator = embeddings_model.embed(params.memory)
@@ -133,7 +137,8 @@ async def save_memory(params: MemoryParams, api_key: str = Depends(get_api_key))
 
 # Endpoint for recalling memory
 @app.post("/recall_memory", operation_id="recall_memory")
-async def recall_memory(params: SearchParams, api_key: str = Depends(get_api_key)):
+async def recall_memory(params: SearchParams, background_tasks: BackgroundTasks, api_key: str = Depends(get_api_key)):
+    await delayed_response(background_tasks)
     try:
         # Generate an embedding from the query text
         embeddings_generator = embeddings_model.embed(params.query)
@@ -217,7 +222,8 @@ async def recall_memory(params: SearchParams, api_key: str = Depends(get_api_key
 
 # This is the endpoint that handles requests to create a new collection
 @app.post("/collections", operation_id="create_collection")
-async def create_collection(params: CreateCollectionParams, api_key: str = Depends(get_api_key)):
+async def create_collection(params: CreateCollectionParams, background_tasks: BackgroundTasks, api_key: str = Depends(get_api_key)):
+    await delayed_response(background_tasks)
     try:
         # Recreate the collection with specified parameters
         db_client.create_collection(
@@ -258,7 +264,8 @@ async def create_collection(params: CreateCollectionParams, api_key: str = Depen
 
 # This is the endpoint that handles embedding requests
 @app.post("/v1/embeddings", operation_id="create_embedding")
-async def embedding_request(params: EmbeddingParams, api_key: str = Depends(get_api_key)):
+async def embedding_request(params: EmbeddingParams, background_tasks: BackgroundTasks, api_key: str = Depends(get_api_key)):
+    await delayed_response(background_tasks)
     try:
         # Generate an embedding from the memory text
         embeddings_generator = embeddings_model.embed(params.input)
@@ -293,6 +300,7 @@ async def embedding_request(params: EmbeddingParams, api_key: str = Depends(get_
         print(f"An error occurred: {e}")
         # Provide more detailed error messaging
         raise HTTPException(status_code=500, detail=f"Error processing request: {str(e)}")  # Raise an exception if there's an error in processing the request
+
 # This is the root endpoint that serves the main page of your web application
 @app.get("/", include_in_schema=False)
 async def root():
