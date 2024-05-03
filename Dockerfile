@@ -28,4 +28,4 @@ ENV LIMIT_CONCURRENCY=5
 ENV LIMIT_CONCURRENCY_JITTER=3
 
 # Set the command to run your FastAPI application with Uvicorn and environment variables
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers $WORKERS --max-requests $MAX_REQUESTS --max-requests-jitter $MAX_REQUESTS_JITTER --limit-concurrency $LIMIT_CONCURRENCY --limit-concurrency-jitter $LIMIT_CONCURRENCY_JITTER"]
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers $WORKERS --limit-max-requests $MAX_REQUESTS --max-requests-jitter $MAX_REQUESTS_JITTER --limit-concurrency $LIMIT_CONCURRENCY --limit-concurrency-jitter $LIMIT_CONCURRENCY_JITTER"]
