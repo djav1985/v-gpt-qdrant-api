@@ -22,6 +22,5 @@ EXPOSE 8060
 
 # Define environment variable
 ENV WORKERS=1
-ENV MAX_CONNECTIONS=16
 
-CMD ["sh", "-c", "gunicorn main:app --worker-class uvicorn.workers.UvicornWorker --workers ${WORKERS} --worker-connections ${MAX_CONNECTIONS}  --bind 0.0.0.0:8060 --preload"]
+CMD ["sh", "-c", "gunicorn main:app --worker-class uvicorn.workers.UvicornWorker --workers ${WORKERS} --bind 0.0.0.0:8060 --preload"]

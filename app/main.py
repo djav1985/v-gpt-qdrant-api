@@ -47,7 +47,6 @@ async def process_task():
     async with semaphore:
         if pending_tasks:
             task = pending_tasks.pop(0)
-            print("Connection processed")
             await task
 
 async def delayed_response():
@@ -57,7 +56,8 @@ async def delayed_response():
         else:
             pending_tasks.append(process_task())
             print("Connection in query of: ", len(pending_tasks))
-            await process_task()
+            async with semaphore:
+                await process_task()
 
 # Class for memory parameters
 class MemoryParams(BaseModel):
