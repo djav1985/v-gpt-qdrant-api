@@ -97,7 +97,7 @@ class EmbeddingParams(BaseModel):
 @app.post("/save_memory", operation_id="save_memory")
 async def save_memory(params: MemoryParams, background_tasks: BackgroundTasks, api_key: str = Depends(get_api_key)):
         async with semaphore:
-            await delayed_response(background_tasks, request)
+            await delayed_response(background_tasks)
             try:
                 # Generate an embedding from the memory text
                 embeddings_generator = embeddings_model.embed(params.memory)
@@ -144,7 +144,7 @@ async def save_memory(params: MemoryParams, background_tasks: BackgroundTasks, a
 @app.post("/recall_memory", operation_id="recall_memory")
 async def recall_memory(params: SearchParams, background_tasks: BackgroundTasks, api_key: str = Depends(get_api_key)):
         async with semaphore:
-            await delayed_response(background_tasks, request)
+            await delayed_response(background_tasks)
             try:
                 # Generate an embedding from the query text
                 embeddings_generator = embeddings_model.embed(params.query)
@@ -230,7 +230,7 @@ async def recall_memory(params: SearchParams, background_tasks: BackgroundTasks,
 @app.post("/collections", operation_id="create_collection")
 async def create_collection(params: CreateCollectionParams, background_tasks: BackgroundTasks, api_key: str = Depends(get_api_key)):
         async with semaphore:
-            await delayed_response(background_tasks, request)
+            await delayed_response(background_tasks)
             try:
                 # Recreate the collection with specified parameters
                 db_client.create_collection(
@@ -273,7 +273,7 @@ async def create_collection(params: CreateCollectionParams, background_tasks: Ba
 @app.post("/v1/embeddings", operation_id="create_embedding")
 async def embedding_request(params: EmbeddingParams, background_tasks: BackgroundTasks, api_key: str = Depends(get_api_key)):
         async with semaphore:
-            await delayed_response(background_tasks, request)
+            await delayed_response(background_tasks)
             try:
                 # Generate an embedding from the memory text
                 embeddings_generator = embeddings_model.embed(params.input)
