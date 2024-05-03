@@ -72,9 +72,13 @@ semaphore = LoggingSemaphore(8)
 
 async def limit_concurrency(request: Request, call_next):
     print(f"Number of currently active tasks: {semaphore.get_active_tasks()}, Number of pending tasks: {semaphore.get_waiting_tasks()}")
-    async with semaphore:
+    await semaphore.acquire()
+    try:
         response = await call_next(request)
-    return response
+        return response
+    finally:
+        semaphore.release()
+        print(f"Task complete. Active tasks now: {semaphore.get_active_tasks()}, Waiting tasks now: {semaphore.get_waiting_tasks()}")
 
 app.middleware('http')(limit_concurrency)
 
