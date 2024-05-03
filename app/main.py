@@ -41,7 +41,7 @@ app = FastAPI(
 )
 
 # Define a semaphore to limit concurrent connections
-semaphore = asyncio.Semaphore(5)  # Set the limit to 5 concurrent connections
+semaphore = asyncio.Semaphore(8)  # Set the limit to 5 concurrent connections
 
 async def delayed_response(background_task: BackgroundTasks):
     # Use the semaphore to control the flow
@@ -52,7 +52,7 @@ async def delayed_response(background_task: BackgroundTasks):
         print(f"Connection in query of: {waiting_connections}")
 
         async def delayed_task():
-            await asyncio.sleep(10)  # Delay response by 10 seconds
+            await asyncio.sleep(3)  # Delay response by 10 seconds
             print("Connection processed")
 
         background_task.add_task(delayed_task)
