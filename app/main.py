@@ -46,8 +46,10 @@ semaphore = asyncio.Semaphore(5)  # Set the limit to 5 concurrent connections
 async def delayed_response(background_task: BackgroundTasks):
     # Use the semaphore to control the flow
     async with semaphore:
+        # Get the current count of connections waiting in the queue
+        waiting_connections = semaphore._value - semaphore._semaphore._value
         # Add your background task to introduce a delay
-        print("Connection in query")
+        print(f"Connection in query of: {waiting_connections}")
 
         async def delayed_task():
             await asyncio.sleep(10)  # Delay response by 10 seconds

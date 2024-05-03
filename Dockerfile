@@ -21,7 +21,7 @@ RUN pip install --no-cache-dir -r /app/requirements.txt
 EXPOSE 8060
 
 # Define environment variable
-ENV WORKERS=1
+ENV WORKERS=2
 ENV MAX_REQUESTS=128
 ENV LIMIT_CONCURRENCY=32
 
