@@ -54,10 +54,14 @@ async def delayed_response():
         if semaphore._value < int(os.getenv("QUERY", "8")) and not pending_tasks:
             asyncio.create_task(process_task())
         else:
-            pending_tasks.append(process_task())
+            # Create a new task for processing the current request
+            current_task = asyncio.create_task(process_task())
+            # Append the current task to the pending tasks list
+            pending_tasks.append(current_task)
             print("Connection in query of: ", len(pending_tasks))
-            async with semaphore:
-                await process_task()
+            # Wait for the current task to complete before continuing
+            await current_task
+
 
 # Class for memory parameters
 class MemoryParams(BaseModel):
