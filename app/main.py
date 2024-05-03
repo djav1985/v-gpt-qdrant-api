@@ -48,13 +48,12 @@ class LoggingSemaphore(asyncio.Semaphore):
 
     async def acquire(self):
         self._waiting_tasks += 1
-        await super().acquire()  # This call will block until the semaphore is acquired
+        await super().acquire()
         self._waiting_tasks -= 1
         self._active_tasks += 1
 
     def release(self):
-        if self._active_tasks > 0:  # Ensure there are active tasks to decrement
-            self._active_tasks -= 1
+        self._active_tasks -= 1
         super().release()
 
     def get_waiting_tasks(self):
