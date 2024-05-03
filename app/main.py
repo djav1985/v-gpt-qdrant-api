@@ -47,21 +47,33 @@ class LoggingSemaphore(asyncio.Semaphore):
     def __init__(self, value: int):
         super().__init__(value)
         self._waiting_tasks = 0
+        self._active_tasks = 0
 
     async def acquire(self):
         self._waiting_tasks += 1
         try:
             await super().acquire()
-        finally:
             self._waiting_tasks -= 1
+            self._active_tasks += 1
+        finally:
+            if self._value == 0:
+                self._active_tasks -= 1
+
+    async def release(self):
+        super().release()
+        self._active_tasks -= 1
 
     def get_waiting_tasks(self):
         return self._waiting_tasks
 
-# Semaphore for controlling access to endpoints
-semaphore = Semaphore(8)
+    def get_active_tasks(self):
+        return self._active_tasks
+
+# Create an instance of the semaphore with logging
+semaphore = LoggingSemaphore(8)
 
 async def limit_concurrency(request: Request, call_next):
+    print(f"Number of currently active tasks: {semaphore.get_active_tasks()}, Number of pending tasks: {semaphore.get_waiting_tasks()}")
     async with semaphore:
         response = await call_next(request)
     return response
