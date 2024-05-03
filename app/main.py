@@ -50,7 +50,7 @@ async def process_task():
             await task
 
 async def delayed_response():
-    if len(pending_tasks) < int(os.getenv("QUERY", "8")):
+    if semaphore._value < int(os.getenv("QUERY", "8")):
         asyncio.create_task(process_task())
     else:
         print("Connection in query of: ", len(pending_tasks))
