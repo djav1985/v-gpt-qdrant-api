@@ -25,5 +25,6 @@ ENV WORKERS=2
 ENV MAX_CONNECTIONS=16
 ENV MAX_REQUESTS=32
 ENV MAX_REQUESTS_JITTER=8
+ENV PYTHONUNBUFFERED=true
 
 CMD ["sh", "-c", "gunicorn main:app --worker-class uvicorn.workers.UvicornWorker --workers ${WORKERS} --worker-connections ${MAX_CONNECTIONS} --max-requests $MAX_REQUESTS --max-requests-jitter $MAX_REQUESTS_JITTER --bind 0.0.0.0:8060 --preload"]
