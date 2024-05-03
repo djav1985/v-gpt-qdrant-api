@@ -41,16 +41,19 @@ app = FastAPI(
 )
 
 # Define a semaphore to limit concurrent connections
-semaphore = asyncio.Semaphore(5)  # Set the limit to 10 concurrent connections
+semaphore = asyncio.Semaphore(5)  # Set the limit to 5 concurrent connections
 
 async def delayed_response(background_task: BackgroundTasks):
-    # Add your background task to introduce a delay
-    async def delayed_task():
-        await asyncio.sleep(10)  # Delay response by 5 seconds
-        # Add your actual response logic here
+    # Use the semaphore to control the flow
+    async with semaphore:
+        # Add your background task to introduce a delay
         print("Connection in query")
 
-    background_task.add_task(delayed_task)
+        async def delayed_task():
+            await asyncio.sleep(10)  # Delay response by 10 seconds
+            print("Connection processed")
+
+        background_task.add_task(delayed_task)
 
 # Class for memory parameters
 class MemoryParams(BaseModel):
@@ -96,218 +99,214 @@ class EmbeddingParams(BaseModel):
 # Endpoint for saving memory
 @app.post("/save_memory", operation_id="save_memory")
 async def save_memory(params: MemoryParams, background_tasks: BackgroundTasks, api_key: str = Depends(get_api_key)):
-        async with semaphore:
-            await delayed_response(background_tasks)
-            try:
-                # Generate an embedding from the memory text
-                embeddings_generator = embeddings_model.embed(params.memory)
+    await delayed_response(background_tasks)
+    try:
+        # Generate an embedding from the memory text
+        embeddings_generator = embeddings_model.embed(params.memory)
 
-                # Extract the single vector from the generator
-                vector = next(embeddings_generator)  # This fetches the first item from the generator
+        # Extract the single vector from the generator
+        vector = next(embeddings_generator)  # This fetches the first item from the generator
 
-                if isinstance(vector, np.ndarray):
-                    vector_list = vector.tolist()  # Convert numpy array to list
-                else:
-                    raise ValueError("The embedding is not in the expected format (np.ndarray)")
+        if isinstance(vector, np.ndarray):
+            vector_list = vector.tolist()  # Convert numpy array to list
+        else:
+            raise ValueError("The embedding is not in the expected format (np.ndarray)")
 
-                timestamp = datetime.utcnow().isoformat()
-                unique_id = str(uuid.uuid4())
+        timestamp = datetime.utcnow().isoformat()
+        unique_id = str(uuid.uuid4())
 
-                # Upsert the memory into the Qdrant collection
-                db_client.upsert(
-                    collection_name=params.collection_name,
-                    points=[
-                        {
-                            "id": unique_id,
-                            "payload": {
-                            "memory": params.memory,
-                            "timestamp": timestamp,
-                            "sentiment": params.sentiment,
-                            "entities": params.entities,
-                            "tags": params.tags,
-                            },
-                        "vector": vector_list,
-                        }
-                    ]
-                )
+        # Upsert the memory into the Qdrant collection
+        db_client.upsert(
+            collection_name=params.collection_name,
+            points=[
+                {
+                    "id": unique_id,
+                    "payload": {
+                    "memory": params.memory,
+                    "timestamp": timestamp,
+                    "sentiment": params.sentiment,
+                    "entities": params.entities,
+                    "tags": params.tags,
+                    },
+                "vector": vector_list,
+                }
+            ]
+        )
 
-                print(f"Saved Memory: {params.memory}")
-                return {"message": "Memory saved successfully"}
+        print(f"Saved Memory: {params.memory}")
+        return {"message": "Memory saved successfully"}
 
-            except Exception as e:
-                print(f"An error occurred: {e}")
-                # Provide more detailed error messaging
-                raise HTTPException(status_code=500, detail=f"Error processing request: {str(e)}")
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        # Provide more detailed error messaging
+        raise HTTPException(status_code=500, detail=f"Error processing request: {str(e)}")
 
 
 # Endpoint for recalling memory
 @app.post("/recall_memory", operation_id="recall_memory")
 async def recall_memory(params: SearchParams, background_tasks: BackgroundTasks, api_key: str = Depends(get_api_key)):
-        async with semaphore:
-            await delayed_response(background_tasks)
-            try:
-                # Generate an embedding from the query text
-                embeddings_generator = embeddings_model.embed(params.query)
+    await delayed_response(background_tasks)
+    try:
+        # Generate an embedding from the query text
+        embeddings_generator = embeddings_model.embed(params.query)
 
-                # Extract the single vector from the generator
-                vector = next(embeddings_generator)  # This fetches the first item from the generator
+        # Extract the single vector from the generator
+        vector = next(embeddings_generator)  # This fetches the first item from the generator
 
-                if isinstance(vector, np.ndarray):
-                    vector_list = vector.tolist()  # Convert numpy array to list
-                else:
-                    raise ValueError("The embedding is not in the expected format (np.ndarray)")
+        if isinstance(vector, np.ndarray):
+            vector_list = vector.tolist()  # Convert numpy array to list
+        else:
+            raise ValueError("The embedding is not in the expected format (np.ndarray)")
 
-                filter_conditions = []
+        filter_conditions = []
 
-                # Create a filter condition for entity if it exists in params
-                if params.entity:
-                    filter_conditions.append(
-                        models.FieldCondition(
-                            key="entities",
-                            match=models.MatchValue(value=params.entity)  # Direct value match
-                        )
-                    )
-
-                # Create a filter condition for sentiment if it exists in params
-                if params.sentiment:
-                    filter_conditions.append(
-                        models.FieldCondition(
-                            key="sentiment",
-                            match=models.MatchAny(any=[params.sentiment])  # Using list for MatchAny
-                        )
-                    )
-
-                # Create a filter condition for tag if it exists in params
-                if params.tag:
-                    filter_conditions.append(
-                        models.FieldCondition(
-                            key="tags",
-                            match=models.MatchAny(any=[params.tag])  # Using list for MatchAny
-                        )
-                    )
-
-                # Define the search filter with the specified conditions
-                search_filter = models.Filter(
-                    must=filter_conditions
+        # Create a filter condition for entity if it exists in params
+        if params.entity:
+            filter_conditions.append(
+                models.FieldCondition(
+                    key="entities",
+                    match=models.MatchValue(value=params.entity)  # Direct value match
                 )
+            )
 
-                # Perform the search with the specified filters
-                hits = db_client.search(
-                    collection_name=params.collection_name,
-                    query_vector=vector_list,
-                    query_filter=search_filter,
-                    with_payload=True,
-                    limit=params.top_k,
-                    search_params=models.SearchParams(
-                        quantization=models.QuantizationSearchParams(
-                            ignore=False,
-                            rescore=True,
-                            oversampling=2.0,
-                        )
-                    ),
+        # Create a filter condition for sentiment if it exists in params
+        if params.sentiment:
+            filter_conditions.append(
+                models.FieldCondition(
+                    key="sentiment",
+                    match=models.MatchAny(any=[params.sentiment])  # Using list for MatchAny
                 )
+            )
 
-                # Format the results
-                results = [{
-                    "id": hit.id,
-                    "memory": hit.payload["memory"],
-                    "timestamp": hit.payload["timestamp"],
-                    "sentiment": hit.payload["sentiment"],
-                    "entities": hit.payload["entities"],
-                    "tags": hit.payload["tags"],
-                    "score": hit.score,
-                } for hit in hits]
+        # Create a filter condition for tag if it exists in params
+        if params.tag:
+            filter_conditions.append(
+                models.FieldCondition(
+                    key="tags",
+                    match=models.MatchAny(any=[params.tag])  # Using list for MatchAny
+                )
+            )
 
-                print("Recalled Memories:", results)
-                return {"results": results}
+        # Define the search filter with the specified conditions
+        search_filter = models.Filter(
+            must=filter_conditions
+        )
 
-            except Exception as e:
-                print(f"An error occurred: {e}")
-                raise HTTPException(status_code=500, detail=f"Error processing request: {str(e)}")
+        # Perform the search with the specified filters
+        hits = db_client.search(
+            collection_name=params.collection_name,
+            query_vector=vector_list,
+            query_filter=search_filter,
+            with_payload=True,
+            limit=params.top_k,
+            search_params=models.SearchParams(
+                quantization=models.QuantizationSearchParams(
+                    ignore=False,
+                    rescore=True,
+                    oversampling=2.0,
+                )
+            ),
+        )
+
+        # Format the results
+        results = [{
+            "id": hit.id,
+            "memory": hit.payload["memory"],
+            "timestamp": hit.payload["timestamp"],
+            "sentiment": hit.payload["sentiment"],
+            "entities": hit.payload["entities"],
+            "tags": hit.payload["tags"],
+            "score": hit.score,
+        } for hit in hits]
+
+        print("Recalled Memories:", results)
+        return {"results": results}
+
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        raise HTTPException(status_code=500, detail=f"Error processing request: {str(e)}")
 
 
 # This is the endpoint that handles requests to create a new collection
 @app.post("/collections", operation_id="create_collection")
 async def create_collection(params: CreateCollectionParams, background_tasks: BackgroundTasks, api_key: str = Depends(get_api_key)):
-        async with semaphore:
-            await delayed_response(background_tasks)
-            try:
-                # Recreate the collection with specified parameters
-                db_client.create_collection(
-                    collection_name=params.collection_name,
-                    vectors_config=VectorParams(size=768, distance=Distance.COSINE),  # Configure vector parameters
-                    quantization_config=models.ScalarQuantization(  # Configure scalar quantization
-                        scalar=models.ScalarQuantizationConfig(
-                            type=models.ScalarType.INT8,
-                            quantile=0.99,
-                            always_ram=False,
-                        ),
-                    ),
-                )
+    await delayed_response(background_tasks)
+    try:
+        # Recreate the collection with specified parameters
+        db_client.create_collection(
+            collection_name=params.collection_name,
+            vectors_config=VectorParams(size=768, distance=Distance.COSINE),  # Configure vector parameters
+            quantization_config=models.ScalarQuantization(  # Configure scalar quantization
+                scalar=models.ScalarQuantizationConfig(
+                    type=models.ScalarType.INT8,
+                    quantile=0.99,
+                    always_ram=False,
+                ),
+            ),
+        )
 
-                # Create payload index for sentiment
-                db_client.create_payload_index(
-                    collection_name=params.collection_name,
-                    field_name="sentiment", field_schema="keyword"  # Index for sentiment
-                )
+        # Create payload index for sentiment
+        db_client.create_payload_index(
+            collection_name=params.collection_name,
+            field_name="sentiment", field_schema="keyword"  # Index for sentiment
+        )
 
-                # Create payload index for entities
-                db_client.create_payload_index(
-                    collection_name=params.collection_name,
-                    field_name="entities", field_schema="keyword"  # Index for entities
-                )
+        # Create payload index for entities
+        db_client.create_payload_index(
+            collection_name=params.collection_name,
+            field_name="entities", field_schema="keyword"  # Index for entities
+        )
 
-                # Create payload index for tags
-                db_client.create_payload_index(
-                    collection_name=params.collection_name,
-                    field_name="tags", field_schema="keyword"  # Index for tags
-                )
+        # Create payload index for tags
+        db_client.create_payload_index(
+            collection_name=params.collection_name,
+            field_name="tags", field_schema="keyword"  # Index for tags
+        )
 
-                print(f"Collection {params.collection_name} created successfully")  # Log the successful creation of the collection
-                return {"message": f"Collection '{params.collection_name}' created successfully"}  # Return a success message
-            except Exception as e:
-                print(f"An error occurred: {e}")
-                raise HTTPException(status_code=500, detail=f"Error creating collection: {str(e)}")  # Raise an exception if there's an error in creating the collection
+        print(f"Collection {params.collection_name} created successfully")  # Log the successful creation of the collection
+        return {"message": f"Collection '{params.collection_name}' created successfully"}  # Return a success message
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        raise HTTPException(status_code=500, detail=f"Error creating collection: {str(e)}")  # Raise an exception if there's an error in creating the collection
 
 # This is the endpoint that handles embedding requests
 @app.post("/v1/embeddings", operation_id="create_embedding")
 async def embedding_request(params: EmbeddingParams, background_tasks: BackgroundTasks, api_key: str = Depends(get_api_key)):
-        async with semaphore:
-            await delayed_response(background_tasks)
-            try:
-                # Generate an embedding from the memory text
-                embeddings_generator = embeddings_model.embed(params.input)
+    await delayed_response(background_tasks)
+    try:
+        # Generate an embedding from the memory text
+        embeddings_generator = embeddings_model.embed(params.input)
 
-                # Extract the single vector from the generator
-                vector = next(embeddings_generator)  # This fetches the first item from the generator
+        # Extract the single vector from the generator
+        vector = next(embeddings_generator)  # This fetches the first item from the generator
 
-                if isinstance(vector, np.ndarray):
-                    vector_list = vector.tolist()  # Convert numpy array to list
-                else:
-                    raise ValueError("The embedding is not in the expected format (np.ndarray)")  # Exception handling for unexpected formats
+        if isinstance(vector, np.ndarray):
+            vector_list = vector.tolist()  # Convert numpy array to list
+        else:
+            raise ValueError("The embedding is not in the expected format (np.ndarray)")  # Exception handling for unexpected formats
 
-                # Construct the response data with usage details
-                response_data = {
-                    "object": "list",
-                    "data": [{
-                        "object": "embedding",
-                        "embedding": vector_list,
-                        "index": 0
-                    }],
-                    "model": params.model,
-                    "usage": {
-                        "prompt_tokens": len(params.input.split()),  # Count of tokens in the input prompt
-                        "total_tokens": len(vector_list)  # Count of tokens in the generated vector
-                    }
-                }
+        # Construct the response data with usage details
+        response_data = {
+            "object": "list",
+            "data": [{
+                "object": "embedding",
+                "embedding": vector_list,
+                "index": 0
+            }],
+            "model": params.model,
+            "usage": {
+                "prompt_tokens": len(params.input.split()),  # Count of tokens in the input prompt
+                "total_tokens": len(vector_list)  # Count of tokens in the generated vector
+            }
+        }
 
-                print("Created Embedding Successfully")  # Log the response data
+        print("Created Embedding Successfully")  # Log the response data
 
-                return response_data  # Return the response data
-            except Exception as e:
-                print(f"An error occurred: {e}")
-                # Provide more detailed error messaging
-                raise HTTPException(status_code=500, detail=f"Error processing request: {str(e)}")  # Raise an exception if there's an error in processing the request
+        return response_data  # Return the response data
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        # Provide more detailed error messaging
+        raise HTTPException(status_code=500, detail=f"Error processing request: {str(e)}")  # Raise an exception if there's an error in processing the request
 
 # This is the root endpoint that serves the main page of your web application
 @app.get("/", include_in_schema=False)
