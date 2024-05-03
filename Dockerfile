@@ -21,9 +21,8 @@ RUN pip install --no-cache-dir -r /app/requirements.txt
 EXPOSE 8060
 
 # Define environment variable
-ENV WORKERS=2
-ENV MAX_REQUESTS=32
+ENV WORKERS=1
 ENV LIMIT_CONCURRENCY=32
 
 # Set the command to run your FastAPI application with Uvicorn and environment variables
-CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port 8060 --workers $WORKERS --limit-max-requests $MAX_REQUESTS --limit-concurrency $LIMIT_CONCURRENCY"]
+CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port 8060 --workers $WORKERS --limit-concurrency $LIMIT_CONCURRENCY"]
