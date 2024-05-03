@@ -5,6 +5,7 @@ import asyncio
 import numpy as np
 from datetime import datetime
 from typing import List, Optional, Dict, Union
+from asyncio import Semaphore
 
 from fastapi import FastAPI, HTTPException, Security, Depends, Request, BackgroundTasks
 from fastapi.staticfiles import StaticFiles
@@ -40,22 +41,15 @@ app = FastAPI(
     servers=[{"url": os.getenv("BASE_URL"), "description": "Base API server"}]
 )
 
-semaphore = asyncio.Semaphore(int(os.getenv("QUERY", "8")))
-pending_tasks = []
+# Semaphore for controlling access to endpoints
+semaphore = Semaphore(8)
 
-async def process_task():
+async def limit_concurrency(request: Request, call_next):
     async with semaphore:
-        if pending_tasks:
-            task = pending_tasks.pop(0)
-            await task
+        response = await call_next(request)
+    return response
 
-async def delayed_response():
-    if semaphore._value < int(os.getenv("QUERY", "8")):
-        asyncio.create_task(process_task())
-    else:
-        print("Connection in query of: ", len(pending_tasks))
-        pending_tasks.append(process_task())
-
+app.middleware('http')(limit_concurrency)
 
 # Class for memory parameters
 class MemoryParams(BaseModel):
@@ -101,7 +95,6 @@ class EmbeddingParams(BaseModel):
 # Endpoint for saving memory
 @app.post("/save_memory", operation_id="save_memory")
 async def save_memory(params: MemoryParams, api_key: str = Depends(get_api_key)):
-    await delayed_response()
     try:
         # Generate an embedding from the memory text
         embeddings_generator = embeddings_model.embed(params.memory)
@@ -147,7 +140,6 @@ async def save_memory(params: MemoryParams, api_key: str = Depends(get_api_key))
 # Endpoint for recalling memory
 @app.post("/recall_memory", operation_id="recall_memory")
 async def recall_memory(params: SearchParams, api_key: str = Depends(get_api_key)):
-    await delayed_response()
     try:
         # Generate an embedding from the query text
         embeddings_generator = embeddings_model.embed(params.query)
@@ -232,7 +224,6 @@ async def recall_memory(params: SearchParams, api_key: str = Depends(get_api_key
 # This is the endpoint that handles requests to create a new collection
 @app.post("/collections", operation_id="create_collection")
 async def create_collection(params: CreateCollectionParams, api_key: str = Depends(get_api_key)):
-    await delayed_response()
     try:
         # Recreate the collection with specified parameters
         db_client.create_collection(
@@ -274,7 +265,6 @@ async def create_collection(params: CreateCollectionParams, api_key: str = Depen
 # This is the endpoint that handles embedding requests
 @app.post("/v1/embeddings", operation_id="create_embedding")
 async def embedding_request(params: EmbeddingParams, api_key: str = Depends(get_api_key)):
-    await delayed_response()
     try:
         # Generate an embedding from the memory text
         embeddings_generator = embeddings_model.embed(params.input)
