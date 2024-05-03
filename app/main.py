@@ -69,13 +69,11 @@ semaphore = LoggingSemaphore(int(os.getenv("API_CONCURRENCY")))
 
 # Middleware to limit concurrency and log task status
 async def limit_concurrency(request: Request, call_next):
-    print(f"New Task: Active tasks now: {semaphore.get_active_tasks()}, Number of pending tasks: {semaphore.get_waiting_tasks()}")
     await semaphore.acquire()  # Acquire semaphore before processing the request
     try:
         response = await call_next(request)
         return response
     finally:
-        print(f"Task Complete: Active tasks now: {semaphore.get_active_tasks()}, Number of pending tasks: {semaphore.get_waiting_tasks()}")
         semaphore.release()  # Always release semaphore after processing the request
 
 app.middleware('http')(limit_concurrency)
@@ -125,6 +123,7 @@ class EmbeddingParams(BaseModel):
 @app.post("/save_memory", operation_id="save_memory")
 async def save_memory(params: MemoryParams, api_key: str = Depends(get_api_key)):
     try:
+        print(f"New Task: Active tasks now: {semaphore.get_active_tasks()}, Number of pending tasks: {semaphore.get_waiting_tasks()}")
         # Generate an embedding from the memory text using the AI model
         embeddings_generator = embeddings_model.embed(params.memory)
 
@@ -172,6 +171,7 @@ async def save_memory(params: MemoryParams, api_key: str = Depends(get_api_key))
 @app.post("/recall_memory", operation_id="recall_memory")
 async def recall_memory(params: SearchParams, api_key: str = Depends(get_api_key)):
     try:
+        print(f"New Task: Active tasks now: {semaphore.get_active_tasks()}, Number of pending tasks: {semaphore.get_waiting_tasks()}")
         # Generate an embedding from the query text using the AI model
         embeddings_generator = embeddings_model.embed(params.query)
 
@@ -258,6 +258,7 @@ async def recall_memory(params: SearchParams, api_key: str = Depends(get_api_key
 @app.post("/collections", operation_id="create_collection")
 async def create_collection(params: CreateCollectionParams, api_key: str = Depends(get_api_key)):
     try:
+        print(f"New Task: Active tasks now: {semaphore.get_active_tasks()}, Number of pending tasks: {semaphore.get_waiting_tasks()}")
         # Initialize Qdrant client for database operations
         db_client = AsyncQdrantClient(url=os.getenv("QDRANT_HOST"), api_key=os.getenv("QDRANT_API_KEY"))
         # Recreate the collection with specified parameters
@@ -301,6 +302,7 @@ async def create_collection(params: CreateCollectionParams, api_key: str = Depen
 @app.post("/v1/embeddings", operation_id="create_embedding")
 async def embedding_request(params: EmbeddingParams, api_key: str = Depends(get_api_key)):
     try:
+        print(f"New Task: Active tasks now: {semaphore.get_active_tasks()}, Number of pending tasks: {semaphore.get_waiting_tasks()}")
         # Generate an embedding from the memory text using the AI model
         embeddings_generator = embeddings_model.embed(params.input)
 
