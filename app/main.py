@@ -15,12 +15,13 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, Field, validator
 from starlette.responses import FileResponse
 
-from qdrant_client import AsyncQdrantClient, models
+from qdrant_client import AsyncQdrantClient, models  # Asynchronous Qdrant client for non-blocking database operations
 from qdrant_client.models import Distance, VectorParams, Filter, FieldCondition
-from fastembed import TextEmbedding
+from fastembed import TextEmbedding  # Library for generating embeddings from text
 
-# TextEmbedding for AI operations
+# Initialize TextEmbedding for AI operations
 embeddings_model = TextEmbedding("nomic-ai/nomic-embed-text-v1.5")
+
 # Setup the bearer token authentication scheme
 bearer_scheme = HTTPBearer(auto_error=False)
 
@@ -28,7 +29,7 @@ bearer_scheme = HTTPBearer(auto_error=False)
 app = FastAPI(
     title="AI Memory API",
     version="0.1.0",
-    description="A FastAPI application to remember and recall things",
+    description="A FastAPI application that allows users to save memories in the form of text, recall them later, and perform searches. It uses an AI model to generate embeddings from text and a Qdrant database to store these embeddings along with other data.",
     servers=[{"url": os.getenv("BASE_URL"), "description": "Base API server"}]
 )
 
@@ -38,6 +39,7 @@ async def get_api_key(credentials: HTTPAuthorizationCredentials = Security(beare
         raise HTTPException(status_code=403, detail="Invalid or missing API key")
     return credentials.credentials if credentials else None
 
+# Define a custom Semaphore class with logging
 class LoggingSemaphore(asyncio.Semaphore):
     def __init__(self, value: int):
         super().__init__(value)
@@ -54,15 +56,18 @@ class LoggingSemaphore(asyncio.Semaphore):
         self._active_tasks -= 1
         super().release()
 
+    # Get the number of waiting tasks
     def get_waiting_tasks(self):
         return self._waiting_tasks
 
+    # Get the number of active tasks
     def get_active_tasks(self):
         return self._active_tasks
 
 # Create an instance of the semaphore with logging
-semaphore = LoggingSemaphore(8)
+semaphore = LoggingSemaphore(int(os.getenv("API_CONCURRENCY")))
 
+# Middleware to limit concurrency and log task status
 async def limit_concurrency(request: Request, call_next):
     print(f"New Task: Active tasks now: {semaphore.get_active_tasks()}, Number of pending tasks: {semaphore.get_waiting_tasks()}")
     await semaphore.acquire()  # Acquire semaphore before processing the request
@@ -71,7 +76,7 @@ async def limit_concurrency(request: Request, call_next):
         return response
     finally:
         print(f"Task Complete: Active tasks now: {semaphore.get_active_tasks()}, Number of pending tasks: {semaphore.get_waiting_tasks()}")
-        semaphore.release()  # Always release semaphore
+        semaphore.release()  # Always release semaphore after processing the request
 
 app.middleware('http')(limit_concurrency)
 
@@ -120,7 +125,7 @@ class EmbeddingParams(BaseModel):
 @app.post("/save_memory", operation_id="save_memory")
 async def save_memory(params: MemoryParams, api_key: str = Depends(get_api_key)):
     try:
-        # Generate an embedding from the memory text
+        # Generate an embedding from the memory text using the AI model
         embeddings_generator = embeddings_model.embed(params.memory)
 
         # Extract the single vector from the generator
@@ -131,6 +136,7 @@ async def save_memory(params: MemoryParams, api_key: str = Depends(get_api_key))
         else:
             raise ValueError("The embedding is not in the expected format (np.ndarray)")
 
+        # Initialize Qdrant client for database operations
         db_client = AsyncQdrantClient(url=os.getenv("QDRANT_HOST"), api_key=os.getenv("QDRANT_API_KEY"))
         timestamp = datetime.utcnow().isoformat()
         unique_id = str(uuid.uuid4())
@@ -166,7 +172,7 @@ async def save_memory(params: MemoryParams, api_key: str = Depends(get_api_key))
 @app.post("/recall_memory", operation_id="recall_memory")
 async def recall_memory(params: SearchParams, api_key: str = Depends(get_api_key)):
     try:
-        # Generate an embedding from the query text
+        # Generate an embedding from the query text using the AI model
         embeddings_generator = embeddings_model.embed(params.query)
 
         # Extract the single vector from the generator
@@ -177,6 +183,7 @@ async def recall_memory(params: SearchParams, api_key: str = Depends(get_api_key
         else:
             raise ValueError("The embedding is not in the expected format (np.ndarray)")
 
+        # Initialize Qdrant client for database operations
         db_client = AsyncQdrantClient(url=os.getenv("QDRANT_HOST"), api_key=os.getenv("QDRANT_API_KEY"))
         filter_conditions = []
 
@@ -251,7 +258,7 @@ async def recall_memory(params: SearchParams, api_key: str = Depends(get_api_key
 @app.post("/collections", operation_id="create_collection")
 async def create_collection(params: CreateCollectionParams, api_key: str = Depends(get_api_key)):
     try:
-        # QdrantClient for database interaction
+        # Initialize Qdrant client for database operations
         db_client = AsyncQdrantClient(url=os.getenv("QDRANT_HOST"), api_key=os.getenv("QDRANT_API_KEY"))
         # Recreate the collection with specified parameters
         await db_client.create_collection(
@@ -294,7 +301,7 @@ async def create_collection(params: CreateCollectionParams, api_key: str = Depen
 @app.post("/v1/embeddings", operation_id="create_embedding")
 async def embedding_request(params: EmbeddingParams, api_key: str = Depends(get_api_key)):
     try:
-        # Generate an embedding from the memory text
+        # Generate an embedding from the memory text using the AI model
         embeddings_generator = embeddings_model.embed(params.input)
 
         # Extract the single vector from the generator
@@ -304,7 +311,7 @@ async def embedding_request(params: EmbeddingParams, api_key: str = Depends(get_
             vector_list = vector.tolist()  # Convert numpy array to list
         else:
             raise ValueError("The embedding is not in the expected format (np.ndarray)")  # Exception handling for unexpected formats
-        # QdrantClient for database interaction
+        # Initialize Qdrant client for database operations
         db_client = AsyncQdrantClient(url=os.getenv("QDRANT_HOST"), api_key=os.getenv("QDRANT_API_KEY"))
         # Construct the response data with usage details
         response_data = {

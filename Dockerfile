@@ -22,7 +22,7 @@ EXPOSE 8060
 
 # Define environment variable
 ENV WORKERS=1
-ENV LIMIT_CONCURRENCY=32
+ENV UVICORN_CONCURRENCY=32
 
 # Set the command to run your FastAPI application with Uvicorn and environment variables
-CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port 8060 --workers $WORKERS --limit-concurrency $LIMIT_CONCURRENCY"]
+CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port 8060 --workers $WORKERS --limit-concurrency $UVICORN_CONCURRENCY"]
