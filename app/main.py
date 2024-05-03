@@ -48,17 +48,14 @@ class LoggingSemaphore(asyncio.Semaphore):
 
     async def acquire(self):
         self._waiting_tasks += 1
-        try:
-            await super().acquire()
-            self._waiting_tasks -= 1
-            self._active_tasks += 1
-        finally:
-            if self._value == 0:
-                self._active_tasks -= 1
+        await super().acquire()  # This call will block until the semaphore is acquired
+        self._waiting_tasks -= 1
+        self._active_tasks += 1
 
     def release(self):
+        if self._active_tasks > 0:  # Ensure there are active tasks to decrement
+            self._active_tasks -= 1
         super().release()
-        self._active_tasks -= 1
 
     def get_waiting_tasks(self):
         return self._waiting_tasks
@@ -66,18 +63,17 @@ class LoggingSemaphore(asyncio.Semaphore):
     def get_active_tasks(self):
         return self._active_tasks
 
-
 # Create an instance of the semaphore with logging
 semaphore = LoggingSemaphore(8)
 
 async def limit_concurrency(request: Request, call_next):
     print(f"Number of currently active tasks: {semaphore.get_active_tasks()}, Number of pending tasks: {semaphore.get_waiting_tasks()}")
-    await semaphore.acquire()
+    await semaphore.acquire()  # Acquire semaphore before processing the request
     try:
         response = await call_next(request)
         return response
     finally:
-        semaphore.release()
+        semaphore.release()  # Always release semaphore
         print(f"Task complete. Active tasks now: {semaphore.get_active_tasks()}, Waiting tasks now: {semaphore.get_waiting_tasks()}")
 
 app.middleware('http')(limit_concurrency)
