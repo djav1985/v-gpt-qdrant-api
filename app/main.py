@@ -5,9 +5,8 @@ import asyncio
 import numpy as np
 from datetime import datetime
 from typing import List, Optional, Dict, Union
-from asyncio import Semaphore
 
-from fastapi import FastAPI, HTTPException, Security, Depends, Request, BackgroundTasks
+from fastapi import FastAPI, HTTPException, Security, Depends, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, Field, validator
@@ -40,6 +39,21 @@ app = FastAPI(
     description="A FastAPI application to remember and recall things",
     servers=[{"url": os.getenv("BASE_URL"), "description": "Base API server"}]
 )
+
+class LoggingSemaphore(asyncio.Semaphore):
+    def __init__(self, value: int):
+        super().__init__(value)
+        self._waiting_tasks = 0
+
+    async def acquire(self):
+        self._waiting_tasks += 1
+        try:
+            await super().acquire()
+        finally:
+            self._waiting_tasks -= 1
+
+    def get_waiting_tasks(self):
+        return self._waiting_tasks
 
 # Semaphore for controlling access to endpoints
 semaphore = Semaphore(8)
