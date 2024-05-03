@@ -39,7 +39,7 @@ async def get_api_key(credentials: HTTPAuthorizationCredentials = Security(beare
     if os.getenv("MEMORIES_API_KEY") and (not credentials or credentials.credentials != os.getenv("MEMORIES_API_KEY")):
         raise HTTPException(status_code=403, detail="Invalid or missing API key")
     return credentials.credentials if credentials else None
-    
+
 class LoggingSemaphore(asyncio.Semaphore):
     def __init__(self, value: int):
         super().__init__(value)
@@ -56,7 +56,7 @@ class LoggingSemaphore(asyncio.Semaphore):
             if self._value == 0:
                 self._active_tasks -= 1
 
-    async def release(self):
+    def release(self):
         super().release()
         self._active_tasks -= 1
 
@@ -65,6 +65,7 @@ class LoggingSemaphore(asyncio.Semaphore):
 
     def get_active_tasks(self):
         return self._active_tasks
+
 
 # Create an instance of the semaphore with logging
 semaphore = LoggingSemaphore(8)
