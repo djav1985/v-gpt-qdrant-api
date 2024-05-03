@@ -40,22 +40,23 @@ app = FastAPI(
     servers=[{"url": os.getenv("BASE_URL"), "description": "Base API server"}]
 )
 
-# Define a semaphore to limit concurrent connections
-semaphore = asyncio.Semaphore(8)  # Set the limit to 5 concurrent connections
+semaphore = asyncio.Semaphore(int(os.getenv("QUERY", "8")))
+pending_tasks = []
 
-async def delayed_response(background_task: BackgroundTasks):
-    # Use the semaphore to control the flow
+async def process_task():
     async with semaphore:
-        # Get the current count of connections waiting in the queue
-        waiting_connections = semaphore._value
-        # Add your background task to introduce a delay
-        print(f"Connection in query of: {waiting_connections}")
+        print("Connection processed")
+        if pending_tasks:
+            task = pending_tasks.pop(0)
+            await task
 
-        async def delayed_task():
-            await asyncio.sleep(3)  # Delay response by 10 seconds
-            print("Connection processed")
-
-        background_task.add_task(delayed_task)
+async def delayed_response():
+    async with semaphore:
+        if semaphore._value < int(os.getenv("QUERY", "8")) and not pending_tasks:
+            asyncio.create_task(process_task())
+        else:
+            print("Connection in query of: ", len(pending_tasks))
+            pending_tasks.append(process_task)
 
 # Class for memory parameters
 class MemoryParams(BaseModel):
@@ -100,8 +101,8 @@ class EmbeddingParams(BaseModel):
 
 # Endpoint for saving memory
 @app.post("/save_memory", operation_id="save_memory")
-async def save_memory(params: MemoryParams, background_tasks: BackgroundTasks, api_key: str = Depends(get_api_key)):
-    await delayed_response(background_tasks)
+async def save_memory(params: MemoryParams, api_key: str = Depends(get_api_key)):
+    await delayed_response()
     try:
         # Generate an embedding from the memory text
         embeddings_generator = embeddings_model.embed(params.memory)
@@ -146,8 +147,8 @@ async def save_memory(params: MemoryParams, background_tasks: BackgroundTasks, a
 
 # Endpoint for recalling memory
 @app.post("/recall_memory", operation_id="recall_memory")
-async def recall_memory(params: SearchParams, background_tasks: BackgroundTasks, api_key: str = Depends(get_api_key)):
-    await delayed_response(background_tasks)
+async def recall_memory(params: SearchParams, api_key: str = Depends(get_api_key)):
+    await delayed_response()
     try:
         # Generate an embedding from the query text
         embeddings_generator = embeddings_model.embed(params.query)
@@ -231,8 +232,8 @@ async def recall_memory(params: SearchParams, background_tasks: BackgroundTasks,
 
 # This is the endpoint that handles requests to create a new collection
 @app.post("/collections", operation_id="create_collection")
-async def create_collection(params: CreateCollectionParams, background_tasks: BackgroundTasks, api_key: str = Depends(get_api_key)):
-    await delayed_response(background_tasks)
+async def create_collection(params: CreateCollectionParams, api_key: str = Depends(get_api_key)):
+    await delayed_response()
     try:
         # Recreate the collection with specified parameters
         db_client.create_collection(
@@ -273,8 +274,8 @@ async def create_collection(params: CreateCollectionParams, background_tasks: Ba
 
 # This is the endpoint that handles embedding requests
 @app.post("/v1/embeddings", operation_id="create_embedding")
-async def embedding_request(params: EmbeddingParams, background_tasks: BackgroundTasks, api_key: str = Depends(get_api_key)):
-    await delayed_response(background_tasks)
+async def embedding_request(params: EmbeddingParams, api_key: str = Depends(get_api_key)):
+    await delayed_response()
     try:
         # Generate an embedding from the memory text
         embeddings_generator = embeddings_model.embed(params.input)
