@@ -22,7 +22,8 @@ router = APIRouter()
 async def save_memory(params: MemoryParams, api_key: str = Depends(get_api_key), db_client: AsyncQdrantClient = Depends(get_qdrant_client)):
     try:
         # Generate an embedding from the memory text using the AI model
-        embeddings_generator = embeddings_model.embed(params.memory)
+        embeddings_generator = get_embeddings_model().embed(params.memory)
+    
         vector = next(embeddings_generator)  # This fetches the first item from the generator
 
         if isinstance(vector, np.ndarray):
@@ -63,7 +64,7 @@ async def save_memory(params: MemoryParams, api_key: str = Depends(get_api_key),
 async def recall_memory(params: SearchParams, api_key: str = Depends(get_api_key), db_client: AsyncQdrantClient = Depends(get_qdrant_client)):
     try:
         # Generate an embedding from the query text using the AI model
-        embeddings_generator = embeddings_model.embed(params.query)
+        embeddings_generator = get_embeddings_model().embed(params.query)
 
         # Extract the single vector from the generator
         vector = next(embeddings_generator)  # This fetches the first item from the generator
