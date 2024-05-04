@@ -83,8 +83,7 @@ app.middleware('http')(limit_concurrency)
 # Dependency to get Qdrant client
 async def get_qdrant_client(request: Request) -> AsyncQdrantClient:
     db_client = AsyncQdrantClient(
-        url=os.getenv("QDRANT_HOST"),
-        port=6333,
+        host=os.getenv("QDRANT_HOST"),
         prefer_grpc=True,
         grpc_port=6334,
         https=False,
