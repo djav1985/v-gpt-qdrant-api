@@ -296,8 +296,7 @@ async def embedding_request(params: EmbeddingParams, api_key: str = Depends(get_
             vector_list = vector.tolist()  # Convert numpy array to list
         else:
             raise ValueError("The embedding is not in the expected format (np.ndarray)")  # Exception handling for unexpected formats
-        # Initialize Qdrant client for database operations
-        db_client = AsyncQdrantClient(url=os.getenv("QDRANT_HOST"), port=6333, prefer_grpc=True, grpc_port=6334, https=False, api_key=os.getenv("QDRANT_API_KEY"))
+
         # Construct the response data with usage details
         response_data = {
             "object": "list",
