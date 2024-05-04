@@ -1,7 +1,20 @@
-from fastapi import HTTPException, Depends
+import os
+import uuid
+from datetime import datetime
+import numpy as np
+
+from fastapi import FastAPI, HTTPException, Depends
+from pydantic import BaseModel, Field, validator
+
 from qdrant_client import AsyncQdrantClient
-from .models import MemoryParams, SearchParams, CreateCollectionParams, VectorParams  # Adjust import paths as needed
-from .dependencies import get_api_key, get_qdrant_client
+from qdrant_client.models import PointStruct, Distance, VectorParams, Filter, FieldCondition, MatchValue, MatchAny, SearchParams as QdrantSearchParams, ScalarQuantizationConfig
+from fastembed import TextEmbedding
+
+from ..models import MemoryParams, SearchParams, CreateCollectionParams
+from ..dependencies import get_api_key, get_qdrant_client
+
+
+router = APIRouter()
 
 # Endpoint for saving memory
 @app.post("/save_memory", operation_id="save_memory")
