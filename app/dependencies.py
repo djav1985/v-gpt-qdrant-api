@@ -49,18 +49,17 @@ class LoggingSemaphore(asyncio.Semaphore):
     async def acquire(self):
         await super().acquire()
         active_tasks = self.total_permits - self._value  # Calculate active tasks based on the semaphore's remaining value
-        print(f"Semaphore acquired. Active tasks: {active_tasks}")
+        print(f"Current active tasks: {active_tasks}")
 
     def release(self):
         super().release()
         active_tasks = self.total_permits - self._value  # Update active tasks after releasing
-        print(f"Semaphore released. Active tasks: {active_tasks}")
 
     def get_active_tasks(self):
         return self.total_permits - self._value
 
 # Create an instance of the semaphore with logging
-semaphore = LoggingSemaphore(int(os.getenv("API_CONCURRENCY", "8")))
+semaphore = LoggingSemaphore(int(os.getenv("API_CONCURRENCY", "5")))
 
 # Middleware to limit concurrency and log task status
 async def limit_concurrency(request: Request, call_next):
