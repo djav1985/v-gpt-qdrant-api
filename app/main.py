@@ -16,6 +16,7 @@ from pydantic import BaseModel, Field, validator
 from starlette.responses import FileResponse
 
 from qdrant_client import AsyncQdrantClient, models  # Asynchronous Qdrant client for non-blocking database operations
+from qdrant_client.grpc import GrpcConnection
 from qdrant_client.models import Distance, VectorParams, Filter, FieldCondition
 from fastembed import TextEmbedding  # Library for generating embeddings from text
 
@@ -80,6 +81,17 @@ async def limit_concurrency(request: Request, call_next):
 
 app.middleware('http')(limit_concurrency)
 
+# Dependency to get Qdrant client
+async def get_qdrant_client(request: Request) -> AsyncQdrantClient:
+    return AsyncQdrantClient(
+        connection=GrpcConnection(
+            host=os.getenv("QDRANT_HOST", "localhost"),
+            port=6334,  # Ensure this is the correct gRPC port
+            api_key=os.getenv("QDRANT_API_KEY"),
+            use_tls=False  # Adjust based on your setup
+        )
+    )
+
 # Class for memory parameters
 class MemoryParams(BaseModel):
     collection_name: str = Field(..., description="The name of the collection to be created.")
@@ -123,12 +135,10 @@ class EmbeddingParams(BaseModel):
 
 # Endpoint for saving memory
 @app.post("/save_memory", operation_id="save_memory")
-async def save_memory(params: MemoryParams, api_key: str = Depends(get_api_key)):
+async def save_memory(params: MemoryParams, api_key: str = Depends(get_api_key), db_client: AsyncQdrantClient = Depends(get_qdrant_client)):
     try:
         # Generate an embedding from the memory text using the AI model
         embeddings_generator = embeddings_model.embed(params.memory)
-
-        # Extract the single vector from the generator
         vector = next(embeddings_generator)  # This fetches the first item from the generator
 
         if isinstance(vector, np.ndarray):
@@ -136,40 +146,37 @@ async def save_memory(params: MemoryParams, api_key: str = Depends(get_api_key))
         else:
             raise ValueError("The embedding is not in the expected format (np.ndarray)")
 
-        # Initialize Qdrant client for database operations
-        db_client = AsyncQdrantClient(url=os.getenv("QDRANT_HOST"), port=6333, prefer_grpc=True, grpc_port=6334, https=False, api_key=os.getenv("QDRANT_API_KEY"))
         timestamp = datetime.utcnow().isoformat()
         unique_id = str(uuid.uuid4())
 
-        # Upsert the memory into the Qdrant collection
+        # Upsert the memory into the Qdrant collection using PointStruct
         await db_client.upsert(
             collection_name=params.collection_name,
             points=[
-                {
-                    "id": unique_id,
-                    "payload": {
-                    "memory": params.memory,
-                    "timestamp": timestamp,
-                    "sentiment": params.sentiment,
-                    "entities": params.entities,
-                    "tags": params.tags,
+                models.PointStruct(
+                    id=unique_id,
+                    payload={
+                        "memory": params.memory,
+                        "timestamp": timestamp,
+                        "sentiment": params.sentiment,
+                        "entities": params.entities,
+                        "tags": params.tags,
                     },
-                "vector": vector_list,
-                }
-            ]
+                    vector=vector_list,
+                ),
+            ],
         )
 
         return {"message": "Memory saved successfully"}
 
     except Exception as e:
         print(f"An error occurred: {e}")
-        # Provide more detailed error messaging
         raise HTTPException(status_code=500, detail=f"Error processing request: {str(e)}")
 
 
 # Endpoint for recalling memory
 @app.post("/recall_memory", operation_id="recall_memory")
-async def recall_memory(params: SearchParams, api_key: str = Depends(get_api_key)):
+async def recall_memory(params: SearchParams, api_key: str = Depends(get_api_key), db_client: AsyncQdrantClient = Depends(get_qdrant_client)):
     try:
         # Generate an embedding from the query text using the AI model
         embeddings_generator = embeddings_model.embed(params.query)
@@ -177,46 +184,39 @@ async def recall_memory(params: SearchParams, api_key: str = Depends(get_api_key
         # Extract the single vector from the generator
         vector = next(embeddings_generator)  # This fetches the first item from the generator
 
-        if isinstance(vector, np.ndarray):
-            vector_list = vector.tolist()  # Convert numpy array to list
-        else:
+        if not isinstance(vector, np.ndarray):
             raise ValueError("The embedding is not in the expected format (np.ndarray)")
 
-        # Initialize Qdrant client for database operations
-        db_client = AsyncQdrantClient(url=os.getenv("QDRANT_HOST"), port=6333, prefer_grpc=True, grpc_port=6334, https=False, api_key=os.getenv("QDRANT_API_KEY"))
-        filter_conditions = []
+        vector_list = vector.tolist()  # Convert numpy array to list
 
-        # Create a filter condition for entity if it exists in params
+        filter_conditions = []
+        # Create filter conditions based on provided parameters
         if params.entity:
             filter_conditions.append(
                 models.FieldCondition(
                     key="entities",
-                    match=models.MatchValue(value=params.entity)  # Direct value match
+                    match=models.MatchValue(value=params.entity)
                 )
             )
 
-        # Create a filter condition for sentiment if it exists in params
         if params.sentiment:
             filter_conditions.append(
                 models.FieldCondition(
                     key="sentiment",
-                    match=models.MatchAny(any=[params.sentiment])  # Using list for MatchAny
+                    match=models.MatchAny(any=[params.sentiment])
                 )
             )
 
-        # Create a filter condition for tag if it exists in params
         if params.tag:
             filter_conditions.append(
                 models.FieldCondition(
                     key="tags",
-                    match=models.MatchAny(any=[params.tag])  # Using list for MatchAny
+                    match=models.MatchAny(any=[params.tag])
                 )
             )
 
         # Define the search filter with the specified conditions
-        search_filter = models.Filter(
-            must=filter_conditions
-        )
+        search_filter = models.Filter(must=filter_conditions)
 
         # Perform the search with the specified filters
         hits = await db_client.search(
@@ -229,9 +229,9 @@ async def recall_memory(params: SearchParams, api_key: str = Depends(get_api_key
                 quantization=models.QuantizationSearchParams(
                     ignore=False,
                     rescore=True,
-                    oversampling=2.0,
+                    oversampling=2.0
                 )
-            ),
+            )
         )
 
         # Format the results
@@ -249,20 +249,17 @@ async def recall_memory(params: SearchParams, api_key: str = Depends(get_api_key
 
     except Exception as e:
         print(f"An error occurred: {e}")
-        raise HTTPException(status_code=500, detail=f"Error processing request: {str(e)}")
-
+        raise HTTPException(status_code=500, detail=str(e))
 
 # This is the endpoint that handles requests to create a new collection
 @app.post("/collections", operation_id="create_collection")
-async def create_collection(params: CreateCollectionParams, api_key: str = Depends(get_api_key)):
+async def create_collection(params: CreateCollectionParams, api_key: str = Depends(get_api_key), db_client: AsyncQdrantClient = Depends(get_qdrant_client)):
     try:
-        # Initialize Qdrant client for database operations
-        db_client = AsyncQdrantClient(url=os.getenv("QDRANT_HOST"), port=6333, prefer_grpc=True, grpc_port=6334, https=False, api_key=os.getenv("QDRANT_API_KEY"))
         # Recreate the collection with specified parameters
         await db_client.create_collection(
             collection_name=params.collection_name,
-            vectors_config=VectorParams(size=768, distance=Distance.COSINE),  # Configure vector parameters
-            quantization_config=models.ScalarQuantization(  # Configure scalar quantization
+            vectors_config=VectorParams(size=768, distance=Distance.COSINE),
+            quantization_config=models.ScalarQuantization(
                 scalar=models.ScalarQuantizationConfig(
                     type=models.ScalarType.INT8,
                     quantile=0.99,
@@ -271,28 +268,19 @@ async def create_collection(params: CreateCollectionParams, api_key: str = Depen
             ),
         )
 
-        # Create payload index for sentiment
-        await db_client.create_payload_index(
-            collection_name=params.collection_name,
-            field_name="sentiment", field_schema="keyword"  # Index for sentiment
-        )
+        # Create payload index for sentiment, entities, and tags
+        index_fields = ["sentiment", "entities", "tags"]
+        for field in index_fields:
+            await db_client.create_payload_index(
+                collection_name=params.collection_name,
+                field_name=field, field_schema="keyword"
+            )
 
-        # Create payload index for entities
-        await db_client.create_payload_index(
-            collection_name=params.collection_name,
-            field_name="entities", field_schema="keyword"  # Index for entities
-        )
+        return {"message": f"Collection '{params.collection_name}' created successfully"}
 
-        # Create payload index for tags
-        await db_client.create_payload_index(
-            collection_name=params.collection_name,
-            field_name="tags", field_schema="keyword"  # Index for tags
-        )
-
-        return {"message": f"Collection '{params.collection_name}' created successfully"}  # Return a success message
     except Exception as e:
         print(f"An error occurred: {e}")
-        raise HTTPException(status_code=500, detail=f"Error creating collection: {str(e)}")  # Raise an exception if there's an error in creating the collection
+        raise HTTPException(status_code=500, detail=str(e))
 
 # This is the endpoint that handles embedding requests
 @app.post("/v1/embeddings", operation_id="create_embedding")
