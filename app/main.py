@@ -137,7 +137,7 @@ async def save_memory(params: MemoryParams, api_key: str = Depends(get_api_key))
             raise ValueError("The embedding is not in the expected format (np.ndarray)")
 
         # Initialize Qdrant client for database operations
-        db_client = AsyncQdrantClient(url=os.getenv("QDRANT_HOST"), api_key=os.getenv("QDRANT_API_KEY"))
+        db_client = AsyncQdrantClient(url=os.getenv("QDRANT_HOST"), port=6333, prefer_grpc=True, grpc_port=6334, https=False, api_key=os.getenv("QDRANT_API_KEY"))
         timestamp = datetime.utcnow().isoformat()
         unique_id = str(uuid.uuid4())
 
@@ -183,7 +183,7 @@ async def recall_memory(params: SearchParams, api_key: str = Depends(get_api_key
             raise ValueError("The embedding is not in the expected format (np.ndarray)")
 
         # Initialize Qdrant client for database operations
-        db_client = AsyncQdrantClient(url=os.getenv("QDRANT_HOST"), api_key=os.getenv("QDRANT_API_KEY"))
+        db_client = AsyncQdrantClient(url=os.getenv("QDRANT_HOST"), port=6333, prefer_grpc=True, grpc_port=6334, https=False, api_key=os.getenv("QDRANT_API_KEY"))
         filter_conditions = []
 
         # Create a filter condition for entity if it exists in params
@@ -257,7 +257,7 @@ async def recall_memory(params: SearchParams, api_key: str = Depends(get_api_key
 async def create_collection(params: CreateCollectionParams, api_key: str = Depends(get_api_key)):
     try:
         # Initialize Qdrant client for database operations
-        db_client = AsyncQdrantClient(url=os.getenv("QDRANT_HOST"), api_key=os.getenv("QDRANT_API_KEY"))
+        db_client = AsyncQdrantClient(url=os.getenv("QDRANT_HOST"), port=6333, prefer_grpc=True, grpc_port=6334, https=False, api_key=os.getenv("QDRANT_API_KEY"))
         # Recreate the collection with specified parameters
         await db_client.create_collection(
             collection_name=params.collection_name,
@@ -309,7 +309,7 @@ async def embedding_request(params: EmbeddingParams, api_key: str = Depends(get_
         else:
             raise ValueError("The embedding is not in the expected format (np.ndarray)")  # Exception handling for unexpected formats
         # Initialize Qdrant client for database operations
-        db_client = AsyncQdrantClient(url=os.getenv("QDRANT_HOST"), api_key=os.getenv("QDRANT_API_KEY"))
+        db_client = AsyncQdrantClient(url=os.getenv("QDRANT_HOST"), port=6333, prefer_grpc=True, grpc_port=6334, https=False, api_key=os.getenv("QDRANT_API_KEY"))
         # Construct the response data with usage details
         response_data = {
             "object": "list",
