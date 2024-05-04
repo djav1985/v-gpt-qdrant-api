@@ -44,38 +44,26 @@ async def get_api_key(credentials: HTTPAuthorizationCredentials = Depends(HTTPBe
 class LoggingSemaphore(asyncio.Semaphore):
     def __init__(self, value: int):
         super().__init__(value)
-        self._waiting_tasks = 0
-        self._active_tasks = 0
+        self.total_permits = value
 
     async def acquire(self):
-        print("Attempting to acquire semaphore...")
-        self._waiting_tasks += 1
         await super().acquire()
-        self._waiting_tasks -= 1
-        self._active_tasks += 1
-        print(f"Semaphore acquired. Active: {self._active_tasks}, Waiting: {self._waiting_tasks}")
+        active_tasks = self.total_permits - self._value  # Calculate active tasks based on the semaphore's remaining value
+        print(f"Semaphore acquired. Active tasks: {active_tasks}")
 
     def release(self):
-        print("Releasing semaphore...")
-        self._active_tasks -= 1
         super().release()
-        print(f"Semaphore released. Active: {self._active_tasks}, Waiting: {self._waiting_tasks}")
-
-    def get_waiting_tasks(self):
-        return self._waiting_tasks
+        active_tasks = self.total_permits - self._value  # Update active tasks after releasing
+        print(f"Semaphore released. Active tasks: {active_tasks}")
 
     def get_active_tasks(self):
-        return self._active_tasks
-
-semaphore = LoggingSemaphore(int(os.getenv("API_CONCURRENCY", "8")))
-
+        return self.total_permits - self._value
 
 # Create an instance of the semaphore with logging
 semaphore = LoggingSemaphore(int(os.getenv("API_CONCURRENCY", "8")))
 
 # Middleware to limit concurrency and log task status
 async def limit_concurrency(request: Request, call_next):
-    print(f"New Task: Active tasks now: {semaphore.get_active_tasks()}, Number of pending tasks: {semaphore.get_waiting_tasks()}")
     await semaphore.acquire()  # Acquire semaphore before processing the request
     try:
         response = await call_next(request)
@@ -84,5 +72,4 @@ async def limit_concurrency(request: Request, call_next):
         print(f"Error processing request: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
     finally:
-        print(f"Task Complete: Active tasks now: {semaphore.get_active_tasks()}, Number of pending tasks: {semaphore.get_waiting_tasks()}")
         semaphore.release()  # Always release semaphore after processing the request
