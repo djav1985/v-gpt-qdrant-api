@@ -40,7 +40,7 @@ async def get_api_key(credentials: HTTPAuthorizationCredentials = Depends(HTTPBe
         raise HTTPException(status_code=403, detail="Invalid or missing API key")
     return credentials.credentials if credentials else None
 
-    # Define a custom Semaphore class with logging
+# Define a custom Semaphore class with logging
 class LoggingSemaphore(asyncio.Semaphore):
     def __init__(self, value: int):
         super().__init__(value)
@@ -48,22 +48,27 @@ class LoggingSemaphore(asyncio.Semaphore):
         self._active_tasks = 0
 
     async def acquire(self):
+        print("Attempting to acquire semaphore...")
         self._waiting_tasks += 1
         await super().acquire()
         self._waiting_tasks -= 1
         self._active_tasks += 1
+        print(f"Semaphore acquired. Active: {self._active_tasks}, Waiting: {self._waiting_tasks}")
 
     def release(self):
+        print("Releasing semaphore...")
         self._active_tasks -= 1
         super().release()
+        print(f"Semaphore released. Active: {self._active_tasks}, Waiting: {self._waiting_tasks}")
 
-    # Get the number of waiting tasks
     def get_waiting_tasks(self):
         return self._waiting_tasks
 
-    # Get the number of active tasks
     def get_active_tasks(self):
         return self._active_tasks
+
+semaphore = LoggingSemaphore(int(os.getenv("API_CONCURRENCY", "8")))
+
 
 # Create an instance of the semaphore with logging
 semaphore = LoggingSemaphore(int(os.getenv("API_CONCURRENCY", "8")))
