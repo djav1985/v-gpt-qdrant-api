@@ -15,7 +15,7 @@ from fastembed import TextEmbedding
 from models import MemoryParams, SearchParams, CreateCollectionParams
 from dependencies import get_api_key, get_qdrant_client, get_embeddings_model
 
-router = APIRouter()
+memory_router = APIRouter()
 
 # Endpoint for saving memory
 @router.post("/save_memory", operation_id="save_memory")
