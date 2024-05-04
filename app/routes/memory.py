@@ -2,13 +2,13 @@ import os
 import uuid
 import numpy as np
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Dict, Union
 
 from fastapi import APIRouter, FastAPI, Depends, HTTPException, Request
 from fastapi.security import HTTPBearer
 from pydantic import BaseModel, Field, validator
 
-from qdrant_client import AsyncQdrantClient
+from qdrant_client import AsyncQdrantClient, models
 from qdrant_client.models import Distance, VectorParams, Filter, FieldCondition, PointStruct
 from fastembed import TextEmbedding
 
@@ -23,7 +23,7 @@ async def save_memory(params: MemoryParams, api_key: str = Depends(get_api_key),
     try:
         # Generate an embedding from the memory text using the AI model
         embeddings_generator = get_embeddings_model().embed(params.memory)
-    
+
         vector = next(embeddings_generator)  # This fetches the first item from the generator
 
         if isinstance(vector, np.ndarray):

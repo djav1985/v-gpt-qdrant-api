@@ -2,13 +2,13 @@ import os
 import uuid
 import numpy as np
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Dict, Union
 
 from fastapi import APIRouter, FastAPI, Depends, HTTPException, Request
 from fastapi.security import HTTPBearer
 from pydantic import BaseModel, Field, validator
 
-from qdrant_client import AsyncQdrantClient
+from qdrant_client import AsyncQdrantClient, models
 from qdrant_client.models import Distance, VectorParams, Filter, FieldCondition, PointStruct
 from fastembed import TextEmbedding
 

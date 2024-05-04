@@ -66,7 +66,7 @@ class LoggingSemaphore(asyncio.Semaphore):
         return self._active_tasks
 
 # Create an instance of the semaphore with logging
-semaphore = LoggingSemaphore(int(os.getenv("API_CONCURRENCY")))
+semaphore = LoggingSemaphore(int(os.getenv("API_CONCURRENCY", "8")))
 
 # Middleware to limit concurrency and log task status
 async def limit_concurrency(request: Request, call_next):
@@ -75,6 +75,9 @@ async def limit_concurrency(request: Request, call_next):
     try:
         response = await call_next(request)
         return response
+    except Exception as e:
+        print(f"Error processing request: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
     finally:
         print(f"Task Complete: Active tasks now: {semaphore.get_active_tasks()}, Number of pending tasks: {semaphore.get_waiting_tasks()}")
         semaphore.release()  # Always release semaphore after processing the request

@@ -1,5 +1,5 @@
 import os
-from typing import List, Optional, Union
+from typing import List, Optional, Dict, Union
 
 from fastapi import FastAPI, HTTPException, Depends
 from pydantic import BaseModel, Field, validator
