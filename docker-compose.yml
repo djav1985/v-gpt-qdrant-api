@@ -9,14 +9,13 @@ services:
     ports:
       - "8060:8060"
     environment:
-      QDRANT_HOST: http://qdrant:6333
+      QDRANT_HOST: qdrant #uses grpc to connect to port 6334
       QDRANT_API_KEY:
-      #MEMORIES_API_KEY:
+      #MEMORIES_API_KEY: Optional API key to connect to api
       BASE_URL: http://memories-api
-      WORKERS: 1
-      MAX_REQUESTS: 128
-      LIMIT_CONCURRENCY: 5
-      BACKLOG: 64
+      WORKERS: 1 #uvicorn workers 1 should be enough for personal use
+      API_CONCURRENCY: 4 #max embeddings produced similtaniusly. This stops eccessive CPU usage. 
+      UVICORN_CONCURRENCY: 32 #this controls the mac connections. Anything over the API_concurrancy value is put in query pool. Anything over this number is rejected.
     volumes:
       - embedding-model:/tmp/fastembed_cache
 
