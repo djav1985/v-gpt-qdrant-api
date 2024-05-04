@@ -18,7 +18,7 @@ from app.dependencies import get_api_key, get_qdrant_client, get_embeddings_mode
 router = APIRouter()
 
 # Endpoint for saving memory
-@app.post("/save_memory", operation_id="save_memory")
+@router.post("/save_memory", operation_id="save_memory")
 async def save_memory(params: MemoryParams, api_key: str = Depends(get_api_key), db_client: AsyncQdrantClient = Depends(get_qdrant_client)):
     try:
         # Generate an embedding from the memory text using the AI model
@@ -59,7 +59,7 @@ async def save_memory(params: MemoryParams, api_key: str = Depends(get_api_key),
 
 
 # Endpoint for recalling memory
-@app.post("/recall_memory", operation_id="recall_memory")
+@router.post("/recall_memory", operation_id="recall_memory")
 async def recall_memory(params: SearchParams, api_key: str = Depends(get_api_key), db_client: AsyncQdrantClient = Depends(get_qdrant_client)):
     try:
         # Generate an embedding from the query text using the AI model
@@ -136,7 +136,7 @@ async def recall_memory(params: SearchParams, api_key: str = Depends(get_api_key
         raise HTTPException(status_code=500, detail=str(e))
 
 # This is the endpoint that handles requests to create a new collection
-@app.post("/collections", operation_id="create_collection")
+@router.post("/collections", operation_id="create_collection")
 async def create_collection(params: CreateCollectionParams, api_key: str = Depends(get_api_key), db_client: AsyncQdrantClient = Depends(get_qdrant_client)):
     try:
         # Recreate the collection with specified parameters
