@@ -5,8 +5,8 @@ from starlette.responses import FileResponse
 from fastembed import TextEmbedding
 
 from dependencies import limit_concurrency
-from routes.embeddings import router as embeddings_router
-from routes.memory import router as memory_router
+from routes.embeddings import embeddings_router
+from routes.memory import memory_router
 
 # FastAPI application instance
 app = FastAPI(
