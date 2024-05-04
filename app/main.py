@@ -16,7 +16,6 @@ from pydantic import BaseModel, Field, validator
 from starlette.responses import FileResponse
 
 from qdrant_client import AsyncQdrantClient, models  # Asynchronous Qdrant client for non-blocking database operations
-from qdrant_client.grpc import GrpcConnection
 from qdrant_client.models import Distance, VectorParams, Filter, FieldCondition
 from fastembed import TextEmbedding  # Library for generating embeddings from text
 
@@ -83,14 +82,15 @@ app.middleware('http')(limit_concurrency)
 
 # Dependency to get Qdrant client
 async def get_qdrant_client(request: Request) -> AsyncQdrantClient:
-    return AsyncQdrantClient(
-        connection=GrpcConnection(
-            host=os.getenv("QDRANT_HOST", "localhost"),
-            port=6334,  # Ensure this is the correct gRPC port
-            api_key=os.getenv("QDRANT_API_KEY"),
-            use_tls=False  # Adjust based on your setup
-        )
+    db_client = AsyncQdrantClient(
+        url=os.getenv("QDRANT_HOST"),
+        port=6333,
+        prefer_grpc=True,
+        grpc_port=6334,
+        https=False,
+        api_key=os.getenv("QDRANT_API_KEY")
     )
+    return db_client
 
 # Class for memory parameters
 class MemoryParams(BaseModel):
