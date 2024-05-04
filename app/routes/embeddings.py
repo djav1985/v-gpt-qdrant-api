@@ -18,7 +18,7 @@ from app.dependencies import get_api_key, get_qdrant_client, get_embeddings_mode
 router = APIRouter()
 
 # This is the endpoint that handles embedding requests
-@app.post("/v1/embeddings", operation_id="create_embedding")
+@router.post("/v1/embeddings", operation_id="create_embedding")
 async def embedding_request(params: EmbeddingParams, api_key: str = Depends(get_api_key)):
     try:
         # Generate an embedding from the memory text using the AI model
