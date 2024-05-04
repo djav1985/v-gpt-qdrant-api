@@ -15,7 +15,7 @@ from fastembed import TextEmbedding
 from models import EmbeddingParams
 from dependencies import get_api_key, get_qdrant_client, get_embeddings_model
 
-router = APIRouter()
+embeddings_router = APIRouter()
 
 # This is the endpoint that handles embedding requests
 @router.post("/v1/embeddings", operation_id="create_embedding")
