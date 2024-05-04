@@ -8,6 +8,20 @@ from fastapi import FastAPI, HTTPException, Depends, Request, Security
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 from qdrant_client import AsyncQdrantClient
+from fastembed import TextEmbedding
+
+class SingletonTextEmbedding:
+    _instance = None
+
+    @classmethod
+    def get_instance(cls):
+        if cls._instance is None:
+            cls._instance = TextEmbedding("nomic-ai/nomic-embed-text-v1.5")
+        return cls._instance
+
+# Now get_embeddings_model simply returns the singleton instance
+def get_embeddings_model():
+    return SingletonTextEmbedding.get_instance()
 
 # Dependency to get Qdrant client
 async def get_qdrant_client(request: Request) -> AsyncQdrantClient:
@@ -21,7 +35,7 @@ async def get_qdrant_client(request: Request) -> AsyncQdrantClient:
     return db_client
 
 # This function checks if the provided API key is valid or not
-async def get_api_key(credentials: HTTPAuthorizationCredentials = Security(bearer_scheme)):
+async def get_api_key(credentials: HTTPAuthorizationCredentials = Depends(HTTPBearer(auto_error=False))):
     if os.getenv("MEMORIES_API_KEY") and (not credentials or credentials.credentials != os.getenv("MEMORIES_API_KEY")):
         raise HTTPException(status_code=403, detail="Invalid or missing API key")
     return credentials.credentials if credentials else None

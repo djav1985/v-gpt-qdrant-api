@@ -1,18 +1,19 @@
 import os
 import uuid
-from datetime import datetime
 import numpy as np
+from datetime import datetime
+from typing import List, Optional
 
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import APIRouter, FastAPI, Depends, HTTPException, Request
+from fastapi.security import HTTPBearer
 from pydantic import BaseModel, Field, validator
 
 from qdrant_client import AsyncQdrantClient
-from qdrant_client.models import PointStruct, Distance, VectorParams, Filter, FieldCondition, MatchValue, MatchAny, SearchParams as QdrantSearchParams, ScalarQuantizationConfig
+from qdrant_client.models import Distance, VectorParams, Filter, FieldCondition, PointStruct
 from fastembed import TextEmbedding
 
 from ..models import MemoryParams, SearchParams, CreateCollectionParams
-from ..dependencies import get_api_key, get_qdrant_client
-
+from ..dependencies import get_api_key, get_qdrant_client, get_embeddings_model
 
 router = APIRouter()
 

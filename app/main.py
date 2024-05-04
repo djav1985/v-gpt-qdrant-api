@@ -16,9 +16,6 @@ app = FastAPI(
     servers=[{"url": os.getenv("BASE_URL"), "description": "Base API server"}]
 )
 
-embeddings_model = TextEmbedding("nomic-ai/nomic-embed-text-v1.5")
-bearer_scheme = HTTPBearer(auto_error=False)
-
 app.middleware('http')(limit_concurrency)
 
 app.include_router(memory_router)
