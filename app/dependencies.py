@@ -1,12 +1,10 @@
+# Standard Library Imports
 import os
-import asyncio
 from asyncio import Semaphore
-from datetime import datetime
-from typing import List, Optional, Union
 
+# Third-Party Library Imports
 from fastapi import FastAPI, HTTPException, Depends, Request, Security
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-
 from qdrant_client import AsyncQdrantClient
 from fastembed import TextEmbedding
 
