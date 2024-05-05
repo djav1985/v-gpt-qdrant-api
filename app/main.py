@@ -15,7 +15,7 @@ app = FastAPI(
 )
 
 # Applying the concurrency limit middleware (assuming it's a middleware factory)
-app.add_middleware(limit_concurrency())
+app.add_middleware(limit_concurrency)
 
 app.include_router(memory_router)
 app.include_router(embeddings_router)
