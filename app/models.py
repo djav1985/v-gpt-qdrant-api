@@ -1,7 +1,8 @@
+# Standard library imports
 import os
-from typing import List, Optional, Dict, Union
 
-from fastapi import FastAPI, HTTPException, Depends
+# Third-Party Library Imports
+from typing import List, Optional, Union
 from pydantic import BaseModel, Field, validator
 
 # Class for memory parameters
