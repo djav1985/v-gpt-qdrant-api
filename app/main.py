@@ -106,7 +106,7 @@ async def save_memory(params: Memoryparams, api_key: str = Depends(get_api_key))
 async def recall_memory(params: Searchparams, api_key: str = Depends(get_api_key)):
     try:
         # Generate embedding vector for the query
-        response = ai_client.embeddings.create(input=params.query, model=os.getenv("EMBEDDINGS_MODEL"), dimensions=512)
+        response = ai_client.embeddings.create(input=params.query, model=os.getenv("EMBEDDINGS_MODEL"), dimensions=128)
         query_vector = response.data[0].embedding  # Assuming the embedding is nested within the 'data' attribute
 
         # Build search filter based on optional parameters
