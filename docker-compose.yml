@@ -13,13 +13,22 @@ services:
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       EMBEDDINGS_MODEL: text-embedding-3-small
       QDRANT_HOST: http://qdrant:6333
+      # API_KEY: # Optional api key. If set will need key to connect to endpoints.
       QDRANT_API_KEY: xtfpouszusdsdsozlzlwdwac
       BASE_URL: http://qdrant-api
 
   qdrant:
-    image: qdrant/qdrant
+    image: langgenius/qdrant:latest
+    container_name: qdrant
+    restart: always
+    # ports:
+       # - "8060:6333"
     environment:
-      API_KEY: xtfpouszukodiivuaucbgeozlzlwdwac
+      QDRANT_API_KEY: xtfpouszusdsdsozlzlwdwac
+    volumes:
+      - qdrant-data:/qdrant/storage
+      - qdrant-config:/qdrant/config/
 
 volumes:
-  qdrant_data:
+  qdrant-data:
+  qdrant-config:
