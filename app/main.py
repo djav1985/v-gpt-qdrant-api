@@ -1,8 +1,10 @@
+# main.py
 import os
 from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
 from starlette.responses import FileResponse
 
+# Third-Party Library Imports
 from dependencies import limit_concurrency
 from routes.embeddings import embeddings_router
 from routes.memory import memory_router
@@ -15,7 +17,7 @@ app = FastAPI(
 )
 
 # Applying the concurrency limit middleware (assuming it's a middleware factory)
-app.add_middleware(limit_concurrency)
+app.middleware(limit_concurrency)
 
 app.include_router(memory_router)
 app.include_router(embeddings_router)

@@ -1,4 +1,4 @@
-# Third-Party Library Imports
+# routes/embeddings.py
 import numpy as np
 from fastapi import APIRouter, Depends, HTTPException
 from fastembed import TextEmbedding
