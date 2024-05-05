@@ -1,11 +1,6 @@
-# Standard Library Imports
-import os
-from typing import List, Optional, Dict, Union
-
 # Third-Party Library Imports
 import numpy as np
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
 from fastembed import TextEmbedding
 
 # Local Imports
