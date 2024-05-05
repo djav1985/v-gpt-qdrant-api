@@ -6,7 +6,9 @@
 
 This repository contains a FastAPI application for interacting with Qdrant, a vector database, and FastEmbed w/ nomic-ai/nomic-embed-text-v1.5 for embeddings. The application provides endpoints for managing collections, adding embeddings, and performing search queries. Openapi spec at /openapi.json. This is meant for use with custom GPTs or other AI platforms. It can be used to store conversation history (marked AI or User). It can also store custom (Info) entries. Each entry can be marked with metadata. Context: ai, user or info. Keywords: one or more comma separated words that tag entry. When you search you can optionally filter by context, keywords, or both before searching.
 
-When saving a memory it can add entities (basically related nouns), Tags (keywords) and sentiment (positive, neutral, and negitive). Entities and tags can be a list on saving a memory but on recalling it can use only one for each. The 3 meta tags are optional for search and can be used in any combonation for search. So you can basically have the ai for example look up only memeories that are "negitive", or only memories that are realted to entity "bob" that are "positive"
+When saving a memory it can add entities (basically related nouns), Tags (keywords) and sentiment (positive, neutral, and negitive). Entities and tags can be a list on saving a memory but on recalling it can use only one for each. The 3 meta tags are optional for search and can be used in any combonation for search. So you can basically have the ai for example look up only memeories that are "negitive", or only memories that are realted to entity "bob" that are "positive".
+
+The openapi spec at `http://BASE_URL:8077/openapi.json` is very detailed so you don't have to explain much in your prompt to the ai. The spect handle most of that.
 
 ## Example System Prompt
 ~~~
