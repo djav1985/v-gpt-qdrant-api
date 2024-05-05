@@ -38,6 +38,7 @@ For GPTs:
 Use docker-compose.yml
 
 ## Whats New
+- Checkout the dev branch for a version with its own lightweight embedding modle and embeddings endpoint.
   
 ### Endpoints
 
