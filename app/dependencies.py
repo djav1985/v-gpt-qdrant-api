@@ -11,15 +11,18 @@ from fastembed import TextEmbedding
 
 class SingletonTextEmbedding:
     _instance = None
+    _lock = asyncio.Lock()
+
     @classmethod
-    def get_instance(cls):
-        if cls._instance is None:
-            cls._instance = TextEmbedding("nomic-ai/nomic-embed-text-v1.5")
+    async def get_instance(cls):
+        async with cls._lock:
+            if cls._instance is None:
+                cls._instance = TextEmbedding("nomic-ai/nomic-embed-text-v1.5")
         return cls._instance
 
-# Now get_embeddings_model simply returns the singleton instance
-def get_embeddings_model():
-    return SingletonTextEmbedding.get_instance()
+# Update the function to use the new async singleton method
+async def get_embeddings_model():
+    return await SingletonTextEmbedding.get_instance()
 
 # Dependency to get Qdrant client
 async def get_qdrant_client(request: Request) -> AsyncQdrantClient:
