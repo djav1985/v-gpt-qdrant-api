@@ -10,7 +10,7 @@ from fastembed import TextEmbedding
 
 # Local Imports
 from models import EmbeddingParams
-from dependencies import get_api_key, get_qdrant_client, get_embeddings_model
+from dependencies import get_api_key, get_embeddings_model
 
 embeddings_router = APIRouter()
 
