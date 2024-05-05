@@ -39,9 +39,9 @@ Use docker-compose.yml
 ## Whats New
 - Using FastEmbed with nomic-embed-text-v1.5 for fast local embeddings and retrieval to lower costs. This is a small but quality model that works file on low end hardware.
 - Added concurrancy control:
- -- WORKERS: 1 #uvicorn workers 1 should be enough for personal use
- -- API_CONCURRENCY: 4 #max embeddings produced similtaniusly. This stops eccessive CPU usage. 
- -- UVICORN_CONCURRENCY: 32 #this controls the max connections. Anything over the API_concurrancy value is put in query pool. Anything over this number is rejected.
+  - WORKERS: 1 #uvicorn workers 1 should be enough for personal use
+  - API_CONCURRENCY: 4 #max embeddings produced similtaniusly. This stops eccessive CPU usage. 
+  - UVICORN_CONCURRENCY: 32 #this controls the max connections. Anything over the API_concurrancy value is put in query pool. Anything over this number is rejected.
 - On my lowend vps it uses less then 1.5gb ram on load and cam produce 4 embeddings a second.
 - Reorginized the code so its not one big file.
 - switched the connection to qdrant to use grpc as its 10x performant.
