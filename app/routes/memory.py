@@ -1,13 +1,10 @@
 # Standard Library Imports
-import os
 import uuid
 from datetime import datetime
-from typing import List, Optional, Dict, Union
 
 # Third-Party Library Imports
 import numpy as np
-from fastapi import APIRouter, Depends, HTTPException  # Keep APIRouter here
-from pydantic import BaseModel
+from fastapi import APIRouter, Depends, HTTPException
 from qdrant_client import AsyncQdrantClient, models
 from qdrant_client.models import Distance, VectorParams, Filter, FieldCondition, PointStruct
 from fastembed import TextEmbedding
