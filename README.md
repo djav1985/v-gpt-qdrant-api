@@ -17,6 +17,8 @@ This repository contains a FastAPI application for interacting with Qdrant, a ve
 - "save_memory": Store key interactions, info, and preferences (people, places, events, preferences, task details, functionalities, etc..) & attach sentiment, entities and keywords.
 - "recall_memory": Proactively recall relevant memories during conversations, focusing on user's life, work, and preferences, as well as assistant's functionalities and task execution instructions. Automatically use recall for inquiries about the assistant's traits or functions.
 - Collection Name: Use `nxs-assistant` for all memory functions.
+
+** Always use "recall_memory" before answering a question you don't know.
 ~~~
 
 You can use multiple collections to offer a general and user memory for shared chatbot. Just change the instructions a bit.
@@ -36,7 +38,14 @@ Use docker-compose.yml
 
 ## Whats New
 - Using FastEmbed with nomic-embed-text-v1.5 for fast local embeddings and retrieval to lower costs. This is a small but quality model that works file on low end hardware.
-
+- Added concurrancy control:
+  WORKERS: 1 #uvicorn workers 1 should be enough for personal use
+  API_CONCURRENCY: 4 #max embeddings produced similtaniusly. This stops eccessive CPU usage. 
+  UVICORN_CONCURRENCY: 32 #this controls the max connections. Anything over the API_concurrancy value is put in query pool. Anything over this number is rejected.
+- On my lowend vps it uses less then 1.5gb ram on load and cam produce 4 embeddings a second.
+- Reorginized the code so its not one big file.
+- switched the connection to qdrant to use grpc as its 10x performant.
+  
 ### Endpoints
 
 - POST `/collections/`: Create or delete collections in Qdrant.
@@ -57,6 +66,9 @@ curl -X POST "http://localhost:8000/recall_memory/" -H "Content-Type: applicatio
 **Retrieve memories:**
 
 curl -X POST "http://localhost:8000/recall_memory/" -H "Content-Type: application/json" -d '{"collection_name": "my_collection", "query": "example_query", "top_k": 5, "entity": "entity", "tag": "tag", "sentiment": "positive"}'
+
+**Create Embedding:**
+curl -X POST "http://localhost:8000/v1/embeddings/" -H "Content-Type: application/json" -d '{"input": "model": "user": "encoding": "float"}'
 
 ### OpenAPI Specification
 
