@@ -154,7 +154,7 @@ async def create_collection(Params: CreateCollectionParams, api_key: str = Depen
         # Creating payload index for sentiment, entities, and tags
         index_fields = ["sentiment", "entities", "tags"]
         for field in index_fields:
-            await QdrantClient.create_payload_index(
+            await Qdrant.create_payload_index(
                 collection_name=Params.collection_name,
                 field_name=field, field_schema="keyword"
             )
