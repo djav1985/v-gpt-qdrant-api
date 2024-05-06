@@ -29,7 +29,7 @@ async def initialize_text_embedding():
 async def get_embeddings_model():
     return await SingletonTextEmbedding.get_instance()
 
-async def create_qdrant_client():
+async def get_qdrant_client():
     return AsyncQdrantClient(
         url=os.getenv("QDRANT_HOST"),
         api_key=os.getenv("QDRANT_API_KEY")
