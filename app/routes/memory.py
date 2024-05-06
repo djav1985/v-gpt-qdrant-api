@@ -1,4 +1,6 @@
 # routes/memory.py
+
+# Importing necessary libraries and modules
 import uuid
 from datetime import datetime
 
@@ -12,23 +14,31 @@ from qdrant_client import AsyncQdrantClient
 from models import MemoryParams, SearchParams, CreateCollectionParams
 from dependencies import get_api_key, get_qdrant_client, get_embeddings_model
 
+# Creating an instance of the FastAPI router
 memory_router = APIRouter()
 
 # Endpoint for saving memory
 @memory_router.post("/save_memory", operation_id="save_memory")
-async def save_memory(params: MemoryParams, api_key: str = Depends(get_api_key), QdrantClient: AsyncQdrantClient = Depends(get_qdrant_client), FastEmbed: TextEmbedding = Depends(get_embeddings_model)):
+# The function below saves a memory into the Qdrant collection.
+async def save_memory(params: MemoryParams, api_key: str = Depends(get_api_key)):
     try:
-        vector = next(FastEmbed.embed(params.memory))  # Fetch the first item from the generator
+        # Extracting the single vector from the generator
+        embeddings_model = await get_embeddings_model()
+        embeddings_generator = embeddings_model.embed(params.input)
 
-        if isinstance(vector, np.ndarray):
-            vector_list = vector.tolist()  # Convert numpy array to list
-        else:
-            raise ValueError("The embedding is not in the expected format (np.ndarray)")
+        # Fetching the first item from the generator
+        vector = next(embeddings_generator)
 
+        # Converting the vector to a list
+        vector_list = vector.tolist()
+
+        # Generating a unique ID and timestamp for the memory
         timestamp = datetime.utcnow().isoformat()
         unique_id = str(uuid.uuid4())
 
-        # Upsert the memory into the Qdrant collection using PointStruct
+        QdrantClient = await get_qdrant_client()
+
+        # Upserting the memory into the Qdrant collection using PointStruct
         await QdrantClient.upsert(
             collection_name=params.collection_name,
             points=[
@@ -53,18 +63,21 @@ async def save_memory(params: MemoryParams, api_key: str = Depends(get_api_key),
 
 # Endpoint for recalling memory
 @memory_router.post("/recall_memory", operation_id="recall_memory")
-async def recall_memory(params: SearchParams, api_key: str = Depends(get_api_key), QdrantClient: AsyncQdrantClient = Depends(get_qdrant_client), FastEmbed: TextEmbedding = Depends(get_embeddings_model)):
+# The function below recalls a memory from the Qdrant collection based on provided search parameters.
+async def recall_memory(params: SearchParams, api_key: str = Depends(get_api_key)):
     try:
-        # Extract the single vector from the generator
-        vector = next(FastEmbed.embed(params.query))    
-        
-        if not isinstance(vector, np.ndarray):
-            raise ValueError("The embedding is not in the expected format (np.ndarray)")
+        # Extracting the single vector from the generator
+        embeddings_model = await get_embeddings_model()
+        embeddings_generator = embeddings_model.embed(params.input)
 
-        vector_list = vector.tolist()  # Convert numpy array to list
+        # Fetching the first item from the generator
+        vector = next(embeddings_generator)
+
+        # Converting the vector to a list
+        vector_list = vector.tolist()
 
         filter_conditions = []
-        # Create filter conditions based on provided parameters
+        # Creating filter conditions based on provided parameters
         if params.entity:
             filter_conditions.append(
                 models.FieldCondition(
@@ -89,10 +102,12 @@ async def recall_memory(params: SearchParams, api_key: str = Depends(get_api_key
                 )
             )
 
-        # Define the search filter with the specified conditions
+        # Defining the search filter with the specified conditions
         search_filter = models.Filter(must=filter_conditions)
 
-        # Perform the search with the specified filters
+        QdrantClient = await get_qdrant_client()
+
+        # Performing the search with the specified filters
         hits = await QdrantClient.search(
             collection_name=params.collection_name,
             query_vector=vector_list,
@@ -108,7 +123,7 @@ async def recall_memory(params: SearchParams, api_key: str = Depends(get_api_key
             )
         )
 
-        # Format the results
+        # Formatting the results
         results = [{
             "id": hit.id,
             "memory": hit.payload["memory"],
@@ -127,9 +142,11 @@ async def recall_memory(params: SearchParams, api_key: str = Depends(get_api_key
 
 # This is the endpoint that handles requests to create a new collection
 @memory_router.post("/collections", operation_id="create_collection")
-async def create_collection(params: CreateCollectionParams, api_key: str = Depends(get_api_key), QdrantClient: AsyncQdrantClient = Depends(get_qdrant_client)):
+# The function below creates a new collection in Qdrant with specified parameters.
+async def create_collection(params: CreateCollectionParams, api_key: str = Depends(get_api_key)):
     try:
-        # Recreate the collection with specified parameters
+        QdrantClient = await get_qdrant_client()
+        # Recreating the collection with specified parameters
         await QdrantClient.create_collection(
             collection_name=params.collection_name,
             vectors_config=VectorParams(size=768, distance=Distance.COSINE),
@@ -142,7 +159,7 @@ async def create_collection(params: CreateCollectionParams, api_key: str = Depen
             ),
         )
 
-        # Create payload index for sentiment, entities, and tags
+        # Creating payload index for sentiment, entities, and tags
         index_fields = ["sentiment", "entities", "tags"]
         for field in index_fields:
             await QdrantClient.create_payload_index(
