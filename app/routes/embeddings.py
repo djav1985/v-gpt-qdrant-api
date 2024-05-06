@@ -19,7 +19,7 @@ async def embedding_request(params: EmbeddingParams, api_key: str = Depends(get_
         model = await get_embeddings_model()
 
         # Then, use the model instance to call and await the embed method
-        embeddings_generator = await model.embed(params.input)
+        embeddings_generator = model.embed(params.input)
 
         # Fetching the first item from the generator
         vector = next(embeddings_generator)
