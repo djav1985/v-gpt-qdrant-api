@@ -103,7 +103,7 @@ class LoggingSemaphore(asyncio.Semaphore):
         loop = asyncio.get_event_loop()
         future = loop.create_future()
         self.request_queue.put(future)
-        await future
+        return future
 
     def release(self):
         start_time = self.task_start_times.pop(self.task_id, None)
