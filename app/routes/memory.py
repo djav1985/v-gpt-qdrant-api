@@ -13,7 +13,7 @@ from qdrant_client.models import Distance, VectorParams, Filter, FieldCondition,
 
 # Local Imports
 from models import MemoryParams, SearchParams, CreateCollectionParams
-from dependencies import get_api_key, get_qdrant_client, get_embeddings_model
+from dependencies import get_api_key, get_embeddings_model
 
 # Creating an instance of the FastAPI router
 memory_router = APIRouter()
@@ -37,7 +37,7 @@ async def save_memory(params: MemoryParams, api_key: str = Depends(get_api_key))
         timestamp = datetime.utcnow().isoformat()
         unique_id = str(uuid.uuid4())
 
-        QdrantClient = await get_qdrant_client()
+        QdrantClient = AsyncQdrantClient(url=os.getenv("QDRANT_HOST"), api_key=os.getenv("QDRANT_API_KEY"))
 
         # Upserting the memory into the Qdrant collection using PointStruct
         await QdrantClient.upsert(
@@ -106,7 +106,7 @@ async def recall_memory(params: SearchParams, api_key: str = Depends(get_api_key
         # Defining the search filter with the specified conditions
         search_filter = models.Filter(must=filter_conditions)
 
-        QdrantClient = await get_qdrant_client()
+        QdrantClient = AsyncQdrantClient(url=os.getenv("QDRANT_HOST"), api_key=os.getenv("QDRANT_API_KEY"))
 
         # Performing the search with the specified filters
         hits = await QdrantClient.search(
@@ -146,7 +146,7 @@ async def recall_memory(params: SearchParams, api_key: str = Depends(get_api_key
 # The function below creates a new collection in Qdrant with specified parameters.
 async def create_collection(params: CreateCollectionParams, api_key: str = Depends(get_api_key)):
     try:
-        QdrantClient = await get_qdrant_client()
+        QdrantClient = AsyncQdrantClient(url=os.getenv("QDRANT_HOST"), api_key=os.getenv("QDRANT_API_KEY"))
         # Recreating the collection with specified parameters
         await QdrantClient.create_collection(
             collection_name=params.collection_name,
