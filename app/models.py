@@ -1,4 +1,5 @@
 # models.py
+import os
 from typing import List, Optional, Union
 from pydantic import BaseModel, Field, validator
 
@@ -41,3 +42,9 @@ class EmbeddingParams(BaseModel):
         if isinstance(v, list):
             return ' '.join(v)
         return v
+
+    @validator("model")
+    def validate_model(cls, value):
+        if value != os.getenv("LOCALMODEL"):
+            raise ValueError("Model does not match the environment variable LOCALMODEL")
+        return value

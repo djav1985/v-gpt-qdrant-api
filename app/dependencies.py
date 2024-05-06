@@ -18,7 +18,7 @@ class SingletonTextEmbedding:
     async def get_instance(cls):
         async with cls._lock:
             if cls._instance is None:
-                cls._instance = TextEmbedding("BAAI/bge-small-en-v1.5")
+                cls._instance = TextEmbedding(os.getenv("LOCALMODEL"))
         return cls._instance
 
 async def initialize_text_embedding():
