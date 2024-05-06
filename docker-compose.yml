@@ -9,7 +9,7 @@ services:
     ports:
       - "8060:8060"
     environment:
-      QDRANT_HOST: qdrant #uses grpc to connect to port 6334
+      QDRANT_HOST: http://qdrant:6333
       QDRANT_API_KEY:
       #MEMORIES_API_KEY: Optional API key to connect to api
       BASE_URL: http://memories-api
