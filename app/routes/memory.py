@@ -140,7 +140,7 @@ async def recall_memory(Params: SearchParams, api_key: str = Depends(get_api_key
 async def create_collection(Params: CreateCollectionParams, api_key: str = Depends(get_api_key), Qdrant: AsyncQdrantClient = Depends(create_qdrant_client)):
     try:
         # Recreating the collection with specified parameters
-        await QdrantClient.create_collection(
+        await Qdrant.create_collection(
             collection_name=Params.collection_name,
             vectors_config=VectorParams(size=768, distance=Distance.COSINE),
             quantization_config=models.ScalarQuantization(
