@@ -17,10 +17,10 @@ class SingletonTextEmbedding:
             cls._instance = TextEmbedding("nomic-ai/nomic-embed-text-v1.5")
         return cls._instance
 
-# Now get_embeddings_model simply returns the singleton instance
-def get_embeddings_model():
+# Dependency to get embeddings model
+def get_embeddings_model(request: Request = None) -> TextEmbedding:
     return SingletonTextEmbedding.get_instance()
-
+    
 class SingletonQdrantClient:
     _instance = None
 
