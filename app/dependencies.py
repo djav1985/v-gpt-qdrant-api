@@ -23,39 +23,13 @@ class SingletonTextEmbedding:
 # Dependency to get embeddings model
 async def get_embeddings_model(request: Request = None) -> TextEmbedding:
     return await SingletonTextEmbedding.get_instance()
-   class SingletonQdrantClient:
-    _instance = None
-    _lock = asyncio.Lock()
 
-    @classmethod
-    async def get_instance(cls):
-        # Use the lock to ensure that only one coroutine is executing
-        # the instance creation code at a time.
-        async with cls._lock:
-            if cls._instance is None:
-                cls._instance = await cls.create_instance()
-        return cls._instance
-
-    @classmethod
-    async def create_instance(cls):
-        # Asynchronous creation of AsyncQdrantClient.
-        return AsyncQdrantClient(
-            host=os.getenv("QDRANT_HOST"),
-            prefer_grpc=True,
-            grpc_port=6334,
-            https=False,
-            api_key=os.getenv("QDRANT_API_KEY")
-        )
-
-# Dependency to get Qdrant client
 class SingletonQdrantClient:
     _instance = None
     _lock = asyncio.Lock()
 
     @classmethod
     async def get_instance(cls):
-        # Use the lock to ensure that only one coroutine is executing
-        # the instance creation code at a time.
         async with cls._lock:
             if cls._instance is None:
                 cls._instance = await cls.create_instance()
@@ -63,7 +37,6 @@ class SingletonQdrantClient:
 
     @classmethod
     async def create_instance(cls):
-        # Asynchronous creation of AsyncQdrantClient.
         return AsyncQdrantClient(
             host=os.getenv("QDRANT_HOST"),
             prefer_grpc=True,
@@ -71,11 +44,11 @@ class SingletonQdrantClient:
             https=False,
             api_key=os.getenv("QDRANT_API_KEY")
         )
-        
+
 # Dependency to get Qdrant client
 async def get_qdrant_client(request: Request) -> AsyncQdrantClient:
     return await SingletonQdrantClient.get_instance()
-    
+
 # This function checks if the provided API key is valid or not
 async def get_api_key(credentials: HTTPAuthorizationCredentials = Depends(HTTPBearer(auto_error=False))):
     if os.getenv("MEMORIES_API_KEY") and (not credentials or credentials.credentials != os.getenv("MEMORIES_API_KEY")):
@@ -101,12 +74,12 @@ class LoggingSemaphore(asyncio.Semaphore):
         return self.total_permits - self._value
 
 # Create an instance of the semaphore with logging
-semaphore = LoggingSemaphore(int(os.getenv("API_CONCURRENCY", "5")))
+semaphore = LoggingSemaphore(int(os.getenv("API_CONCERNS", "5")))
 
 # Middleware to limit concurrency and log task status
 async def limit_concurrency(request: Request, call_next):
+    await semaphore.acquire()  # Acquire semaphore before processing the request
     try:
-        await semaphore.acquire()  # Acquire semaphore before processing the request
         response = await call_next(request)
         return response
     except Exception as e:
