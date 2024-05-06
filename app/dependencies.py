@@ -1,5 +1,6 @@
 # dependencies.py
 import os
+import time
 import asyncio
 from asyncio import Semaphore
 
@@ -60,21 +61,26 @@ class LoggingSemaphore(asyncio.Semaphore):
     def __init__(self, value: int):
         super().__init__(value)
         self.total_permits = value
+        self.task_start_times = {}  # Dictionary to store task start times
 
     async def acquire(self):
+        task_id = asyncio.current_task().get_name()  # Get the name of the current task
+        self.task_start_times[task_id] = time.monotonic()  # Store the start time of the task
         await super().acquire()
-        active_tasks = self.total_permits - self._value  # Calculate active tasks based on the semaphore's remaining value
-        print(f"Current active tasks: {active_tasks}")
 
     def release(self):
+        task_id = asyncio.current_task().get_name()
+        start_time = self.task_start_times.pop(task_id)  # Retrieve and remove the task's start time
+        elapsed_time = time.monotonic() - start_time
         super().release()
-        active_tasks = self.total_permits - self._value  # Update active tasks after releasing
+        active_tasks = self.total_permits - self._value  # Calculate active tasks after releasing
+        print(f"Task completed in: {elapsed_time:.4f} seconds. Current active tasks: {active_tasks}")
 
     def get_active_tasks(self):
         return self.total_permits - self._value
 
 # Create an instance of the semaphore with logging
-semaphore = LoggingSemaphore(int(os.getenv("API_CONCERNS", "5")))
+semaphore = LoggingSemaphore(int(os.getenv("API_CONCERNS", "8")))
 
 # Middleware to limit concurrency and log task status
 async def limit_concurrency(request: Request, call_next):

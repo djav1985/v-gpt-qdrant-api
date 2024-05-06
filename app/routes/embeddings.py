@@ -11,15 +11,16 @@ embeddings_router = APIRouter()
 
 # This is the endpoint that handles embedding requests
 @embeddings_router.post("/v1/embeddings", operation_id="create_embedding")
-async def embedding_request(params: EmbeddingParams, api_key: str = Depends(get_api_key), FastEmbed: TextEmbedding = Depends(get_embeddings_model)):
+async def embedding_request(params: EmbeddingParams, api_key: str = Depends(get_api_key)):
     try:
         # Extract the single vector from the generator
-        vector = next(FastEmbed.embed(params.input))
+        embeddings_model = await get_embeddings_model()
+        embeddings_generator = embeddings_model.embed(params.input)
 
-        if isinstance(vector, np.ndarray):
-            vector_list = vector.tolist()  # Convert numpy array to list
-        else:
-            raise ValueError("The embedding is not in the expected format (np.ndarray)")  # Exception handling for unexpected formats
+         # This fetches the first item from the generator
+        vector = next(embeddings_generator)
+
+        vector_list = vector.tolist()
 
         # Construct the response data with usage details
         response_data = {
