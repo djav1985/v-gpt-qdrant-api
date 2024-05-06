@@ -94,13 +94,14 @@ class LoggingSemaphore(asyncio.Semaphore):
         print(f"Current active tasks: {active_tasks}")
 
     def release(self):
-    super().release()
-    active_tasks = self.total_permits - self._value  # Update active tasks after releasing
-    elapsed_time = time.monotonic() - self.task_start_times.pop(task_id)
-    print(f"Task completed in: {elapsed_time:.4f} seconds.")
+        super().release()
+        active_tasks = self.total_permits - self._value  # Update active tasks after releasing
+        elapsed_time = time.monotonic() - self.task_start_times.pop(task_id)
+        print(f"Task completed in: {elapsed_time:.4f} seconds.")
 
     def get_active_tasks(self):
         return self.total_permits - self._value
+
 
 # Create an instance of the semaphore with logging
 semaphore = LoggingSemaphore(int(os.getenv("API_CONCURRENCY", "5")))
