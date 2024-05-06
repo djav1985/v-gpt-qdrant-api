@@ -33,7 +33,7 @@ class CreateCollectionParams(BaseModel):
 # Class for embedding parameters
 class EmbeddingParams(BaseModel):
     input: Union[str, List[str]]
-    model: str
+    model: str = Field(os.getenv("LOCALMODEL"), description="The name of the embedding model.")
     user: Optional[str] = "unassigned"
     encoding_format: Optional[str] = "float"
 
