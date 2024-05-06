@@ -91,7 +91,7 @@ class LoggingSemaphore(asyncio.Semaphore):
         self.request_queue = Queue()
 
     async def acquire(self):
-        task_id = id(asyncio.current_task())  # Unique identifier for the task
+        task_id = str(id(asyncio.current_task()))[-6:]  # Using the last six digits of the task ID
         if self._value <= 0:
             await self.enqueue_request()
         await super().acquire()
@@ -106,7 +106,7 @@ class LoggingSemaphore(asyncio.Semaphore):
         await future  # Wait until the semaphore is available
 
     def release(self):
-        task_id = id(asyncio.current_task())  # Same task ID as in acquire
+        task_id = str(id(asyncio.current_task()))[-6:]  # Using the last six digits of the task ID
         start_time = self.task_start_times.pop(task_id, None)
         if start_time is not None:
             elapsed_time = time.monotonic() - start_time
