@@ -29,31 +29,7 @@ async def initialize_text_embedding():
 async def get_embeddings_model():
     return await SingletonTextEmbedding.get_instance()
 
-class SingletonQdrantClient:
-    _instance = None
-    _lock = asyncio.Lock()
-
-    @classmethod
-    async def get_instance(cls):
-        async with cls._lock:
-            if cls._instance is None:
-                cls._instance = await cls.create_instance()
-        return cls._instance
-
-    @classmethod
-    async def create_instance(cls):
-            # Attempt to create a new instance of AsyncQdrantClient
-            return AsyncQdrantClient(
-                host=os.getenv("QDRANT_HOST"),
-                prefer_grpc=True,
-                grpc_port=6334,
-                https=False,
-                api_key=os.getenv("QDRANT_API_KEY")
-            )
-        
-# Dependency to get Qdrant client
-async def get_qdrant_client():
-    return await SingletonQdrantClient.get_instance()
+db_client = AsyncQdrantClient(host=os.getenv("QDRANT_HOST"), prefer_grpc=True, grpc_port=6334, https=False, api_key=os.getenv("QDRANT_API_KEY"))
     
 # This function checks if the provided API key is valid or not
 async def get_api_key(credentials: HTTPAuthorizationCredentials = Depends(HTTPBearer(auto_error=False))):
