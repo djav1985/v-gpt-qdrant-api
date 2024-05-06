@@ -11,34 +11,70 @@ from fastembed import TextEmbedding
 
 class SingletonTextEmbedding:
     _instance = None
+    _lock = asyncio.Lock()
+
     @classmethod
-    def get_instance(cls):
-        if cls._instance is None:
-            cls._instance = TextEmbedding("nomic-ai/nomic-embed-text-v1.5")
+    async def get_instance(cls):
+        async with cls._lock:
+            if cls._instance is None:
+                cls._instance = TextEmbedding("nomic-ai/nomic-embed-text-v1.5")
         return cls._instance
 
 # Dependency to get embeddings model
-def get_embeddings_model(request: Request = None) -> TextEmbedding:
-    return SingletonTextEmbedding.get_instance()
-    
-class SingletonQdrantClient:
+async def get_embeddings_model(request: Request = None) -> TextEmbedding:
+    return await SingletonTextEmbedding.get_instance()
+   class SingletonQdrantClient:
     _instance = None
+    _lock = asyncio.Lock()
 
     @classmethod
-    def get_instance(cls):
-        if cls._instance is None:
-            cls._instance = AsyncQdrantClient(
-                host=os.getenv("QDRANT_HOST"),
-                prefer_grpc=True,
-                grpc_port=6334,
-                https=False,
-                api_key=os.getenv("QDRANT_API_KEY")
-            )
+    async def get_instance(cls):
+        # Use the lock to ensure that only one coroutine is executing
+        # the instance creation code at a time.
+        async with cls._lock:
+            if cls._instance is None:
+                cls._instance = await cls.create_instance()
         return cls._instance
 
+    @classmethod
+    async def create_instance(cls):
+        # Asynchronous creation of AsyncQdrantClient.
+        return AsyncQdrantClient(
+            host=os.getenv("QDRANT_HOST"),
+            prefer_grpc=True,
+            grpc_port=6334,
+            https=False,
+            api_key=os.getenv("QDRANT_API_KEY")
+        )
+
 # Dependency to get Qdrant client
-def get_qdrant_client(request: Request) -> AsyncQdrantClient:
-    return SingletonQdrantClient.get_instance()
+class SingletonQdrantClient:
+    _instance = None
+    _lock = asyncio.Lock()
+
+    @classmethod
+    async def get_instance(cls):
+        # Use the lock to ensure that only one coroutine is executing
+        # the instance creation code at a time.
+        async with cls._lock:
+            if cls._instance is None:
+                cls._instance = await cls.create_instance()
+        return cls._instance
+
+    @classmethod
+    async def create_instance(cls):
+        # Asynchronous creation of AsyncQdrantClient.
+        return AsyncQdrantClient(
+            host=os.getenv("QDRANT_HOST"),
+            prefer_grpc=True,
+            grpc_port=6334,
+            https=False,
+            api_key=os.getenv("QDRANT_API_KEY")
+        )
+        
+# Dependency to get Qdrant client
+async def get_qdrant_client(request: Request) -> AsyncQdrantClient:
+    return await SingletonQdrantClient.get_instance()
     
 # This function checks if the provided API key is valid or not
 async def get_api_key(credentials: HTTPAuthorizationCredentials = Depends(HTTPBearer(auto_error=False))):
