@@ -87,5 +87,5 @@ async def limit_concurrency(request: Request, call_next):
         print(f"Error processing request: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
     finally:
-        await asyncio.sleep(os.getenv("RUN_BUFFER", "1"))  # Introduce a 2-second delay before releasing the semaphore
+        await asyncio.sleep(int(os.getenv("RUN_BUFFER", "1")))  # Introduce a 2-second delay before releasing the semaphore
         semaphore.release()  # Release semaphore after processing
