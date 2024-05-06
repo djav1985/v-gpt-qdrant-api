@@ -1,6 +1,4 @@
 # routes/embeddings.py
-
-# Importing necessary libraries and modules
 import numpy as np
 from fastapi import APIRouter, Depends, HTTPException
 from fastembed import TextEmbedding
