@@ -87,6 +87,7 @@ class LoggingSemaphore(asyncio.Semaphore):
     def __init__(self, value: int):
         super().__init__(value)
         self.total_permits = value
+        self.task_start_times = {}
 
     async def acquire(self):
         await super().acquire()
