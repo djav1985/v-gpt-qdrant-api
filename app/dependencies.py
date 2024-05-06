@@ -21,6 +21,9 @@ class SingletonTextEmbedding:
                 cls._instance = TextEmbedding("nomic-ai/nomic-embed-text-v1.5")
         return cls._instance
 
+async def initialize_text_embedding():
+    await SingletonTextEmbedding.get_instance()
+
 # Dependency to get embeddings model
 async def get_embeddings_model():
     return await SingletonTextEmbedding.get_instance()
