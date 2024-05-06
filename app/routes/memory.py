@@ -27,8 +27,8 @@ async def save_memory(Params: MemoryParams, api_key: str = Depends(get_api_key),
         # Then, use the model instance to call and await the embed method
         embeddings_generator = model.embed(Params.memory)
 
-        # Fetching the first item from the generator asynchronously
-        vector = await embeddings_generator.__anext__()
+        # Extract the single vector from the generator
+        vector = next(embeddings_generator)
 
         # Generating a unique ID and timestamp for the memory
         timestamp = datetime.utcnow().isoformat()
@@ -68,8 +68,8 @@ async def recall_memory(Params: SearchParams, api_key: str = Depends(get_api_key
         # Then, use the model instance to call and await the embed method
         embeddings_generator = model.embed(Params.query)
 
-        # Fetching the first item from the generator asynchronously
-        vector = await embeddings_generator.__anext__()
+        # Extract the single vector from the generator
+        vector = next(embeddings_generator)
 
         filter_conditions = []
         # Creating filter conditions based on provided parameters
