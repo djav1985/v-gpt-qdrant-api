@@ -15,8 +15,11 @@ embeddings_router = APIRouter()
 # The function below creates an embedding for the given input text.
 async def embedding_request(params: EmbeddingParams, api_key: str = Depends(get_api_key)):
     try:
-        # Extracting the single vector from the generator
-        embeddings_generator = await get_embeddings_model().embed(params.input)
+        # First, await the completion of get_embeddings_model to get the model instance
+        model = await get_embeddings_model()
+
+        # Then, use the model instance to call and await the embed method
+        embeddings_generator = await model.embed(params.input)
 
         # Fetching the first item from the generator
         vector = next(embeddings_generator)
