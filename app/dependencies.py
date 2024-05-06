@@ -18,7 +18,7 @@ class SingletonTextEmbedding:
         return cls._instance
 
 # Dependency to get embeddings model
-def get_embeddings_model(request: Request = None) -> TextEmbedding:
+async def get_embeddings_model(request: Request = None) -> TextEmbedding:
     return SingletonTextEmbedding.get_instance()
     
 class SingletonQdrantClient:
@@ -37,7 +37,7 @@ class SingletonQdrantClient:
         return cls._instance
 
 # Dependency to get Qdrant client
-def get_qdrant_client(request: Request) -> AsyncQdrantClient:
+async def get_qdrant_client(request: Request) -> AsyncQdrantClient:
     return SingletonQdrantClient.get_instance()
     
 # This function checks if the provided API key is valid or not
