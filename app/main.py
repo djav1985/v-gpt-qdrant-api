@@ -6,7 +6,7 @@ from starlette.responses import FileResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
 # Importing dependencies and routers
-from dependencies import limit_concurrency, initialize_text_embedding, reconnect_qdrant_client
+from dependencies import limit_concurrency, initialize_text_embedding
 from routes.embeddings import embeddings_router
 from routes.memory import memory_router
 from routes.root import root_router
