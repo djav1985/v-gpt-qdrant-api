@@ -16,8 +16,7 @@ embeddings_router = APIRouter()
 async def embedding_request(params: EmbeddingParams, api_key: str = Depends(get_api_key)):
     try:
         # Extracting the single vector from the generator
-        embeddings_model = await get_embeddings_model()
-        embeddings_generator = embeddings_model.embed(params.input)
+        embeddings_generator = await get_embeddings_model().embed(params.input)
 
         # Fetching the first item from the generator
         vector = next(embeddings_generator)

@@ -22,9 +22,9 @@ memory_router = APIRouter()
 # The function below saves a memory into the Qdrant collection.
 async def save_memory(params: MemoryParams, api_key: str = Depends(get_api_key)):
     try:
-        # Extracting the single vector from the generator
-        embeddings_model = await get_embeddings_model()
-        embeddings_generator = embeddings_model.embed(params.memory)
+        # Extracting the single vector from the generatorfrom dependencies import get_api_key, get_embeddings_model
+
+        embeddings_generator = await get_embeddings_model().embed(params.memory)
 
         # Fetching the first item from the generator
         vector = next(embeddings_generator)
@@ -66,9 +66,9 @@ async def save_memory(params: MemoryParams, api_key: str = Depends(get_api_key))
 # The function below recalls a memory from the Qdrant collection based on provided search parameters.
 async def recall_memory(params: SearchParams, api_key: str = Depends(get_api_key)):
     try:
-        # Extracting the single vector from the generator
-        embeddings_model = await get_embeddings_model()
-        embeddings_generator = embeddings_model.embed(params.query)
+        # Extracting the single vector from the generatorfrom dependencies import get_api_key, get_embeddings_model
+
+        embeddings_generator = await get_embeddings_model().embed(params.query)
 
         # Fetching the first item from the generator
         vector = next(embeddings_generator)
