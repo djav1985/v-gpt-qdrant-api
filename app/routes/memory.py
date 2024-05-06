@@ -4,7 +4,6 @@ import uuid
 from datetime import datetime
 
 # Third-Party Library Imports
-import numpy as np
 from fastapi import APIRouter, Depends, HTTPException
 from fastembed import TextEmbedding
 from qdrant_client import AsyncQdrantClient, models
@@ -12,7 +11,7 @@ from qdrant_client.models import Distance, VectorParams, Filter, FieldCondition,
 
 # Local Imports
 from models import MemoryParams, SearchParams, CreateCollectionParams
-from dependencies import get_api_key, get_embeddings_model
+from dependencies import get_api_key, get_embeddings_model, create_qdrant_client
 
 # Creating an instance of the FastAPI router
 memory_router = APIRouter()
@@ -20,40 +19,35 @@ memory_router = APIRouter()
 # Endpoint for saving memory
 @memory_router.post("/save_memory", operation_id="save_memory")
 # The function below saves a memory into the Qdrant collection.
-async def save_memory(params: MemoryParams, api_key: str = Depends(get_api_key)):
+async def save_memory(Params: MemoryParams, api_key: str = Depends(get_api_key), Qdrant: AsyncQdrantClient = Depends(create_qdrant_client)):
     try:
         # First, await the completion of get_embeddings_model to get the model instance
         model = await get_embeddings_model()
 
         # Then, use the model instance to call and await the embed method
-        embeddings_generator = model.embed(params.memory)
+        embeddings_generator = model.embed(Params.memory)
 
-        # Fetching the first item from the generator
-        vector = next(embeddings_generator)
-
-        # Converting the vector to a list
-        vector_list = vector.tolist()
+        # Fetching the first item from the generator asynchronously
+        vector = await embeddings_generator.__anext__()
 
         # Generating a unique ID and timestamp for the memory
         timestamp = datetime.utcnow().isoformat()
         unique_id = str(uuid.uuid4())
 
-        QdrantClient = AsyncQdrantClient(url=os.getenv("QDRANT_HOST"), api_key=os.getenv("QDRANT_API_KEY"))
-
         # Upserting the memory into the Qdrant collection using PointStruct
-        await QdrantClient.upsert(
-            collection_name=params.collection_name,
+        await Qdrant.upsert(
+            collection_name=Params.collection_name,
             points=[
                 models.PointStruct(
                     id=unique_id,
                     payload={
-                        "memory": params.memory,
+                        "memory": Params.memory,
                         "timestamp": timestamp,
-                        "sentiment": params.sentiment,
-                        "entities": params.entities,
-                        "tags": params.tags,
+                        "sentiment": Params.sentiment,
+                        "entities": Params.entities,
+                        "tags": Params.tags,
                     },
-                    vector=vector_list,
+                    vector=vector.tolist(),
                 ),
             ],
         )
@@ -66,59 +60,54 @@ async def save_memory(params: MemoryParams, api_key: str = Depends(get_api_key))
 # Endpoint for recalling memory
 @memory_router.post("/recall_memory", operation_id="recall_memory")
 # The function below recalls a memory from the Qdrant collection based on provided search parameters.
-async def recall_memory(params: SearchParams, api_key: str = Depends(get_api_key)):
+async def recall_memory(Params: SearchParams, api_key: str = Depends(get_api_key), Qdrant: AsyncQdrantClient = Depends(create_qdrant_client)):
     try:
         # First, await the completion of get_embeddings_model to get the model instance
         model = await get_embeddings_model()
 
         # Then, use the model instance to call and await the embed method
-        embeddings_generator = model.embed(params.query)
+        embeddings_generator = model.embed(Params.query)
 
-        # Fetching the first item from the generator
-        vector = next(embeddings_generator)
-
-        # Converting the vector to a list
-        vector_list = vector.tolist()
+        # Fetching the first item from the generator asynchronously
+        vector = await embeddings_generator.__anext__()
 
         filter_conditions = []
         # Creating filter conditions based on provided parameters
-        if params.entity:
+        if Params.entity:
             filter_conditions.append(
                 models.FieldCondition(
                     key="entities",
-                    match=models.MatchValue(value=params.entity)
+                    match=models.MatchValue(value=Params.entity)
                 )
             )
 
-        if params.sentiment:
+        if Params.sentiment:
             filter_conditions.append(
                 models.FieldCondition(
                     key="sentiment",
-                    match=models.MatchAny(any=[params.sentiment])
+                    match=models.MatchAny(any=[Params.sentiment])
                 )
             )
 
-        if params.tag:
+        if Params.tag:
             filter_conditions.append(
                 models.FieldCondition(
                     key="tags",
-                    match=models.MatchAny(any=[params.tag])
+                    match=models.MatchAny(any=[Params.tag])
                 )
             )
 
         # Defining the search filter with the specified conditions
         search_filter = models.Filter(must=filter_conditions)
 
-        QdrantClient = AsyncQdrantClient(url=os.getenv("QDRANT_HOST"), api_key=os.getenv("QDRANT_API_KEY"))
-
         # Performing the search with the specified filters
-        hits = await QdrantClient.search(
-            collection_name=params.collection_name,
-            query_vector=vector_list,
+        hits = await Qdrant.search(
+            collection_name=Params.collection_name,
+            query_vector=vector.tolist(),
             query_filter=search_filter,
             with_payload=True,
-            limit=params.top_k,
-            search_params=models.SearchParams(
+            limit=Params.top_k,
+            search_Params=models.SearchParams(
                 quantization=models.QuantizationSearchParams(
                     ignore=False,
                     rescore=True,
@@ -147,13 +136,12 @@ async def recall_memory(params: SearchParams, api_key: str = Depends(get_api_key
 # This is the endpoint that handles requests to create a new collection
 @memory_router.post("/collections", operation_id="create_collection")
 # The function below creates a new collection in Qdrant with specified parameters.
-async def create_collection(params: CreateCollectionParams, api_key: str = Depends(get_api_key)):
+async def create_collection(Params: CreateCollectionParams, api_key: str = Depends(get_api_key), Qdrant: AsyncQdrantClient = Depends(create_qdrant_client)):
     try:
-        QdrantClient = AsyncQdrantClient(url=os.getenv("QDRANT_HOST"), api_key=os.getenv("QDRANT_API_KEY"))
         # Recreating the collection with specified parameters
-        await QdrantClient.create_collection(
-            collection_name=params.collection_name,
-            vectors_config=VectorParams(size=768, distance=Distance.COSINE),
+        await Qdrant.create_collection(
+            collection_name=Params.collection_name,
+            vectors_config=VectorParams(size=384, distance=Distance.COSINE),
             quantization_config=models.ScalarQuantization(
                 scalar=models.ScalarQuantizationConfig(
                     type=models.ScalarType.INT8,
@@ -167,11 +155,11 @@ async def create_collection(params: CreateCollectionParams, api_key: str = Depen
         index_fields = ["sentiment", "entities", "tags"]
         for field in index_fields:
             await QdrantClient.create_payload_index(
-                collection_name=params.collection_name,
+                collection_name=Params.collection_name,
                 field_name=field, field_schema="keyword"
             )
 
-        return {"message": f"Collection '{params.collection_name}' created successfully"}
+        return {"message": f"Collection '{Params.collection_name}' created successfully"}
 
     except Exception as e:
         print(f"An error occurred: {e}")
