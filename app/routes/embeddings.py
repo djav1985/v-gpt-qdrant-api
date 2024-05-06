@@ -32,7 +32,7 @@ async def embedding_request(Params: EmbeddingParams, api_key: str = Depends(get_
                 "embedding": vector.tolist(),
                 "index": 0
             }],
-            "model": os.getenv("LOCALMODEL"),
+            "model": os.getenv("LOCAL_MODEL"),
             "usage": {
                 # Counting the tokens in the input prompt
                 "prompt_tokens": len(Params.input.split()),

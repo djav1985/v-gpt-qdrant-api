@@ -33,7 +33,7 @@ class CreateCollectionParams(BaseModel):
 # Class for embedding parameters
 class EmbeddingParams(BaseModel):
     input: Union[str, List[str]]
-    model: str = Field(os.getenv("LOCALMODEL"), description="The name of the embedding model.")
+    model: str = Field(os.getenv("LOCAL_MODEL"), description="The name of the embedding model.")
     user: Optional[str] = "unassigned"
     encoding_format: Optional[str] = "float"
 
@@ -45,6 +45,6 @@ class EmbeddingParams(BaseModel):
 
     @validator("model")
     def validate_model(cls, value):
-        if value != os.getenv("LOCALMODEL"):
-            raise ValueError("Model does not match the environment variable LOCALMODEL")
+        if value != os.getenv("LOCAL_MODEL"):
+            raise ValueError("Model does not match the environment variable LOCAL_MODEL")
         return value

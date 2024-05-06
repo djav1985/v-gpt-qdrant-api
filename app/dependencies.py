@@ -19,7 +19,7 @@ class SingletonTextEmbedding:
     async def get_instance(cls):
         async with cls._lock:
             if cls._instance is None:
-                cls._instance = TextEmbedding(os.getenv("LOCALMODEL"))
+                cls._instance = TextEmbedding(os.getenv("LOCAL_MODEL"))
         return cls._instance
 
 async def initialize_text_embedding():
@@ -30,7 +30,7 @@ async def get_embeddings_model():
     return await SingletonTextEmbedding.get_instance()
 
 async def create_qdrant_client():
-    return AsyncQdrantClient(url=os.getenv("QDRANT_HOST"), api_key=os.getenv("QDRANT_API_KEY"))
+    return AsyncQdrantClient(url=os.getenv("QDRANT_HOST", "http://qdrant:6333"), api_key=os.getenv("QDRANT_API_KEY"))
 
 # This function checks if the provided API key is valid or not
 async def get_api_key(credentials: HTTPAuthorizationCredentials = Depends(HTTPBearer(auto_error=False))):
@@ -87,5 +87,5 @@ async def limit_concurrency(request: Request, call_next):
         print(f"Error processing request: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
     finally:
-        await asyncio.sleep(2)  # Introduce a 2-second delay before releasing the semaphore
+        await asyncio.sleep(os.getenv("RUN_BUFFER", "1"))  # Introduce a 2-second delay before releasing the semaphore
         semaphore.release()  # Release semaphore after processing

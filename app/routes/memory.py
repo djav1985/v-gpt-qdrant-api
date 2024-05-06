@@ -141,7 +141,7 @@ async def create_collection(Params: CreateCollectionParams, api_key: str = Depen
         # Recreating the collection with specified parameters
         await Qdrant.create_collection(
             collection_name=Params.collection_name,
-            vectors_config=VectorParams(size=os.getenv("dim"), distance=Distance.COSINE),
+            vectors_config=VectorParams(size=os.getenv("DIM"), distance=Distance.COSINE),
             quantization_config=models.ScalarQuantization(
                 scalar=models.ScalarQuantizationConfig(
                     type=models.ScalarType.INT8,
