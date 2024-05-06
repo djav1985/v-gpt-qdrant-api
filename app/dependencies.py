@@ -29,8 +29,16 @@ async def initialize_text_embedding():
 async def get_embeddings_model():
     return await SingletonTextEmbedding.get_instance()
 
-db_client = AsyncQdrantClient(host=os.getenv("QDRANT_HOST"), prefer_grpc=True, grpc_port=6334, https=False, api_key=os.getenv("QDRANT_API_KEY"))
-    
+async def get_qdrant_client() -> AsyncQdrantClient:
+    return AsyncQdrantClient(
+        host=os.getenv("QDRANT_HOST"),
+        port=6333,
+        prefer_grpc=True,
+        grpc_port=6334,
+        https=False,
+        api_key=os.getenv("QDRANT_API_KEY")
+    )
+
 # This function checks if the provided API key is valid or not
 async def get_api_key(credentials: HTTPAuthorizationCredentials = Depends(HTTPBearer(auto_error=False))):
     if os.getenv("MEMORIES_API_KEY") and (not credentials or credentials.credentials != os.getenv("MEMORIES_API_KEY")):
