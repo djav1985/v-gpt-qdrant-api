@@ -21,17 +21,25 @@ class SingletonTextEmbedding:
 def get_embeddings_model():
     return SingletonTextEmbedding.get_instance()
 
-# Dependency to get Qdrant client
-async def get_qdrant_client(request: Request) -> AsyncQdrantClient:
-    db_client = AsyncQdrantClient(
-        host=os.getenv("QDRANT_HOST"),
-        prefer_grpc=True,
-        grpc_port=6334,
-        https=False,
-        api_key=os.getenv("QDRANT_API_KEY")
-    )
-    return db_client
+class SingletonQdrantClient:
+    _instance = None
 
+    @classmethod
+    def get_instance(cls):
+        if cls._instance is None:
+            cls._instance = AsyncQdrantClient(
+                host=os.getenv("QDRANT_HOST"),
+                prefer_grpc=True,
+                grpc_port=6334,
+                https=False,
+                api_key=os.getenv("QDRANT_API_KEY")
+            )
+        return cls._instance
+
+# Dependency to get Qdrant client
+def get_qdrant_client(request: Request) -> AsyncQdrantClient:
+    return SingletonQdrantClient.get_instance()
+    
 # This function checks if the provided API key is valid or not
 async def get_api_key(credentials: HTTPAuthorizationCredentials = Depends(HTTPBearer(auto_error=False))):
     if os.getenv("MEMORIES_API_KEY") and (not credentials or credentials.credentials != os.getenv("MEMORIES_API_KEY")):
