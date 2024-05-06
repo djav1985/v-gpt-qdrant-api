@@ -14,7 +14,7 @@ embeddings_router = APIRouter()
 async def embedding_request(params: EmbeddingParams, api_key: str = Depends(get_api_key), FastEmbed: TextEmbedding = Depends(get_embeddings_model)):
     try:
         # Extract the single vector from the generator
-        vector = next(FastEmbed.embed(params.input)
+        vector = next(FastEmbed.embed(params.input))
 
         if isinstance(vector, np.ndarray):
             vector_list = vector.tolist()  # Convert numpy array to list
