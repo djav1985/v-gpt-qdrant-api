@@ -37,7 +37,7 @@ async def embedding_request(Params: EmbeddingParams, api_key: str = Depends(get_
                 # Counting the tokens in the input prompt
                 "prompt_tokens": len(Params.input.split()),
                 # Counting the tokens in the generated vector
-                "total_tokens": len(vector_list)
+                "total_tokens": len(vector.tolist())
             }
         }
 
