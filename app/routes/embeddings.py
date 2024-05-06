@@ -14,7 +14,7 @@ embeddings_router = APIRouter()
 async def embedding_request(params: EmbeddingParams, api_key: str = Depends(get_api_key)):
     try:
         # Generate an embedding from the memory text using the AI model
-        embeddings_generator = await (await get_embeddings_model()).embed(params.input)
+        embeddings_generator = get_embeddings_model().embed(params.input)
 
         # Extract the single vector from the generator
         vector = next(embeddings_generator)  # This fetches the first item from the generator
