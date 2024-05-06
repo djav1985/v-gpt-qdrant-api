@@ -41,17 +41,40 @@ class SingletonQdrantClient:
 
     @classmethod
     async def create_instance(cls):
-        return AsyncQdrantClient(
-            host=os.getenv("QDRANT_HOST"),
-            prefer_grpc=True,
-            grpc_port=6334,
-            https=False,
-            api_key=os.getenv("QDRANT_API_KEY")
-        )
+        try:
+            # Attempt to create a new instance of AsyncQdrantClient
+            return AsyncQdrantClient(
+                host=os.getenv("QDRANT_HOST"),
+                prefer_grpc=True,
+                grpc_port=6334,
+                https=False,
+                api_key=os.getenv("QDRANT_API_KEY")
+            )
+        except Exception as e:
+            print(f"Failed to create Qdrant client instance: {e}")
+            # Handle connection errors and attempt to reconnect
+            await asyncio.sleep(5)  # Wait for a short time before retrying
+            return await cls.create_instance()  # Recursive call to retry creation
+
+# Method to reconnect Qdrant client if it gets disconnected
+async def reconnect_qdrant_client():
+    qdrant_client = await get_qdrant_client()
+    if not qdrant_client.is_connected():
+        # Reinitialize the Qdrant client instance
+        SingletonQdrantClient._instance = None
+        await get_qdrant_client()
 
 # Dependency to get Qdrant client
 async def get_qdrant_client():
-    return await SingletonQdrantClient.get_instance()
+    try:
+        qdrant_client = await SingletonQdrantClient.get_instance()
+        return qdrant_client
+    except Exception as e:
+        print(f"Error getting Qdrant client: {e}")
+        # Attempt to reconnect
+        await reconnect_qdrant_client()
+        # Retry getting the Qdrant client instance
+        return await SingletonQdrantClient.get_instance()
 
 # This function checks if the provided API key is valid or not
 async def get_api_key(credentials: HTTPAuthorizationCredentials = Depends(HTTPBearer(auto_error=False))):

@@ -1,13 +1,11 @@
-# main.py
-
-# Importing necessary libraries and modules
 import os
-from fastapi import FastAPI, HTTPException
+import asyncio
+from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from starlette.responses import FileResponse
 
-# Third-Party Library Imports
-from dependencies import limit_concurrency, initialize_text_embedding
+# Importing dependencies and routers
+from dependencies import limit_concurrency, initialize_text_embedding, reconnect_qdrant_client
 from routes.embeddings import embeddings_router
 from routes.memory import memory_router
 from routes.root import root_router
