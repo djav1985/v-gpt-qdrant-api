@@ -18,7 +18,7 @@ class SingletonTextEmbedding:
         return cls._instance
 
 # Dependency to get embeddings model
-async def get_embeddings_model(request: Request = None) -> TextEmbedding:
+def get_embeddings_model(request: Request = None) -> TextEmbedding:
     return SingletonTextEmbedding.get_instance()
     
 class SingletonQdrantClient:
@@ -37,7 +37,7 @@ class SingletonQdrantClient:
         return cls._instance
 
 # Dependency to get Qdrant client
-async def get_qdrant_client(request: Request) -> AsyncQdrantClient:
+def get_qdrant_client(request: Request) -> AsyncQdrantClient:
     return SingletonQdrantClient.get_instance()
     
 # This function checks if the provided API key is valid or not
@@ -69,12 +69,12 @@ semaphore = LoggingSemaphore(int(os.getenv("API_CONCURRENCY", "5")))
 
 # Middleware to limit concurrency and log task status
 async def limit_concurrency(request: Request, call_next):
-    await semaphore.acquire()  # Acquire semaphore before processing the request
     try:
+        await semaphore.acquire()  # Acquire semaphore before processing the request
         response = await call_next(request)
         return response
     except Exception as e:
-        print(f"Error processing request: {str(e)}")
-        raise HTTPException(status_code=500, detail="Internal Server Error")
+        print(f"Error processing request: {str(e)}")  # Log the error
+        raise HTTPException(status_code=500, detail="Internal Server Error") from e
     finally:
-        semaphore.release()  # Always release semaphore after processing the request
+        semaphore.release()  # Always release semaphore after processing
