@@ -102,7 +102,6 @@ class LoggingSemaphore(asyncio.Semaphore):
     def get_active_tasks(self):
         return self.total_permits - self._value
 
-
 # Create an instance of the semaphore with logging
 semaphore = LoggingSemaphore(int(os.getenv("API_CONCURRENCY", "5")))
 
