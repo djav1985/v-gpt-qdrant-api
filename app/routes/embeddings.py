@@ -13,34 +13,31 @@ embeddings_router = APIRouter()
 # This is the endpoint that handles embedding requests
 @embeddings_router.post("/v1/embeddings", operation_id="create_embedding")
 # The function below creates an embedding for the given input text.
-async def embedding_request(params: EmbeddingParams, api_key: str = Depends(get_api_key)):
+async def embedding_request(Params: EmbeddingParams, api_key: str = Depends(get_api_key)):
     try:
         # First, await the completion of get_embeddings_model to get the model instance
         model = await get_embeddings_model()
 
         # Then, use the model instance to call and await the embed method
-        embeddings_generator = model.embed(params.input)
+        embeddings_generator = model.embed(Params.input)
 
         # Fetching the first item from the generator
         vector = next(embeddings_generator)
-
-        # Converting the vector to a list
-        vector_list = vector.tolist()
 
         # Constructing the response data with usage details
         response_data = {
             "object": "list",
             "data": [{
                 "object": "embedding",
-                "embedding": vector_list,
+                "embedding": vector.tolist(),
                 "index": 0
             }],
-            "model": params.model,
+            "model": Params.model,
             "usage": {
                 # Counting the tokens in the input prompt
-                "prompt_tokens": len(params.input.split()),
+                "prompt_tokens": len(Params.input.split()),
                 # Counting the tokens in the generated vector
-                "total_tokens": len(vector_list)
+                "total_tokens": len(vector.tolist())
             }
         }
 
