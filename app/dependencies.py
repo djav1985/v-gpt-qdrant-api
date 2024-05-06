@@ -94,13 +94,14 @@ class LoggingSemaphore(asyncio.Semaphore):
         self.task_id = id(asyncio.current_task())  # Get the ID of the current task
         self.task_start_times[self.task_id] = time.monotonic()  # Store the start time of the task
         await super().acquire()
+        print(f"Current active tasks: {active_tasks}")
 
     def release(self):
         start_time = self.task_start_times.pop(self.task_id)  # Retrieve and remove the task's start time
         elapsed_time = time.monotonic() - start_time
         super().release()
         active_tasks = self.total_permits - self._value  # Calculate active tasks after releasing
-        print(f"Task completed in: {elapsed_time:.4f} seconds. Current active tasks: {active_tasks}")
+        print(f"Task completed in: {elapsed_time:.4f} seconds.")
 
     def get_active_tasks(self):
         return self.total_permits - self._value
