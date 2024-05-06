@@ -8,7 +8,6 @@ from queue import Queue
 # Third-Party Library Imports
 from fastapi import FastAPI, HTTPException, Depends, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from qdrant_client import AsyncQdrantClient
 from fastembed import TextEmbedding
 
 class SingletonTextEmbedding:
