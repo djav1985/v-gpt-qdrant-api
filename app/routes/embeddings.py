@@ -1,4 +1,5 @@
 # routes/embeddings.py
+import os
 from fastapi import APIRouter, Depends, HTTPException
 from fastembed import TextEmbedding
 
