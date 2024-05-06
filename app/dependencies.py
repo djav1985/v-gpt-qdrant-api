@@ -82,7 +82,6 @@ async def get_api_key(credentials: HTTPAuthorizationCredentials = Depends(HTTPBe
         raise HTTPException(status_code=403, detail="Invalid or missing API key")
     return credentials.credentials if credentials else None
 
-# Define a custom Semaphore class with logging
 class LoggingSemaphore(asyncio.Semaphore):
     def __init__(self, value: int):
         super().__init__(value)
@@ -90,12 +89,12 @@ class LoggingSemaphore(asyncio.Semaphore):
         self.task_start_times = {}  # Dictionary to store task start times
 
     async def acquire(self):
-        task_id = asyncio.current_task().get_name()  # Get the name of the current task
+        task_id = id(asyncio.current_task())  # Get the ID of the current task
         self.task_start_times[task_id] = time.monotonic()  # Store the start time of the task
         await super().acquire()
 
     def release(self):
-        task_id = asyncio.current_task().get_name()
+        task_id = id(asyncio.current_task())
         start_time = self.task_start_times.pop(task_id)  # Retrieve and remove the task's start time
         elapsed_time = time.monotonic() - start_time
         super().release()
@@ -118,4 +117,4 @@ async def limit_concurrency(request: Request, call_next):
         print(f"Error processing request: {str(e)}")  # Log the error
         raise HTTPException(status_code=500, detail="Internal Server Error") from e
     finally:
-        semaphore.release()  # Always release semaphore after processing
+        semaphore.release()
