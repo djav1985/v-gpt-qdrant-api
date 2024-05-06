@@ -31,9 +31,7 @@ async def get_embeddings_model():
 
 async def create_qdrant_client():
     return AsyncQdrantClient(
-        host=os.getenv("QDRANT_HOST"),
-        port=6333,
-        https=False,
+        url=os.getenv("QDRANT_HOST"),
         api_key=os.getenv("QDRANT_API_KEY")
     )
 
