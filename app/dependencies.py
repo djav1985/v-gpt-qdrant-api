@@ -3,6 +3,7 @@ import os
 import time
 import asyncio
 from asyncio import Semaphore
+from queue import Queue
 
 # Third-Party Library Imports
 from fastapi import FastAPI, HTTPException, Depends, Request
@@ -87,27 +88,36 @@ class LoggingSemaphore(asyncio.Semaphore):
     def __init__(self, value: int):
         super().__init__(value)
         self.total_permits = value
-        self.task_start_times = {}  # Dictionary to store task start times
-        self.task_id = None  # Store the task ID
+        self.task_start_times = {}
+        self.task_id = None
+        self.request_queue = Queue()
 
     async def acquire(self):
-        self.task_id = id(asyncio.current_task())  # Get the ID of the current task
-        self.task_start_times[self.task_id] = time.monotonic()  # Store the start time of the task
+        if self._value <= 0:
+            await self.enqueue_request()
         await super().acquire()
-        active_tasks = self.total_permits - self._value  # Calculate active tasks after acquire
+        active_tasks = self.total_permits - self._value
         print(f"Current active tasks: {active_tasks}")
 
+    async def enqueue_request(self):
+        loop = asyncio.get_event_loop()
+        future = loop.create_future()
+        self.request_queue.put(future)
+        await future
+
     def release(self):
-        start_time = self.task_start_times.pop(self.task_id, None)  # Retrieve and remove the task's start time
+        start_time = self.task_start_times.pop(self.task_id, None)
         if start_time is not None:
             elapsed_time = time.monotonic() - start_time
             super().release()
-            active_tasks = self.total_permits - self._value  # Calculate active tasks after releasing
+            active_tasks = self.total_permits - self._value
             print(f"Task completed in: {elapsed_time:.4f} seconds. Current active tasks: {active_tasks}")
+            if not self.request_queue.empty():
+                future = self.request_queue.get()
+                future.set_result(None)
 
     def get_active_tasks(self):
         return self.total_permits - self._value
-
 
 # Create an instance of the semaphore with logging
 semaphore = LoggingSemaphore(int(os.getenv("API_CONCURRENCY", "5")))
