@@ -24,7 +24,7 @@ async def save_memory(params: MemoryParams, api_key: str = Depends(get_api_key))
     try:
         # Extracting the single vector from the generator
         embeddings_model = await get_embeddings_model()
-        embeddings_generator = embeddings_model.embed(params.input)
+        embeddings_generator = embeddings_model.embed(params.memory)
 
         # Fetching the first item from the generator
         vector = next(embeddings_generator)
@@ -68,7 +68,7 @@ async def recall_memory(params: SearchParams, api_key: str = Depends(get_api_key
     try:
         # Extracting the single vector from the generator
         embeddings_model = await get_embeddings_model()
-        embeddings_generator = embeddings_model.embed(params.input)
+        embeddings_generator = embeddings_model.embed(params.query)
 
         # Fetching the first item from the generator
         vector = next(embeddings_generator)
