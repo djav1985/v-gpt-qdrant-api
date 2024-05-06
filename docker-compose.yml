@@ -2,7 +2,7 @@ version: '3.8'
 services:
   memories-api:
     container_name: memories-api
-    image: vontainment/v-gpt-qdrant-api:dev # Use your appropriate image
+    image: vontainment/v-gpt-qdrant-api:dev2 # Use your appropriate image
     restart: always
     depends_on:
       - qdrant
