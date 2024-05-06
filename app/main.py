@@ -3,6 +3,7 @@ import asyncio
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from starlette.responses import FileResponse
+from starlette.middleware.base import BaseHTTPMiddleware
 
 # Importing dependencies and routers
 from dependencies import limit_concurrency, initialize_text_embedding, reconnect_qdrant_client
@@ -23,8 +24,8 @@ app = FastAPI(
 async def startup_event():
     await initialize_text_embedding()
 
-# Applying the concurrency limit middleware (assuming it's a middleware factory)
-app.middleware('http')(limit_concurrency)
+# Applying the concurrency limit middleware
+app.add_middleware(BaseHTTPMiddleware, dispatch=limit_concurrency)
 
 # Including Routers for different endpoints
 app.include_router(memory_router)
