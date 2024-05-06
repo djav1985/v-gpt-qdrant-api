@@ -9,12 +9,12 @@ services:
     ports:
       - "8060:8060"
     environment:
-      QDRANT_HOST: http://qdrant:6333
+      QDRANT_HOST: "http://qdrant:6333"
       QDRANT_API_KEY:
       #MEMORIES_API_KEY: Optional API key to connect to api
       BASE_URL: http://memories-api
       WORKERS: 1 #uvicorn workers 1 should be enough for personal use
-      API_CONCURRENCY: 16 #max embeddings produced similtaniusly. This stops eccessive CPU usage. 
+      API_CONCURRENCY: 16 #max embeddings produced similtaniusly. This stops eccessive CPU usage.
       UVICORN_CONCURRENCY: 64 #this controls the mac connections. Anything over the API_concurrancy value is put in query pool. Anything over this number is rejected.
     volumes:
       - embedding-model:/tmp/fastembed_cache
