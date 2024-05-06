@@ -9,7 +9,7 @@ import numpy as np
 from fastapi import APIRouter, Depends, HTTPException
 from fastembed import TextEmbedding
 from qdrant_client import AsyncQdrantClient, models
-from qdrant_client.models import Distance, VectorParams, Filter, FieldCondition, PointStruc
+from qdrant_client.models import Distance, VectorParams, Filter, FieldCondition, PointStruct
 
 # Local Imports
 from models import MemoryParams, SearchParams, CreateCollectionParams
