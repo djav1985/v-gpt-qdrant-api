@@ -4,7 +4,9 @@
 
 ## Description
 
-The application provides a robust dockerized framework for giving AI long term memory. This api can managing collections and memories, adding memories, and performing searching memories aswell an providing an openAi compatible in enbeddings endpoint, designed specifically for integration with custom GPT models and other AI platforms.
+The application provides a robust dockerize framework for giving AI long term memory. This api can managing collections and memories, adding memories, and performing searching memories as well an providing an openAi compatible in embeddings endpoint, designed specifically for integration with custom GPT models and other AI platforms.
+
+We use FastEmbed TextEmbeddings to generate vectors, leveraging parallel processing to enhance performance. The SingletonTextEmbedding class ensures efficient resource management by loading and sharing just one instance of the FastEmbed model across the entire application. This approach prevents the creation of multiple, resource-intensive instances, thereby optimizing memory and CPU usage. This allows even on low end hardware creating 2 or more embeddings a second.
 
 **Features include:**
 
