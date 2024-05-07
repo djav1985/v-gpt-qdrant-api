@@ -13,18 +13,25 @@ class SingletonTextEmbedding:
     _instance = None
 
     @classmethod
+    def get_instance(cls):
+        if cls._instance is None:
+            raise Exception("SingletonTextEmbedding has not been initialized")
+        return cls._instance
+
+    @classmethod
     async def initialize(cls):
         if cls._instance is None:
-            # Assuming TextEmbedding initialization can be done synchronously
             cls._instance = TextEmbedding(
                 model_name=os.getenv("LOCAL_MODEL"),
                 cache_dir="/app/models",
                 parallel=0
             )
 
+# Function to initialize text embedding at app startup
 async def initialize_text_embedding():
     await SingletonTextEmbedding.initialize()
 
+# Dependency to get embeddings model
 def get_embeddings_model():
     return SingletonTextEmbedding.get_instance()
 
