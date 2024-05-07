@@ -11,20 +11,18 @@ from dependencies import get_api_key, get_embeddings_model
 # Creating an instance of the FastAPI router
 embeddings_router = APIRouter()
 
-# Semaphore to limit to a dynamically configured number of concurrent requests
-# Directly using the environment variable with a default fallback
+# Semaphore to limit to the number of concurrent requests based on an environment variable
 semaphore = asyncio.Semaphore(int(os.getenv("API_CONCURRENCY", "16")))
 
-
 @embeddings_router.post("/v1/embeddings", operation_id="create_embedding")
-async def embedding_request(
-    Params: EmbeddingParams, api_key: str = Depends(get_api_key)
-):
+async def embedding_request(Params: EmbeddingParams, api_key: str = Depends(get_api_key)):
     start_time = time.time()  # Capture the start time
     try:
         # Acquire semaphore
         await semaphore.acquire()
-
+        current_usage = int(os.getenv("API_CONCURRENCY", "16")) - semaphore._value  # Get current semaphore usage before processing
+        print(f"Processing: {current_usage} embeddings requests")
+        
         # First, await the completion of get_embeddings_model to get the model instance
         model = await get_embeddings_model()
 
@@ -58,8 +56,4 @@ async def embedding_request(
         semaphore.release()
         end_time = time.time()  # Capture the end time
         processing_time = end_time - start_time
-        # Calculate the number of used semaphore spots
-        used_spots = int(os.getenv("API_CONCURRENCY", "16")) - semaphore._value
-        print(
-            f"Request processed in {processing_time:.2f} seconds, {used_spots} in queue"
-        )
+        print(f"Processed an embeddin in {processing_time:.2f} seconds")
