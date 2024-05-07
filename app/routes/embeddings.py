@@ -10,6 +10,9 @@ from fastembed import TextEmbedding
 from models import EmbeddingParams
 from dependencies import get_api_key, get_embeddings_model
 
+# Directly create a new instance instead of using the singleton
+model = TextEmbedding(os.getenv("LOCAL_MODEL"))
+
 # Creating an instance of the FastAPI router
 embeddings_router = APIRouter()
 
@@ -30,9 +33,7 @@ async def embedding_request(Params: EmbeddingParams, api_key: str = Depends(get_
         # Run the blocking operation in a separate thread
         # embeddings_generator = await asyncio.to_thread(model.embed, Params.input)
         # vector = next(embeddings_generator)  # Assuming this part is quick and not blocking
-
-        # Directly create a new instance instead of using the singleton
-        model = TextEmbedding(os.getenv("LOCAL_MODEL"))
+        
         embeddings_generator = await asyncio.to_thread(model.embed, Params.input)
         vector = next(embeddings_generator)
         
