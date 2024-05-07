@@ -9,14 +9,14 @@ from qdrant_client import AsyncQdrantClient, models
 from qdrant_client.models import Distance, VectorParams, Filter, FieldCondition, PointStruct
 
 # Local Imports
-from models import MemoryParams, SearchParams, ManageMemoryParams
+from models import SaveParams, SearchParams, ManageMemoryParams
 from dependencies import get_api_key, get_embeddings_model, create_qdrant_client
 
 # Creating an instance of the FastAPI router
 memory_router = APIRouter()
 
 @memory_router.post("/save_memory", operation_id="save_memory")
-async def save_memory(Params: MemoryParams, api_key: str = Depends(get_api_key), Qdrant: AsyncQdrantClient = Depends(create_qdrant_client)):
+async def save_memory(Params: SaveParams, api_key: str = Depends(get_api_key), Qdrant: AsyncQdrantClient = Depends(create_qdrant_client)):
     try:
         model = await get_embeddings_model()
         embeddings_generator = model.embed(Params.memory)
