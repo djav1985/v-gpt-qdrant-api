@@ -37,7 +37,10 @@ async def create_qdrant_client():
         url=os.getenv("QDRANT_HOST", "http://qdrant:6333"),
         api_key=os.getenv("QDRANT_API_KEY"),
     )
-
+    
+# Initialize the TextEmbedding model
+async def InitializeTextEmbedding():
+    return TextEmbedding(model_name=os.getenv("LOCAL_MODEL"), cache_dir="/app/models", threads=2, parallel=0)
 
 # This function checks if the provided API key is valid or not
 async def get_api_key(
