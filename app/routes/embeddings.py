@@ -27,7 +27,7 @@ async def embedding_request(
     print(f"Started processing. Current embeddings: {current_embeddings}")
 
     try:
-        model = await get_embeddings_model()
+        model = get_embeddings_model()
         embeddings_generator = await asyncio.to_thread(model.embed, Params.input)
         vector = next(embeddings_generator)
 
