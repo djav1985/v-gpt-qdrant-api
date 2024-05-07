@@ -11,7 +11,7 @@ from models import EmbeddingParams
 from dependencies import get_api_key, get_embeddings_model
 
 # Directly create a new instance instead of using the singleton
-model = TextEmbedding(os.getenv("LOCAL_MODEL"), cache_dir="/app/models") )
+model = TextEmbedding(model_name=os.getenv("LOCAL_MODEL"), cache_dir="/app/models", threads=3) )
 
 # Creating an instance of the FastAPI router
 embeddings_router = APIRouter()
