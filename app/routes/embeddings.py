@@ -2,7 +2,9 @@
 import os
 import asyncio
 import time
+
 from fastapi import APIRouter, Depends, HTTPException
+from fastembed import TextEmbedding
 
 # Local Imports
 from models import EmbeddingParams
