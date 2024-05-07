@@ -32,7 +32,7 @@ async def save_memory(
     try:
         # Get model and generate embeddings
         model = await get_embeddings_model()
-        embeddings_generator = model.embed(Params.memory)
+        embeddings_generator = await asyncio.to_thread(model.embed, Params.memory)
         vector = next(embeddings_generator)
 
         # Create unique id and timestamp
@@ -75,7 +75,7 @@ async def recall_memory(
     try:
         # Get model and generate embeddings
         model = await get_embeddings_model()
-        embeddings_generator = model.embed(Params.query)
+        embeddings_generator = await asyncio.to_thread(model.embed, Params.query)
         vector = next(embeddings_generator)
 
         # Create filter conditions
