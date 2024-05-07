@@ -31,7 +31,7 @@ async def save_memory(
 ):
     try:
         # Get model and generate embeddings
-        model = await get_embeddings_model()
+        model = get_embeddings_model()
         embeddings_generator = await asyncio.to_thread(model.embed, Params.memory)
         vector = next(embeddings_generator)
 
@@ -74,7 +74,7 @@ async def recall_memory(
 ):
     try:
         # Get model and generate embeddings
-        model = await get_embeddings_model()
+        model = get_embeddings_model()
         embeddings_generator = await asyncio.to_thread(model.embed, Params.query)
         vector = next(embeddings_generator)
 
