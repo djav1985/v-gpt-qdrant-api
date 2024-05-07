@@ -2,42 +2,29 @@
 import os
 import asyncio
 import time
-
 from fastapi import APIRouter, Depends, HTTPException
+
 from fastembed import TextEmbedding
-
-# Local Imports
 from models import EmbeddingParams
-from dependencies import get_api_key, get_embeddings_model
-
-# Directly create a new instance instead of using the singleton
-model = TextEmbedding(model_name=os.getenv("LOCAL_MODEL"), cache_dir="/app/models", threads=2, parallel=0)
+from dependencies import get_api_key
 
 # Creating an instance of the FastAPI router
 embeddings_router = APIRouter()
 
-# Semaphore to limit to the number of concurrent requests based on an environment variable
-semaphore = asyncio.Semaphore(int(os.getenv("API_CONCURRENCY", "16")))
+# Global counter for tracking concurrent embeddings
+current_embeddings = 0
 
 @embeddings_router.post("/v1/embeddings", operation_id="create_embedding")
 async def embedding_request(Params: EmbeddingParams, api_key: str = Depends(get_api_key)):
+    global current_embeddings
     start_time = time.time()  # Capture the start time
+    current_embeddings += 1  # Increment the counter as we start processing a new request
+    print(f"Started processing. Current embeddings: {current_embeddings}")
+
     try:
-        # Acquire semaphore
-        await semaphore.acquire()
-        current_usage = int(os.getenv("API_CONCURRENCY", "16")) - semaphore._value  # Get current semaphore usage before processing
-        print(f"Processing: {current_usage} embeddings requests")
-        
-        # First, await the completion of get_embeddings_model to get the model instance
-        # model = await get_embeddings_model()
-        # Run the blocking operation in a separate thread
-        # embeddings_generator = await asyncio.to_thread(model.embed, Params.input)
-        # vector = next(embeddings_generator)  # Assuming this part is quick and not blocking
-        
         embeddings_generator = await asyncio.to_thread(model.embed, Params.input)
         vector = next(embeddings_generator)
         
-        # Constructing the response data with usage details
         response_data = {
             "object": "list",
             "data": [{"object": "embedding", "embedding": vector.tolist(), "index": 0}],
@@ -47,18 +34,12 @@ async def embedding_request(Params: EmbeddingParams, api_key: str = Depends(get_
                 "total_tokens": len(vector.tolist()),
             },
         }
-
-        # Returning the response data
         return response_data
     except Exception as e:
         print(f"An error occurred: {e}")
-        # Raising an exception if there's an error in processing the request
-        raise HTTPException(
-            status_code=500, detail=f"Error processing request: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Error processing request: {str(e)}")
     finally:
-        # Release the semaphore and calculate the processing time
-        semaphore.release()
-        end_time = time.time()  # Capture the end time
+        end_time = time.time()
         processing_time = end_time - start_time
-        print(f"Processed an embeddin in {processing_time:.2f} seconds")
+        current_embeddings -= 1  # Decrement the counter as we finish processing
+        print(f"Finished processing in {processing_time:.2f} seconds. Current embeddings: {current_embeddings}")
