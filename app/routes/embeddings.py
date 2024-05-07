@@ -1,8 +1,8 @@
 # routes/embeddings.py
 import os
 import asyncio
+import time
 from fastapi import APIRouter, Depends, HTTPException
-from fastembed import TextEmbedding
 
 # Local Imports
 from models import EmbeddingParams
@@ -11,16 +11,20 @@ from dependencies import get_api_key, get_embeddings_model
 # Creating an instance of the FastAPI router
 embeddings_router = APIRouter()
 
-# Semaphore to limit to 16 concurrent requests
-semaphore = asyncio.Semaphore(16)
+# Semaphore to limit to a dynamically configured number of concurrent requests
+# Directly using the environment variable with a default fallback
+semaphore = asyncio.Semaphore(int(os.getenv("API_CONCURRENCY", "16")))
 
-# This is the endpoint that handles embedding requests
+
 @embeddings_router.post("/v1/embeddings", operation_id="create_embedding")
-async def embedding_request(Params: EmbeddingParams, api_key: str = Depends(get_api_key)):
+async def embedding_request(
+    Params: EmbeddingParams, api_key: str = Depends(get_api_key)
+):
+    start_time = time.time()  # Capture the start time
     try:
         # Acquire semaphore
         await semaphore.acquire()
-        
+
         # First, await the completion of get_embeddings_model to get the model instance
         model = await get_embeddings_model()
 
@@ -36,9 +40,7 @@ async def embedding_request(Params: EmbeddingParams, api_key: str = Depends(get_
             "data": [{"object": "embedding", "embedding": vector.tolist(), "index": 0}],
             "model": os.getenv("LOCAL_MODEL"),
             "usage": {
-                # Counting the tokens in the input prompt
                 "prompt_tokens": len(Params.input.split()),
-                # Counting the tokens in the generated vector
                 "total_tokens": len(vector.tolist()),
             },
         }
@@ -52,5 +54,12 @@ async def embedding_request(Params: EmbeddingParams, api_key: str = Depends(get_
             status_code=500, detail=f"Error processing request: {str(e)}"
         )
     finally:
-        # Ensure the semaphore is released even if an error occurs
+        # Release the semaphore and calculate the processing time
         semaphore.release()
+        end_time = time.time()  # Capture the end time
+        processing_time = end_time - start_time
+        # Calculate the number of used semaphore spots
+        used_spots = int(os.getenv("API_CONCURRENCY", "16")) - semaphore._value
+        print(
+            f"Request processed in {processing_time:.2f} seconds, {used_spots} in queue"
+        )
