@@ -24,12 +24,16 @@ async def embedding_request(Params: EmbeddingParams, api_key: str = Depends(get_
         print(f"Processing: {current_usage} embeddings requests")
         
         # First, await the completion of get_embeddings_model to get the model instance
-        model = await get_embeddings_model()
-
+        # model = await get_embeddings_model()
         # Run the blocking operation in a separate thread
-        embeddings_generator = await asyncio.to_thread(model.embed, Params.input)
-        vector = next(embeddings_generator)  # Assuming this part is quick and not blocking
+        # embeddings_generator = await asyncio.to_thread(model.embed, Params.input)
+        # vector = next(embeddings_generator)  # Assuming this part is quick and not blocking
 
+        # Directly create a new instance instead of using the singleton
+        model = TextEmbedding(os.getenv("LOCAL_MODEL"))
+        embeddings_generator = await asyncio.to_thread(model.embed, Params.input)
+        vector = next(embeddings_generator)
+        
         # Constructing the response data with usage details
         response_data = {
             "object": "list",
