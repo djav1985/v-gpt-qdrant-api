@@ -1,5 +1,6 @@
 # routes/embeddings.py
 import os
+import asyncio
 from fastapi import APIRouter, Depends, HTTPException
 from fastembed import TextEmbedding
 
@@ -10,14 +11,16 @@ from dependencies import get_api_key, get_embeddings_model
 # Creating an instance of the FastAPI router
 embeddings_router = APIRouter()
 
+# Semaphore to limit to 16 concurrent requests
+semaphore = asyncio.Semaphore(16)
 
 # This is the endpoint that handles embedding requests
 @embeddings_router.post("/v1/embeddings", operation_id="create_embedding")
-# The function below creates an embedding for the given input text.
-async def embedding_request(
-    Params: EmbeddingParams, api_key: str = Depends(get_api_key)
-):
+async def embedding_request(Params: EmbeddingParams, api_key: str = Depends(get_api_key)):
     try:
+        # Acquire semaphore
+        await semaphore.acquire()
+        
         # First, await the completion of get_embeddings_model to get the model instance
         model = await get_embeddings_model()
 
@@ -48,3 +51,6 @@ async def embedding_request(
         raise HTTPException(
             status_code=500, detail=f"Error processing request: {str(e)}"
         )
+    finally:
+        # Ensure the semaphore is released even if an error occurs
+        semaphore.release()
