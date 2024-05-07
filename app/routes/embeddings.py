@@ -26,11 +26,9 @@ async def embedding_request(Params: EmbeddingParams, api_key: str = Depends(get_
         # First, await the completion of get_embeddings_model to get the model instance
         model = await get_embeddings_model()
 
-        # Then, use the model instance to call and await the embed method
-        embeddings_generator = model.embed(Params.input)
-
-        # Extract the single vector from the generator
-        vector = next(embeddings_generator)
+        # Run the blocking operation in a separate thread
+        embeddings_generator = await asyncio.to_thread(model.embed, Params.input)
+        vector = next(embeddings_generator)  # Assuming this part is quick and not blocking
 
         # Constructing the response data with usage details
         response_data = {
