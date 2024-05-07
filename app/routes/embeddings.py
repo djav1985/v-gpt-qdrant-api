@@ -1,49 +1,55 @@
 # routes/embeddings.py
-import numpy as np
+import os
+import asyncio
+import time
 from fastapi import APIRouter, Depends, HTTPException
-from fastembed import TextEmbedding
 
-# Local Imports
+from fastembed import TextEmbedding
 from models import EmbeddingParams
 from dependencies import get_api_key, get_embeddings_model
 
 # Creating an instance of the FastAPI router
 embeddings_router = APIRouter()
 
-# This is the endpoint that handles embedding requests
+# Global counter for tracking concurrent embeddings
+current_embeddings = 0
+
+
 @embeddings_router.post("/v1/embeddings", operation_id="create_embedding")
-# The function below creates an embedding for the given input text.
-async def embedding_request(Params: EmbeddingParams, api_key: str = Depends(get_api_key)):
+async def embedding_request(
+    Params: EmbeddingParams, api_key: str = Depends(get_api_key)
+):
+    global current_embeddings
+    start_time = time.time()  # Capture the start time
+    current_embeddings += (
+        1  # Increment the counter as we start processing a new request
+    )
+    print(f"Started processing. Current embeddings: {current_embeddings}")
+
     try:
-        # First, await the completion of get_embeddings_model to get the model instance
         model = await get_embeddings_model()
-
-        # Then, use the model instance to call and await the embed method
-        embeddings_generator = model.embed(Params.input)
-
-        # Fetching the first item from the generator
+        embeddings_generator = await asyncio.to_thread(model.embed, Params.input)
         vector = next(embeddings_generator)
 
-        # Constructing the response data with usage details
         response_data = {
             "object": "list",
-            "data": [{
-                "object": "embedding",
-                "embedding": vector.tolist(),
-                "index": 0
-            }],
-            "model": Params.model,
+            "data": [{"object": "embedding", "embedding": vector.tolist(), "index": 0}],
+            "model": os.getenv("LOCAL_MODEL"),
             "usage": {
-                # Counting the tokens in the input prompt
                 "prompt_tokens": len(Params.input.split()),
-                # Counting the tokens in the generated vector
-                "total_tokens": len(vector.tolist())
-            }
+                "total_tokens": len(vector.tolist()),
+            },
         }
-
-        # Returning the response data
         return response_data
     except Exception as e:
         print(f"An error occurred: {e}")
-        # Raising an exception if there's an error in processing the request
-        raise HTTPException(status_code=500, detail=f"Error processing request: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error processing request: {str(e)}"
+        )
+    finally:
+        end_time = time.time()
+        processing_time = end_time - start_time
+        current_embeddings -= 1  # Decrement the counter as we finish processing
+        print(
+            f"Finished processing in {processing_time:.2f} seconds. Current embeddings: {current_embeddings}"
+        )

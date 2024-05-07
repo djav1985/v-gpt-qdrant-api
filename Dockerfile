@@ -1,4 +1,4 @@
-# Use a slimmer Python image
+# Use a slimmer Python image as base
 FROM python:3.9-slim as base
 
 # Set the working directory in the container
@@ -12,9 +12,11 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy only the requirements file and install Python dependencies
+# Copy only the requirements file
 COPY ./app/requirements.txt /app/
-RUN pip install --no-cache-dir -r requirements.txt
+
+# Install Python dependencies
+RUN --mount=type=cache,target=/root/.cache/pip pip install --no-cache-dir -r requirements.txt
 
 # Copy the rest of the application
 COPY ./app /app
@@ -22,9 +24,9 @@ COPY ./app /app
 # Expose port 8060 to the outside world
 EXPOSE 8060
 
-# Define environment variable
+# Define environment variables
 ENV WORKERS=2
-ENV UVICORN_CONCURRENCY=64
+ENV UVICORN_CONCURRENCY=32
 
 # Set the command to run your FastAPI application with Uvicorn and environment variables
-CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port 8060 --workers $WORKERS --limit-concurrency $UVICORN_CONCURRENCY"]
+CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port 8060 --workers $WORKERS --limit-concurrency $UVICORN_CONCURRENCY --timeout-keep-alive 32"]
