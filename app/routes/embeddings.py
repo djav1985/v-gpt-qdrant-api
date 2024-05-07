@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from fastembed import TextEmbedding
 from models import EmbeddingParams
-from dependencies import get_api_key
+from dependencies import get_api_key, InitializeTextEmbedding
 
 # Creating an instance of the FastAPI router
 embeddings_router = APIRouter()
@@ -15,7 +15,7 @@ embeddings_router = APIRouter()
 current_embeddings = 0
 
 @embeddings_router.post("/v1/embeddings", operation_id="create_embedding")
-async def embedding_request(Params: EmbeddingParams, api_key: str = Depends(get_api_key)):
+async def embedding_request(Params: EmbeddingParams, api_key: str = Depends(get_api_key), model: TextEmbedding = Depends(InitializeTextEmbedding)):
     global current_embeddings
     start_time = time.time()  # Capture the start time
     current_embeddings += 1  # Increment the counter as we start processing a new request
