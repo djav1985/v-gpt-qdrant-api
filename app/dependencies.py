@@ -17,7 +17,7 @@ class SingletonTextEmbedding:
     async def get_instance(cls):
         async with cls._lock:
             if cls._instance is None:
-                cls._instance = TextEmbedding(os.getenv("LOCAL_MODEL"))
+                cls._instance = TextEmbedding(model_name=os.getenv("LOCAL_MODEL"), cache_dir="/app/models", threads=2, parallel=0)
         return cls._instance
 
 
@@ -38,10 +38,6 @@ async def create_qdrant_client():
         api_key=os.getenv("QDRANT_API_KEY"),
     )
     
-# Initialize the TextEmbedding model
-async def InitializeTextEmbedding():
-    return TextEmbedding(model_name=os.getenv("LOCAL_MODEL"), cache_dir="/app/models", threads=2, parallel=0)
-
 # This function checks if the provided API key is valid or not
 async def get_api_key(
     credentials: HTTPAuthorizationCredentials = Depends(HTTPBearer(auto_error=False)),
