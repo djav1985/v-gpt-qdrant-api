@@ -1,3 +1,4 @@
+# /routes/momory.py
 import os
 import uuid
 from datetime import datetime
@@ -114,11 +115,23 @@ async def manage_memories(Params: ManageMemoryParams, api_key: str = Depends(get
 
             return {"message": f"Memory Bank '{Params.memory_bank}' created successfully"}
         elif Params.action == "delete":
-            # Placeholder for delete action
-            pass
+            # Perform the deletion of the entire collection specified by the memory bank
+            await Qdrant.delete_collection(
+                collection_name=Params.memory_bank
+            )
+            
+            return {"message": f"Memory Bank '{Params.memory_bank}' has been deleted."}
         elif Params.action == "forget":
-            # Placeholder for forget action
-            pass
+            if Params.uuid is None:
+                raise HTTPException(status_code=400, detail="UUID must be provided for forget action")
+
+            # Perform the deletion of the specified memory using the UUID
+            await Qdrant.delete(
+                collection_name=Params.memory_bank,
+                point_ids=[Params.uuid]
+            )
+
+            return {"message": f"Memory with UUID '{Params.uuid}' has been forgotten from Memory Bank '{Params.memory_bank}'."}
 
     except Exception as e:
         print(f"An error occurred: {e}")
