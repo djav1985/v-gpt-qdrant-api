@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from fastembed import TextEmbedding
 from models import EmbeddingParams
-from dependencies import get_api_key
+from dependencies import get_api_key,get_embeddings_model
 
 # Creating an instance of the FastAPI router
 embeddings_router = APIRouter()
@@ -22,6 +22,7 @@ async def embedding_request(Params: EmbeddingParams, api_key: str = Depends(get_
     print(f"Started processing. Current embeddings: {current_embeddings}")
 
     try:
+        model = await get_embeddings_model()
         embeddings_generator = await asyncio.to_thread(model.embed, Params.input)
         vector = next(embeddings_generator)
         
