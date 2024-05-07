@@ -81,6 +81,7 @@ Use docker-compose.yml by configuring then env variables:
 - #MEMORIES_API_KEY: Optional API key to connect to api
 - WORKERS: 1 #uvicorn workers 1 should be enough for personal use
 - UVICORN_CONCURRENCY: 64 #this controls the mac connections.
+- EMBEDDING_ENDPOINT: True # Unset to remove openai compatible embeddings endpoint
 - LOCAL_MODEL: nomic-ai/nomic-embed-text-v1.5" #"BAAI/bge-small-en-v1.5"
 - DIM: 768 #384
 
