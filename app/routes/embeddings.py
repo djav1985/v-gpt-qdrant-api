@@ -11,11 +11,13 @@ from dependencies import get_api_key, InitializeTextEmbedding
 # Creating an instance of the FastAPI router
 embeddings_router = APIRouter()
 
+model = InitializeTextEmbedding()
+
 # Global counter for tracking concurrent embeddings
 current_embeddings = 0
 
 @embeddings_router.post("/v1/embeddings", operation_id="create_embedding")
-async def embedding_request(Params: EmbeddingParams, api_key: str = Depends(get_api_key), model: TextEmbedding = Depends(InitializeTextEmbedding)):
+async def embedding_request(Params: EmbeddingParams, api_key: str = Depends(get_api_key)):
     global current_embeddings
     start_time = time.time()  # Capture the start time
     current_embeddings += 1  # Increment the counter as we start processing a new request
