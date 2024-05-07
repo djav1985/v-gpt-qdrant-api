@@ -20,7 +20,6 @@ class SingletonTextEmbedding:
                 cls._instance = TextEmbedding(
                     model_name=os.getenv("LOCAL_MODEL"),
                     cache_dir="/app/models",
-                    threads=2,
                     parallel=0,
                 )
         return cls._instance
