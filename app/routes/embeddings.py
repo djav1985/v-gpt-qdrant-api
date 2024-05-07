@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from fastembed import TextEmbedding
 from models import EmbeddingParams
-from dependencies import get_api_key,get_embeddings_model
+from dependencies import get_api_key, get_embeddings_model
 
 # Creating an instance of the FastAPI router
 embeddings_router = APIRouter()
@@ -14,18 +14,23 @@ embeddings_router = APIRouter()
 # Global counter for tracking concurrent embeddings
 current_embeddings = 0
 
+
 @embeddings_router.post("/v1/embeddings", operation_id="create_embedding")
-async def embedding_request(Params: EmbeddingParams, api_key: str = Depends(get_api_key)):
+async def embedding_request(
+    Params: EmbeddingParams, api_key: str = Depends(get_api_key)
+):
     global current_embeddings
     start_time = time.time()  # Capture the start time
-    current_embeddings += 1  # Increment the counter as we start processing a new request
+    current_embeddings += (
+        1  # Increment the counter as we start processing a new request
+    )
     print(f"Started processing. Current embeddings: {current_embeddings}")
 
     try:
         model = await get_embeddings_model()
         embeddings_generator = await asyncio.to_thread(model.embed, Params.input)
         vector = next(embeddings_generator)
-        
+
         response_data = {
             "object": "list",
             "data": [{"object": "embedding", "embedding": vector.tolist(), "index": 0}],
@@ -38,9 +43,13 @@ async def embedding_request(Params: EmbeddingParams, api_key: str = Depends(get_
         return response_data
     except Exception as e:
         print(f"An error occurred: {e}")
-        raise HTTPException(status_code=500, detail=f"Error processing request: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error processing request: {str(e)}"
+        )
     finally:
         end_time = time.time()
         processing_time = end_time - start_time
         current_embeddings -= 1  # Decrement the counter as we finish processing
-        print(f"Finished processing in {processing_time:.2f} seconds. Current embeddings: {current_embeddings}")
+        print(
+            f"Finished processing in {processing_time:.2f} seconds. Current embeddings: {current_embeddings}"
+        )

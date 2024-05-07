@@ -7,7 +7,13 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException
 from fastembed import TextEmbedding
 from qdrant_client import AsyncQdrantClient, models
-from qdrant_client.models import Distance, VectorParams, Filter, FieldCondition, PointStruct
+from qdrant_client.models import (
+    Distance,
+    VectorParams,
+    Filter,
+    FieldCondition,
+    PointStruct,
+)
 
 from models import SaveParams, SearchParams, ManageMemoryParams
 from dependencies import get_api_key, get_embeddings_model, create_qdrant_client

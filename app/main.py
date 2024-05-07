@@ -21,12 +21,6 @@ app = FastAPI(
 )
 
 
-# @app.on_event("startup")
-# The function below initializes text embedding at the startup of the application.
-# async def startup_event():
-#    await initialize_text_embedding()
-
-
 # Including Routers for different endpoints
 app.include_router(memory_router)
 app.include_router(embeddings_router)
