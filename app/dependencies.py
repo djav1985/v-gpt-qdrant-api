@@ -11,28 +11,30 @@ from qdrant_client import AsyncQdrantClient
 # Singleton class to manage a single instance of TextEmbedding
 class SingletonTextEmbedding:
     _instance = None
-    _lock = asyncio.Lock()
 
     @classmethod
-    async def get_instance(cls):
-        async with cls._lock:
-            if cls._instance is None:
-                cls._instance = TextEmbedding(
-                    model_name=os.getenv("LOCAL_MODEL"),
-                    cache_dir="/app/models",
-                    parallel=0,
-                )
+    def get_instance(cls):
+        if cls._instance is None:
+            raise Exception("SingletonTextEmbedding has not been initialized")
         return cls._instance
 
+    @classmethod
+    async def initialize(cls):
+        if cls._instance is None:
+            cls._instance = TextEmbedding(
+                model_name=os.getenv("LOCAL_MODEL"),
+                cache_dir="/app/models",
+                parallel=0
+            )
 
-# Function to initialize text embedding
+# Function to initialize text embedding at app startup
 async def initialize_text_embedding():
-    await SingletonTextEmbedding.get_instance()
-
+    await SingletonTextEmbedding.initialize()
 
 # Dependency to get embeddings model
-async def get_embeddings_model():
-    return await SingletonTextEmbedding.get_instance()
+def get_embeddings_model():
+    return SingletonTextEmbedding.get_instance()
+
 
 
 # Function to create Qdrant client
