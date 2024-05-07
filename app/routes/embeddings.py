@@ -6,12 +6,10 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from fastembed import TextEmbedding
 from models import EmbeddingParams
-from dependencies import get_api_key, InitializeTextEmbedding
+from dependencies import get_api_key
 
 # Creating an instance of the FastAPI router
 embeddings_router = APIRouter()
-
-model = InitializeTextEmbedding()
 
 # Global counter for tracking concurrent embeddings
 current_embeddings = 0
