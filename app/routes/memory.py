@@ -114,6 +114,7 @@ async def manage_memories(Params: ManageMemoryParams, api_key: str = Depends(get
                 )
 
             return {"message": f"Memory Bank '{Params.memory_bank}' created successfully"}
+            
         elif Params.action == "delete":
             # Perform the deletion of the entire collection specified by the memory bank
             await Qdrant.delete_collection(
@@ -121,6 +122,7 @@ async def manage_memories(Params: ManageMemoryParams, api_key: str = Depends(get
             )
             
             return {"message": f"Memory Bank '{Params.memory_bank}' has been deleted."}
+            
         elif Params.action == "forget":
             if Params.uuid is None:
                 raise HTTPException(status_code=400, detail="UUID must be provided for forget action")
