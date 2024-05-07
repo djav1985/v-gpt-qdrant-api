@@ -10,10 +10,13 @@ from dependencies import get_api_key, get_embeddings_model
 # Creating an instance of the FastAPI router
 embeddings_router = APIRouter()
 
+
 # This is the endpoint that handles embedding requests
 @embeddings_router.post("/v1/embeddings", operation_id="create_embedding")
 # The function below creates an embedding for the given input text.
-async def embedding_request(Params: EmbeddingParams, api_key: str = Depends(get_api_key)):
+async def embedding_request(
+    Params: EmbeddingParams, api_key: str = Depends(get_api_key)
+):
     try:
         # First, await the completion of get_embeddings_model to get the model instance
         model = await get_embeddings_model()
@@ -27,18 +30,14 @@ async def embedding_request(Params: EmbeddingParams, api_key: str = Depends(get_
         # Constructing the response data with usage details
         response_data = {
             "object": "list",
-            "data": [{
-                "object": "embedding",
-                "embedding": vector.tolist(),
-                "index": 0
-            }],
+            "data": [{"object": "embedding", "embedding": vector.tolist(), "index": 0}],
             "model": os.getenv("LOCAL_MODEL"),
             "usage": {
                 # Counting the tokens in the input prompt
                 "prompt_tokens": len(Params.input.split()),
                 # Counting the tokens in the generated vector
-                "total_tokens": len(vector.tolist())
-            }
+                "total_tokens": len(vector.tolist()),
+            },
         }
 
         # Returning the response data
@@ -46,4 +45,6 @@ async def embedding_request(Params: EmbeddingParams, api_key: str = Depends(get_
     except Exception as e:
         print(f"An error occurred: {e}")
         # Raising an exception if there's an error in processing the request
-        raise HTTPException(status_code=500, detail=f"Error processing request: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error processing request: {str(e)}"
+        )

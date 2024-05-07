@@ -27,7 +27,7 @@ services:
     container_name: qdrant
     restart: always
     #ports:
-       #- "8060:6333"
+    #- "8060:6333"
     environment:
       QDRANT_API_KEY:
     volumes:

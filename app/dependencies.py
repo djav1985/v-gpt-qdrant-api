@@ -5,12 +5,18 @@ import asyncio
 from asyncio import Semaphore
 from queue import Queue
 
-# Third-Party Library Imports
+# Importing necessary libraries and modules
 from fastapi import FastAPI, HTTPException, Depends, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from qdrant_client import AsyncQdrantClient
 from fastembed import TextEmbedding
+import asyncio
+import os
+import time
+from queue import Queue
 
+
+# Singleton class to manage a single instance of TextEmbedding
 class SingletonTextEmbedding:
     _instance = None
     _lock = asyncio.Lock()
@@ -22,22 +28,37 @@ class SingletonTextEmbedding:
                 cls._instance = TextEmbedding(os.getenv("LOCAL_MODEL"))
         return cls._instance
 
+
+# Function to initialize text embedding
 async def initialize_text_embedding():
     await SingletonTextEmbedding.get_instance()
+
 
 # Dependency to get embeddings model
 async def get_embeddings_model():
     return await SingletonTextEmbedding.get_instance()
 
+
+# Function to create Qdrant client
 async def create_qdrant_client():
-    return AsyncQdrantClient(url=os.getenv("QDRANT_HOST", "http://qdrant:6333"), api_key=os.getenv("QDRANT_API_KEY"))
+    return AsyncQdrantClient(
+        url=os.getenv("QDRANT_HOST", "http://qdrant:6333"),
+        api_key=os.getenv("QDRANT_API_KEY"),
+    )
+
 
 # This function checks if the provided API key is valid or not
-async def get_api_key(credentials: HTTPAuthorizationCredentials = Depends(HTTPBearer(auto_error=False))):
-    if os.getenv("MEMORIES_API_KEY") and (not credentials or credentials.credentials != os.getenv("MEMORIES_API_KEY")):
+async def get_api_key(
+    credentials: HTTPAuthorizationCredentials = Depends(HTTPBearer(auto_error=False)),
+):
+    if os.getenv("MEMORIES_API_KEY") and (
+        not credentials or credentials.credentials != os.getenv("MEMORIES_API_KEY")
+    ):
         raise HTTPException(status_code=403, detail="Invalid or missing API key")
     return credentials.credentials if credentials else None
 
+
+# Semaphore class for limiting concurrency and logging task status
 class LoggingSemaphore(asyncio.Semaphore):
     def __init__(self, value: int):
         super().__init__(value)
@@ -46,13 +67,15 @@ class LoggingSemaphore(asyncio.Semaphore):
         self.request_queue = Queue()
 
     async def acquire(self):
-        task_id = str(id(asyncio.current_task()))[-6:]  # Using the last six digits of the task ID
+        task_id = str(id(asyncio.current_task()))[-6:]
         if self._value <= 0:
             await self.enqueue_request()
         await super().acquire()
-        self.task_start_times[task_id] = time.monotonic()  # Log start time when task acquires the semaphore
+        self.task_start_times[task_id] = time.monotonic()
         active_tasks = self.total_permits - self._value
-        print(f"Task {task_id} acquired semaphore. Currently active tasks: {active_tasks}")
+        print(
+            f"Task {task_id} acquired semaphore. Currently active tasks: {active_tasks}"
+        )
 
     async def enqueue_request(self):
         loop = asyncio.get_event_loop()
@@ -61,21 +84,25 @@ class LoggingSemaphore(asyncio.Semaphore):
         await future  # Wait until the semaphore is available
 
     def release(self):
-        task_id = str(id(asyncio.current_task()))[-6:]  # Using the last six digits of the task ID
+        task_id = str(id(asyncio.current_task()))[-6:]
         start_time = self.task_start_times.pop(task_id, None)
         if start_time is not None:
             elapsed_time = time.monotonic() - start_time
             super().release()
             active_tasks = self.total_permits - self._value
-            print(f"Task {task_id} completed in: {elapsed_time:.4f} seconds. Currently active tasks: {active_tasks}")
+            print(
+                f"Task {task_id} completed in: {elapsed_time:.4f} seconds. Currently active tasks: {active_tasks}"
+            )
             if not self.request_queue.empty():
                 future = self.request_queue.get()
                 future.set_result(None)
         else:
             print("Release called without a corresponding acquire or task ID mismatch.")
 
+
 # Create an instance of the semaphore with logging
 semaphore = LoggingSemaphore(int(os.getenv("API_CONCURRENCY", "5")))
+
 
 # Middleware to limit concurrency and log task status
 async def limit_concurrency(request: Request, call_next):
@@ -87,5 +114,5 @@ async def limit_concurrency(request: Request, call_next):
         print(f"Error processing request: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
     finally:
-        await asyncio.sleep(int(os.getenv("RUN_BUFFER", "1")))  # Introduce a 2-second delay before releasing the semaphore
+        await asyncio.sleep(int(os.getenv("RUN_BUFFER", "1")))
         semaphore.release()  # Release semaphore after processing

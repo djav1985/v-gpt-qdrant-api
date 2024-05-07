@@ -17,13 +17,15 @@ app = FastAPI(
     title="AI Memory API",
     version="0.1.0",
     description="A FastAPI application that allows users to save memories ...",
-    servers=[{"url": os.getenv("BASE_URL"), "description": "Base API server"}]
+    servers=[{"url": os.getenv("BASE_URL"), "description": "Base API server"}],
 )
+
 
 @app.on_event("startup")
 # The function below initializes text embedding at the startup of the application.
 async def startup_event():
     await initialize_text_embedding()
+
 
 # Applying the concurrency limit middleware
 app.add_middleware(BaseHTTPMiddleware, dispatch=limit_concurrency)
