@@ -13,11 +13,11 @@ The application provides a robust dockerized framework for giving AI long term m
 - **Advanced Search Capabilities:** Users can perform targeted searches by filtering entries based on context, keywords, or both. This allows for precise retrieval, such as finding only 'negative' memories or those related to a specific entity like 'Bob' with a 'positive' sentiment.
 - **API Documentation:** Comprehensive API documentation is available at `/openapi.json` accessible through `http://BASE_URL:8077/openapi.json`. This documentation provides all necessary details for effectively utilizing the API without extensive external guidance.
 
-This configuration ensures that the platform is not only versatile in its data handling but also in its capability to interface seamlessly with various AI technologies, providing a powerful tool for data-driven insights and operations. 
+This configuration ensures that the platform is not only versatile in its data handling but also in its capability to interface seamlessly with various AI technologies, providing a powerful tool for data-driven insights and operations.
 
 The default embedding model "BAAI/bge-small-en-v1.5" uses 750mb ram per worker. For those with more RAM "nomic-ai/nomic-embed-text-v1.5" uses 1.5Gb per worker and performs as well as any of the commercial embedding options. You can configure the number of Uvicorn workers through an environment variable. Though for most a single worker is enough.
 
-## Available Models
+### Available Models
 
 | model                                               | dim  | description                                       | size_in_GB |
 | --------------------------------------------------- | ---- | ------------------------------------------------- | ---------- |
@@ -61,90 +61,88 @@ You can use multiple collections to offer a general and user memory for shared c
 For Dify:
 
 ```
-- Collection Name: Use `shared-memories01` for memory related to ORGANIZATION_NAME and '{{USENAME}}' for memory related to the specific user.
+- Memory Bank: Use `shared-memories01` for memory related to ORGANIZATION_NAME and '{{USENAME}}' for memory related to the specific user.
 ```
 
 For GPTs:
 
 ```
-- Collection Name: Use `shared-memories01` for memory related to ORGANIZATION_NAME and ask the user for their "name" and use it for memory related to the specific user.
+- Memory Bank: Use `shared-memories01` for memory related to ORGANIZATION_NAME and ask the user for their "name" and use it for memory related to the specific user.
 ```
 
 #### Setup
 
 Use docker-compose.yml by configuring then env variables:
-- OPENAI_API_KEY: ${OPENAI_API_KEY}
-- EMBEDDINGS_MODEL: text-embedding-3-small
-- QDRANT_HOST: http://qdrant:6333
-- API_KEY: # Optional api key. If set will need key to connect to endpoints.
+- QDRANT_HOST: "http://qdrant:6333"
+- BASE_URL: http://memories-api
 - QDRANT_API_KEY:
-- WORKERS:
-- UVICORN_CONCURRANCY:
-- DIM: 
-- BASE_URL: http://qdrant-api
+- #MEMORIES_API_KEY: Optional API key to connect to api
+- WORKERS: 1 #uvicorn workers 1 should be enough for personal use
+- UVICORN_CONCURRENCY: 64 #this controls the mac connections.
+- LOCAL_MODEL: nomic-ai/nomic-embed-text-v1.5" #"BAAI/bge-small-en-v1.5"
+- DIM: 768 #384
 
 #### Whats New
 
 - Using FastEmbed with ENV Variable to choose model for fast local embeddings and retrieval to lower costs. This is a small but quality model that works file on low end hardware.
-- Added concurrency control:
-  - WORKERS: 1 #uvicorn workers 1 should be enough for personal use
-  - API_CONCURRENCY: 4 #max embeddings produced simultaneously. This stops excessive CPU usage.
-  - UVICORN_CONCURRENCY: 32 #this controls the max connections. Anything over the API_concurrency value is put in query pool. Anything over this number is rejected.
 - On my low-end vps it uses less then 1gb ram on load and can produce 8 embeddings a second.
 - Reorganized the code so its not one big file.
 - switched the connection to Qdrant to use grpc as its 10x performant.
 
 ### Endpoints
 
-- POST `/collections/`: Create or delete collections in Qdrant.
+- POST `/manage_memories/`: Create or delete collections in Qdrant and forget memories.
 - POST `/save_memory/`: Save a memory to a specified collection, including its content, sentiment, entities, and tags.
 - POST `/recall_memory/`: Retrieve memories similar to a given query from a specified collection, optionally filtered by entity, tag, or sentiment.
 - POST `/v1/embeddings/`: OpenAI Drop in replacement for embeddings. Uses Env variable to assign. Will run fast on low-end boxes.
 
-### Usage
+#### Save Memory
 
-**Save Memory:**
+- **POST** `/save_memory`
+  - **Description**: Saves a new memory to the specified memory bank.
+  - **Parameters**:
+    - `memory_bank`: The name of the memory bank.
+    - `memory`: The content of the memory.
+    - `sentiment`: Sentiment associated with the memory.
+    - `entities`: List of entities identified in the memory.
+    - `tags`: List of tags associated with the memory.
+  - **Response**: Confirmation message indicating the memory has been saved.
 
-curl -X POST "http://localhost:8000/save_memory/" -H "Content-Type: application/json" -d '{"collection_name": "my_collection", "memory": "example_memory", "sentiment": "positive", "entities": ["entity1", "entity2"], "tags": ["tag1", "tag2"]}'
+#### Recall Memory
 
-**Recall Memory:**
+- **POST** `/recall_memory`
+  - **Description**: Retrieves memories similar to the query from the specified memory bank.
+  - **Parameters**:
+    - `memory_bank`: The name of the memory bank to search.
+    - `query`: Search query to find similar memories.
+    - `top_k`: Number of similar memories to return.
+    - `entity`: Specific entity to filter the search.
+    - `tag`: Specific tag to filter the search.
+    - `sentiment`: Specific sentiment to filter the search.
+  - **Response**: List of memories that match the query.
 
-curl -X POST "http://localhost:8000/recall_memory/" -H "Content-Type: application/json" -d '{
-"collection_name": "my_collection",
-"query": "example_query",
-"top_k": 5,
-"entity": "entity1",
-"tag": "tag1",
-"sentiment": "positive"
-}'
+#### Manage Memories
 
-**Forgetting a Memory Entry**
+- **POST** `/manage_memories`
+  - **Description**: Manages actions like creating, deleting, or forgetting memories within a memory bank.
+  - **Parameters**:
+    - `memory_bank`: The name of the memory bank to manage.
+    - `action`: Action to perform (create, delete, forget).
+    - `uuid`: UUID of the specific memory to forget (required for the forget action).
+  - **Response**: Confirmation message detailing the action taken.
 
-curl -X POST "http://localhost:8060/manage_memories/" -H "Content-Type: application/json" -d '{
-"memory_bank": "my_memory_bank",
-"action": "forget",
-"uuid": "specific-uuid-here"
-}'
+#### Embeddings
 
-**Deleting a Memory Bank**
+- **POST** `/v1/embeddings`
+  - **Description**: Generates embeddings for the provided input using the designated model. Useful for vectorizing text for various machine learning applications.
+  - **Parameters**:
+    - `input`: The text or list of texts to embed.
+    - `model`: The model to use for generating embeddings, specified by an environment variable.
+    - `user`: Identifier for the user requesting the embedding, defaults to 'unassigned'.
+    - `encoding_format`: Format of the encoding output, defaults to 'float'.
+  - **Response**:
+    - Returns a list of embeddings with model details and usage statistics.
 
-curl -X POST "http://localhost:8060/manage_memories/" -H "Content-Type: application/json" -d '{
-"memory_bank": "my_memory_bank",
-"action": "delete"
-}'
-
-**Creating a Memory Bank**
-
-curl -X POST "http://localhost:8060/manage_memories/" -H "Content-Type: application/json" -d '{
-"memory_bank": "my_memory_bank",
-"action": "delete"
-}'
-
-**Create Embedding:**
-
-curl -X POST "http://localhost:8000/v1/embeddings/" -H "Content-Type: application/json" -d '{
-"input": "model": "user": "encoding": "float"
-}'
 
 ### OpenAPI Specification
 
