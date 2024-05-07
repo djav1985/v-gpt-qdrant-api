@@ -4,11 +4,18 @@
 
 ## Description
 
-This repository contains a FastAPI application for interacting with Qdrant, a vector database, and FastEmbed w/ selectable model for embeddings. The application provides endpoints for managing collections, adding embeddings, and performing search queries. Openapi spec at /openapi.json. This is meant for use with custom GPTs or other AI platforms. It can be used to store conversation history (marked AI or User). It can also store custom (Info) entries. Each entry can be marked with metadata. Context: ai, user or info. Keywords: one or more comma separated words that tag entry. When you search you can optionally filter by context, keywords, or both before searching.
+The application provides a robust dockerized framework for giving AI long term memory. This api can managing collections and memories, adding memories, and performing searching memories aswell an providing an openAi compatible in enbeddings endpoint, designed specifically for integration with custom GPT models and other AI platforms.
 
-When saving a memory it can add entities (basically related nouns), Tags (keywords) and sentiment (positive, neutral, and negative). Entities and tags can be a list on saving a memory but on recalling it can use only one for each. The 3 meta tags are optional for search and can be used in any combination for search. So you can basically have the ai for example look up only memories that are "negative", or only memories that are related to entity "bob" that are "positive".
+**Features include:**
 
-The openapi spec at `http://BASE_URL:8077/openapi.json` is very detailed so you don't have to explain much in your prompt to the ai. The spect handle most of that.
+- **Embedding Endpoint:** The application includes an OpenAPI-compatible embedding endpoint that allows for the integration of open-source model embeddings, which can be self-hosted. This feature enhances the application’s flexibility and control over data handling and processing.
+- **Saving Memories:** Entries can be augmented with entities (typically nouns), tags (keywords), and sentiments (positive, neutral, negative). Although multiple entities and tags can be added when saving, searches can be configured to focus on specific single entries.
+- **Advanced Search Capabilities:** Users can perform targeted searches by filtering entries based on context, keywords, or both. This allows for precise retrieval, such as finding only 'negative' memories or those related to a specific entity like 'Bob' with a 'positive' sentiment.
+- **API Documentation:** Comprehensive API documentation is available at `/openapi.json` accessible through `http://BASE_URL:8077/openapi.json`. This documentation provides all necessary details for effectively utilizing the API without extensive external guidance.
+
+This configuration ensures that the platform is not only versatile in its data handling but also in its capability to interface seamlessly with various AI technologies, providing a powerful tool for data-driven insights and operations. 
+
+The default embedding model "BAAI/bge-small-en-v1.5" uses 750mb ram per worker. For those with more RAM "nomic-ai/nomic-embed-text-v1.5" uses 1.5Gb per worker and performs as well as any of the commercial embedding options. You can configure the number of Uvicorn workers through an environment variable. Though for most a single worker is enough.
 
 ## Available Models
 
@@ -65,7 +72,16 @@ For GPTs:
 
 #### Setup
 
-Use docker-compose.yml
+Use docker-compose.yml by configuring then env variables:
+- OPENAI_API_KEY: ${OPENAI_API_KEY}
+- EMBEDDINGS_MODEL: text-embedding-3-small
+- QDRANT_HOST: http://qdrant:6333
+- API_KEY: # Optional api key. If set will need key to connect to endpoints.
+- QDRANT_API_KEY:
+- WORKERS:
+- UVICORN_CONCURRANCY:
+- DIM: 
+- BASE_URL: http://qdrant-api
 
 #### Whats New
 
