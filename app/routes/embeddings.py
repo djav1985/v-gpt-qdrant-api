@@ -24,7 +24,7 @@ async def embedding_request(
     current_embeddings += (
         1  # Increment the counter as we start processing a new request
     )
-    print(f"Started processing. Current embeddings: {current_embeddings}")
+    print(f"Currently processing {current_embeddings} embeddings")
 
     try:
         model = await get_embeddings_model()
@@ -50,6 +50,4 @@ async def embedding_request(
         end_time = time.time()
         processing_time = end_time - start_time
         current_embeddings -= 1  # Decrement the counter as we finish processing
-        print(
-            f"Finished processing in {processing_time:.2f} seconds. Current embeddings: {current_embeddings}"
-        )
+        print(f"Finished an embedding in {processing_time:.2f} seconds.")
