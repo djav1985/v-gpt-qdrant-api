@@ -181,13 +181,14 @@ async def manage_memories(
 
             # Delete specific memory using UUID
             await Qdrant.delete(
-                collection_name=Params.memory_bank, point_ids=[Params.uuid]
-            )
+                    collection_name=Params.memory_bank,
+                    points_selector=[Params.uuid]
+                )
 
             return {
                 "message": f"Memory with UUID '{Params.uuid}' has been forgotten from Memory Bank '{Params.memory_bank}'."
             }
-
+        
     except Exception as e:
         print(f"An error occurred: {e}")
         raise HTTPException(status_code=500, detail=str(e))
