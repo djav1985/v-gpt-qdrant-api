@@ -181,7 +181,10 @@ async def manage_memories(
 
             # Delete specific memory using UUID
             await Qdrant.delete(
-                collection_name=Params.memory_bank, point_ids=[Params.uuid]
+                collection_name=Params.memory_bank,
+                points_selector=models.PointIdsList(
+                points=[Params.uuid]
+                ),
             )
 
             return {
