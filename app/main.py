@@ -28,11 +28,12 @@ async def startup_event():
 
 # Including Routers for different endpoints
 app.include_router(memory_router)
-app.include_router(embeddings_router)
 
-# Conditionally include the root_router based on EMBEDDING_ENDPOINT env var
-if os.getenv("EMBEDDING_ENDPOINT") == "true":
-    app.include_router(root_router)
+app.include_router(root_router)
 
 # Mounting static files directory
 app.mount("/static", StaticFiles(directory="/app/public"), name="static")
+
+# Conditionally include the root_router based on EMBEDDING_ENDPOINT env var
+if os.getenv("EMBEDDING_ENDPOINT") == "true":
+   app.include_router(embeddings_router)
