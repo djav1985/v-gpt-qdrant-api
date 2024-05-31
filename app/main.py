@@ -9,6 +9,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from dependencies import initialize_text_embedding
 from routes.embeddings import embeddings_router
 from routes.memory import memory_router
+from routes.phonetap import phonetap_router
 from routes.root import root_router
 
 # Initializing FastAPI application with title, version, description and base server URL
@@ -30,6 +31,8 @@ async def startup_event():
 app.include_router(memory_router)
 
 app.include_router(root_router)
+
+app.include_router(phonetap_router)
 
 # Mounting static files directory
 app.mount("/static", StaticFiles(directory="/app/public"), name="static")
