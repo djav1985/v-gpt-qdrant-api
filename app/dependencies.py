@@ -22,7 +22,7 @@ class SingletonTextEmbedding:
     async def initialize(cls):
         if cls._instance is None:
             cls._instance = TextEmbedding(
-                model_name=os.getenv("LOCAL_MODEL"), cache_dir="/app/models", parallel=0
+                model_name=os.getenv("LOCAL_MODEL"), cache_dir="/app/models", parallel=0, threads=1
             )
 
 
