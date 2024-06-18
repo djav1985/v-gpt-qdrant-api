@@ -6,7 +6,7 @@ services:
     hostname: qdrant-api
     restart: unless-stopped
     ports:
-      - "8077:80"
+      - "8077:8888"
     depends_on:
       - qdrant
     environment:
@@ -16,6 +16,7 @@ services:
       # API_KEY: # Optional api key. If set will need key to connect to endpoints.
       QDRANT_API_KEY: xtfpouszusdsdsozlzlwdwac
       BASE_URL: http://qdrant-api
+      ROOT_PATH: /memory
 
   qdrant:
     image: langgenius/qdrant:latest
