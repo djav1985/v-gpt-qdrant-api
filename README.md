@@ -122,7 +122,7 @@ The v-gpt-qdrant-api project is a sophisticated API designed to facilitate memor
 
 **System Requirements:**
 
-* **Python**: `version x.y.z`
+* **Python**: `version 3.10`
 
 ### ⚙️ Installation
 
@@ -168,40 +168,6 @@ The v-gpt-qdrant-api project is a sophisticated API designed to facilitate memor
 - [ ] `► INSERT-TASK-2`
 - [ ] `► ...`
 
----
-
-## 🤝 Contributing
-
-Contributions are welcome! Here are several ways you can contribute:
-
-- **[Report Issues](https://local/v-gpt-qdrant-api/issues)**: Submit bugs found or log feature requests for the `v-gpt-qdrant-api` project.
-- **[Submit Pull Requests](https://local/v-gpt-qdrant-api/blob/main/CONTRIBUTING.md)**: Review open PRs, and submit your own PRs.
-- **[Join the Discussions](https://local/v-gpt-qdrant-api/discussions)**: Share your insights, provide feedback, or ask questions.
-
-<details closed>
-<summary>Contributing Guidelines</summary>
-
-1. **Fork the Repository**: Start by forking the project repository to your local account.
-2. **Clone Locally**: Clone the forked repository to your local machine using a git client.
-   ```sh
-   git clone ../v-gpt-qdrant-api
-   ```
-3. **Create a New Branch**: Always work on a new branch, giving it a descriptive name.
-   ```sh
-   git checkout -b new-feature-x
-   ```
-4. **Make Your Changes**: Develop and test your changes locally.
-5. **Commit Your Changes**: Commit with a clear message describing your updates.
-   ```sh
-   git commit -m 'Implemented new feature x.'
-   ```
-6. **Push to local**: Push the changes to your forked repository.
-   ```sh
-   git push origin new-feature-x
-   ```
-7. **Submit a Pull Request**: Create a PR against the original project repository. Clearly describe the changes and their motivations.
-8. **Review**: Once your PR is reviewed and approved, it will be merged into the main branch. Congratulations on your contribution!
-</details>
 ---
 
 ## 🎗 License
