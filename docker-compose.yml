@@ -1,35 +1,40 @@
-version: '3.8'
+version: "3.8"
 services:
-  app:
-    container_name: qdrant-api
-    image: vontainment/v-gpt-qdrant-api:main # Use your appropriate image
-    hostname: qdrant-api
-    restart: unless-stopped
-    ports:
-      - "8077:8888"
+  memories-api:
+    container_name: memories-api
+    image: vontainment/v-gpt-qdrant-api:dev2 # Use your appropriate image
+    restart: always
     depends_on:
       - qdrant
+    ports:
+      - "8060:8060"
     environment:
-      OPENAI_API_KEY: ${OPENAI_API_KEY}
-      EMBEDDINGS_MODEL: text-embedding-3-small
-      QDRANT_HOST: http://qdrant:6333
-      # API_KEY: # Optional api key. If set will need key to connect to endpoints.
-      QDRANT_API_KEY: xtfpouszusdsdsozlzlwdwac
-      BASE_URL: http://qdrant-api
+      QDRANT_HOST: "http://qdrant:6333"
+      BASE_URL: http://memories-api/memory
       ROOT_PATH: /memory
+      QDRANT_API_KEY:
+      #MEMORIES_API_KEY: Optional API key to connect to api
+      WORKERS: 1 #uvicorn workers 1 should be enough for personal use
+      UVICORN_CONCURRENCY: 64 #this controls the mac connections. Anything over the API_concurrancy value is put in query pool. Anything over this number is rejected.
+      EMBEDDING_ENDPOINT: True
+      LOCAL_MODEL: nomic-ai/nomic-embed-text-v1.5" #"BAAI/bge-small-en-v1.5"
+      DIM: 768 #384
+    volumes:
+      - embedding-model:/app/models
 
   qdrant:
     image: langgenius/qdrant:latest
     container_name: qdrant
     restart: always
-    # ports:
-       # - "8060:6333"
+    #ports:
+    #- "8060:6333"
     environment:
-      QDRANT_API_KEY: xtfpouszusdsdsozlzlwdwac
+      QDRANT_API_KEY:
     volumes:
       - qdrant-data:/qdrant/storage
       - qdrant-config:/qdrant/config/
 
 volumes:
+  embedding-model:
   qdrant-data:
   qdrant-config:
