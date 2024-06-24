@@ -19,7 +19,7 @@ jobs:
         run: |
           pip download -r requirements.txt --dest /opt/hostedtoolcache/${{ gitea.repository }}-${{ gitea.ref_name }}/pip/
           mkdir -p ${{ gitea.workspace }}/cache
-          cp -r /opt/hostedtoolcache/${{ gitea.repository }}-${{ gitea.ref_name }}/pip/* ${{ gitea.workspace }}/cache/                    
+          cp -r /opt/hostedtoolcache/${{ gitea.repository }}-${{ gitea.ref_name }}/pip/* ${{ gitea.workspace }}/cache/
 
       - name: Set up Docker
         uses: docker/setup-buildx-action@v3
@@ -34,12 +34,12 @@ jobs:
         uses: docker/metadata-action@v5
         id: meta
         with:
-          images: vontainment/v-gpt-qdrant-api
+          images: vontainment/v-gpt-gdrant-api
           flavor: latest=false
           tags: |
             type=raw,value=main,enable=${{ gitea.ref == 'refs/heads/main' }}
             type=raw,value=dev,enable=${{ gitea.ref == 'refs/heads/dev' }}
-            type=sha,priority=100,enable=${{ gitea.event_name == 'push' }}                        
+            type=sha,priority=100,enable=${{ gitea.event_name == 'push' }}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
@@ -56,7 +56,3 @@ jobs:
         run: |
           rm -rf /opt/hostedtoolcache/${{ gitea.repository }}-${{ gitea.ref_name }}/build/
           mv /opt/hostedtoolcache/${{ gitea.repository }}-${{ gitea.ref_name }}/build-new/ /opt/hostedtoolcache/${{ gitea.repository }}-${{ gitea.ref_name }}/build/
-
-      - name: Clean up Buildx containers
-        run: |
-          docker ps -a | grep buildx_buildkit_builder | awk '{print $1}' | xargs docker rm -f
