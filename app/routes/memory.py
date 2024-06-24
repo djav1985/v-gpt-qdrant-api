@@ -14,7 +14,7 @@ from dependencies import get_api_key, get_embeddings_model, create_qdrant_client
 
 memory_router = APIRouter()
 
-@memory_router.post("/", operation_id="manage_memory", dependencies=[Depends(get_api_key)])
+@memory_router.post("/", operation_id="manage-memory", dependencies=[Depends(get_api_key)])
 async def manage_memory(params: UnifiedParams, api_key: str = Depends(get_api_key), Qdrant: AsyncQdrantClient = Depends(create_qdrant_client)):
     try:
         operation_type = params.root.operation_type

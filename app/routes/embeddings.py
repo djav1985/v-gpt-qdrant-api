@@ -13,7 +13,7 @@ embeddings_router = APIRouter()
 # Global counter for tracking concurrent embeddings
 current_embeddings = 0
 
-@embeddings_router.post("/v1/embeddings", operation_id="create_embedding")
+@embeddings_router.post("/embeddings", operation_id="create-embedding")
 async def embedding_request(
     Params: EmbeddingParams, api_key: str = Depends(get_api_key)
 ):

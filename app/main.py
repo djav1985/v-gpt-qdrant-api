@@ -6,7 +6,6 @@ from dependencies import initialize_text_embedding
 
 from routes.embeddings import embeddings_router
 from routes.memory import memory_router
-from routes.root import root_router
 
 # Initializing FastAPI application with title, version, description and base server URL
 app = FastAPI(
@@ -26,8 +25,6 @@ async def startup_event():
 
 # Including Routers for different endpoints
 app.include_router(memory_router)
-
-app.include_router(root_router)
 
 # Conditionally include the root_router based on EMBEDDING_ENDPOINT env var
 if os.getenv("EMBEDDING_ENDPOINT") == "true":
