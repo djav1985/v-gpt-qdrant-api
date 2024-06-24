@@ -36,8 +36,8 @@
   - [🧪 Tests](#-tests)
 - [🛠 Project Roadmap](#-project-roadmap)
 - [🤝 Contributing](#-contributing)
+- [](#)
 - [🎗 License](#-license)
-- [🔗 Acknowledgments](#-acknowledgments)
 </details>
 <hr>
 
@@ -202,28 +202,13 @@ Contributions are welcome! Here are several ways you can contribute:
 7. **Submit a Pull Request**: Create a PR against the original project repository. Clearly describe the changes and their motivations.
 8. **Review**: Once your PR is reviewed and approved, it will be merged into the main branch. Congratulations on your contribution!
 </details>
-
-<details closed>
-<summary>Contributor Graph</summary>
-<br>
-<p align="center">
-   <a href="https://local{/v-gpt-qdrant-api/}graphs/contributors">
-      <img src="https://contrib.rocks/image?repo=v-gpt-qdrant-api">
-   </a>
-</p>
-</details>
-
 ---
 
 ## 🎗 License
 
-This project is protected under the [SELECT-A-LICENSE](https://choosealicense.com/licenses) License. For more details, refer to the [LICENSE](https://choosealicense.com/licenses/) file.
+This project is protected under the MIT Licence
 
 ---
-
-## 🔗 Acknowledgments
-
-- List any resources, contributors, inspiration, etc. here.
 
 [**Return**](#-overview)
 
