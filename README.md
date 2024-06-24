@@ -121,4 +121,4 @@ These environment variables are crucial for tuning the performance and behavior 
 
 ### OpenAPI Specification
 
-The OpenAPI specification for the API endpoints is available at `http://BASE_URL:8077/openapi.json`. Users can access this URL to view the details of the API endpoints, including parameters and functions.
+The OpenAPI specification for the API endpoints is available at `http://BASE_URL/openapi.json`. Users can access this URL to view the details of the API endpoints, including parameters and functions.
