@@ -60,7 +60,3 @@ jobs:
       - name: Clean up Buildx containers
         run: |
           docker ps -a | grep buildx_buildkit_builder | awk '{print $1}' | xargs docker rm -f
-
-      - name: Clean up Gitea Action containers
-        run: |
-          docker ps -a | grep GITEA-ACTIONS-TASK | awk '{print $1}' | xargs docker rm -f
