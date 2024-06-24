@@ -3,8 +3,8 @@ import uuid
 import asyncio
 from datetime import datetime
 
+# Importing necessary libraries and modules
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import ValidationError
 from fastembed import TextEmbedding
 from qdrant_client import AsyncQdrantClient, models
 from qdrant_client.models import Distance, VectorParams, Filter, FieldCondition, PointStruct
