@@ -3,7 +3,6 @@ import uuid
 import asyncio
 from datetime import datetime
 
-# Importing necessary libraries and modules
 from fastapi import APIRouter, Depends, HTTPException
 from fastembed import TextEmbedding
 from qdrant_client import AsyncQdrantClient, models

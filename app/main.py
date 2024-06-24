@@ -1,9 +1,6 @@
 import os
-
 from fastapi import FastAPI
-
 from dependencies import initialize_text_embedding
-
 from routes.embeddings import embeddings_router
 from routes.memory import memory_router
 
@@ -16,12 +13,10 @@ app = FastAPI(
     servers=[{"url": os.getenv("BASE_URL", ""), "description": "Base API server"}],
 )
 
-
 @app.on_event("startup")
 async def startup_event():
     # Initialize the text embedding singleton
     await initialize_text_embedding()
-
 
 # Including Routers for different endpoints
 app.include_router(memory_router)
