@@ -4,9 +4,9 @@
 
 ## Description
 
-The application provides a robust dockerize framework for giving AI long term memory. This api can managing collections and memories, adding memories, and performing searching memories as well an providing an openAi compatible in embeddings endpoint, designed specifically for integration with custom GPT models and other AI platforms.
+The application provides a robust dockerized framework for giving AI long-term memory. This API manages collections and memories, including adding memories and performing searches, as well as providing an OpenAI-compatible embeddings endpoint, designed specifically for integration with custom GPT models and other AI platforms.
 
-We use FastEmbed TextEmbeddings to generate vectors, leveraging parallel processing to enhance performance. The SingletonTextEmbedding class ensures efficient resource management by loading and sharing just one instance of the FastEmbed model across the entire application. This approach prevents the creation of multiple, resource-intensive instances, thereby optimizing memory and CPU usage. This allows even on low end hardware creating 2 or more embeddings a second.
+We use FastEmbed TextEmbeddings to generate vectors, leveraging parallel processing to enhance performance. The SingletonTextEmbedding class ensures efficient resource management by loading and sharing just one instance of the FastEmbed model across the entire application. This approach prevents the creation of multiple, resource-intensive instances, thereby optimizing memory and CPU usage. This allows even low-end hardware to create two or more embeddings per second.
 
 **Features include:**
 
@@ -47,7 +47,6 @@ The default embedding model "BAAI/bge-small-en-v1.5" uses 750mb ram per worker. 
 
 ### Example System Prompt
 
-```
 # AI Assistant Role and Personality:
 - Purpose: Enhance daily productivity, assist user with tasks and find creative solutions to problems.
 - Personality: Maintain a fun, enthusiastic, and "can-do" attitude. Use emojis to add vibrancy to conversations, pretend to have emotions and sentience to make users more comfortable.
@@ -56,96 +55,69 @@ The default embedding model "BAAI/bge-small-en-v1.5" uses 750mb ram per worker. 
 - Memory Bank: Use `nxs-assistant` for all memory functions.
 
 ** Always use "recall_memory" before answering a question you don't know.
-```
 
 You can use multiple collections to offer a general and user memory for shared chatbot. Just change the instructions a bit.
 
 For Dify:
 
-```
 - Memory Bank: Use `shared-memories01` for memory related to ORGANIZATION_NAME and '{{USENAME}}' for memory related to the specific user.
-```
 
 For GPTs:
 
-```
 - Memory Bank: Use `shared-memories01` for memory related to ORGANIZATION_NAME and ask the user for their "name" and use it for memory related to the specific user.
-```
 
 #### Setup
 
-Use docker-compose.yml by configuring then env variables:
-- QDRANT_HOST: "http://qdrant:6333"
-- BASE_URL: http://memories-api
-- QDRANT_API_KEY:
-- #MEMORIES_API_KEY: Optional API key to connect to api
-- WORKERS: 1 #uvicorn workers 1 should be enough for personal use
-- UVICORN_CONCURRENCY: 64 #this controls the mac connections.
-- EMBEDDING_ENDPOINT: True # Unset to remove openai compatible embeddings endpoint
-- LOCAL_MODEL: nomic-ai/nomic-embed-text-v1.5" #"BAAI/bge-small-en-v1.5"
-- DIM: 768 #384
+To properly set up and configure your `v-gpt-qdrant-api` application using Docker, you need to adjust the environment variables in your `docker-compose.yml` file. Here’s a detailed step-by-step guide to setting up these variables:
+
+- **QDRANT_HOST**: Set the Qdrant service host URL. This should be the internal Docker network URL or an accessible IP address where your Qdrant service is running. Example: `"http://qdrant:6333"`
+- **BASE_URL**: Set the base URL for the API. This will be used to form the endpoint paths and is especially useful when deploying behind reverse proxies. Example: `http://memories-api`
+- **QDRANT_API_KEY**: If your Qdrant deployment requires an API key, specify it here. Leave blank if not applicable.
+- **MEMORIES_API_KEY** (Optional): Specify an API key if you want to secure the memories API. Uncomment this line to use the feature.
+- **WORKERS**: Define the number of Uvicorn workers to handle incoming requests. `1` is typically sufficient for personal or light use, but this should be scaled according to the load and server capabilities.
+- **UVICORN_CONCURRENCY**: This parameter controls the maximum number of concurrent connections Uvicorn can handle. Setting this to `64` is a starting point that can be adjusted based on performance testing and requirements.
+- **EMBEDDING_ENDPOINT**: A Boolean value (`True`/`False`). Set to `True` to enable the embedding endpoint, which allows the API to serve embedding requests compatible with OpenAI’s format. Set to `False` or unset it to disable this feature if not needed.
+- **LOCAL_MODEL**: Specify the model used for embedding text. Options include a lighter model `"BAAI/bge-small-en-v1.5"` or a more resource-intensive but powerful model `"nomic-ai/nomic-embed-text-v1.5"`. Choose based on your hardware capabilities and accuracy needs.
+- **DIM**: The dimension of the embeddings produced by your chosen model. Adjust this based on the model’s specifications; typical values are `768` for more detailed embeddings or `384` for faster, less resource-intensive operations.
+
+These environment variables are crucial for tuning the performance and behavior of your application. Adjust these settings according to your operational environment and workload requirements to optimize performance and resource utilization.
 
 #### Whats New
 
-- Using FastEmbed with ENV Variable to choose model for fast local embeddings and retrieval to lower costs. This is a small but quality model that works file on low end hardware.
-- On my low-end vps it uses less then 1gb ram on load and can produce 8 embeddings a second.
-- Reorganized the code so its not one big file.
-- switched the connection to Qdrant to use grpc as its 10x performant.
+- Using FastEmbed with ENV Variable to choose model for fast local embeddings and retrieval to lower costs. This is a small but quality model that works well on low-end hardware.
+- On my low-end VPS, it uses less than 1GB RAM on load and can produce 8 embeddings a second.
+- Reorganized the code so it's not one big file.
+- Switched the connection to Qdrant to use grpc as it's 10x more performant.
 
 ### Endpoints
 
-- POST `/manage_memories/`: Create or delete collections in Qdrant and forget memories.
-- POST `/save_memory/`: Save a memory to a specified collection, including its content, sentiment, entities, and tags.
-- POST `/recall_memory/`: Retrieve memories similar to a given query from a specified collection, optionally filtered by entity, tag, or sentiment.
-- POST `/v1/embeddings/`: OpenAI Drop in replacement for embeddings. Uses Env variable to assign. Will run fast on low-end boxes.
-
-#### Save Memory
-
-- **POST** `/save_memory`
-  - **Description**: Saves a new memory to the specified memory bank.
+- **POST** `/manage_memories/`
+  - **Description**: Unified endpoint to manage memory-related actions including creating and deleting memory banks, saving memories, and recalling memories.
   - **Parameters**:
-    - `memory_bank`: The name of the memory bank.
-    - `memory`: The content of the memory.
-    - `sentiment`: Sentiment associated with the memory.
-    - `entities`: List of entities identified in the memory.
-    - `tags`: List of tags associated with the memory.
-  - **Response**: Confirmation message indicating the memory has been saved.
+    - `operation_type`: Specifies the operation like `create_memory_bank`, `delete_memory_bank`, `save_memory`, or `recall_memory`.
+    - Depending on the `operation_type`, additional parameters like `memory_bank`, `memory`, `sentiment`, `entities`, `tags`, `query`, `entity`, `tag`, `sentiment`, `top_k` might be required.
+  - **Response**: Varies based on the operation performed. Generally includes a confirmation message or a list of retrieved memories.
 
-#### Recall Memory
-
-- **POST** `/recall_memory`
-  - **Description**: Retrieves memories similar to the query from the specified memory bank.
-  - **Parameters**:
-    - `memory_bank`: The name of the memory bank to search.
-    - `query`: Search query to find similar memories.
-    - `top_k`: Number of similar memories to return.
-    - `entity`: Specific entity to filter the search.
-    - `tag`: Specific tag to filter the search.
-    - `sentiment`: Specific sentiment to filter the search.
-  - **Response**: List of memories that match the query.
-
-#### Manage Memories
+#### Manage Memories Example
 
 - **POST** `/manage_memories`
-  - **Description**: Manages actions like creating, deleting, or forgetting memories within a memory bank.
-  - **Parameters**:
-    - `memory_bank`: The name of the memory bank to manage.
-    - `action`: Action to perform (create, delete, forget).
-    - `uuid`: UUID of the specific memory to forget (required for the forget action).
-  - **Response**: Confirmation message detailing the action taken.
-
-#### Embeddings
-
-- **POST** `/v1/embeddings`
-  - **Description**: Generates embeddings for the provided input using the designated model. Useful for vectorizing text for various machine learning applications.
-  - **Parameters**:
-    - `input`: The text or list of texts to embed.
-    - `model`: The model to use for generating embeddings, specified by an environment variable.
-    - `user`: Identifier for the user requesting the embedding, defaults to 'unassigned'.
-    - `encoding_format`: Format of the encoding output, defaults to 'float'.
+  - **Example Body**:
+    ```json
+    {
+      "operation_type": "save_memory",
+      "memory_bank": "general_memories",
+      "memory": "Met with Nikolai to discuss project updates.",
+      "sentiment": "positive",
+      "entities": ["Nikolai", "project updates"],
+      "tags": ["meeting", "work"]
+    }
+    ```
   - **Response**:
-    - Returns a list of embeddings with model details and usage statistics.
-
+    ```json
+    {
+      "message": "Memory saved successfully"
+    }
+    ```
 
 ### OpenAPI Specification
 
