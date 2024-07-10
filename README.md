@@ -27,6 +27,7 @@
   <summary>Table of Contents</summary><br>
 
 - [📍 Overview](#-overview)
+  - [Available Models](#available-models)
 - [🧩 Features](#-features)
 - [🗂️ Repository Structure](#️-repository-structure)
 - [📦 Modules](#-modules)
@@ -39,6 +40,32 @@
 ## 📍 Overview
 
 The v-gpt-qdrant-api is a FastAPI-based application designed to manage and process memory operations using semantic vector embeddings. By leveraging Qdrant for vector storage and ONNX Runtime for efficient model execution, it facilitates the creation, retrieval, and deletion of memory entities. The project ensures robust interaction between core API services and Qdrant, encapsulating embeddings and memory management functionalities. Its containerized deployment via Docker and environment orchestration through docker-compose seamlessly integrate dependencies, making the system scalable and efficient. This API serves as a powerful tool for applications requiring sophisticated text embedding and memory handling capabilities.
+
+### Available Models
+
+| model                                               | dim  | description                                       | size_in_GB |
+| --------------------------------------------------- | ---- | ------------------------------------------------- | ---------- |
+| BAAI/bge-small-en-v1.5                              | 384  | Fast and Default English model                    | 0.067      |
+| BAAI/bge-small-zh-v1.5                              | 512  | Fast and recommended Chinese model                | 0.090      |
+| sentence-transformers/all-MiniLM-L6-v2              | 384  | Sentence Transformer model, MiniLM-L6-v2          | 0.090      |
+| snowflake/snowflake-arctic-embed-xs                 | 384  | Based on all-MiniLM-L6-v2 model with only 22m ... | 0.090      |
+| jinaai/jina-embeddings-v2-small-en                  | 512  | English embedding model supporting 8192 sequen... | 0.120      |
+| snowflake/snowflake-arctic-embed-s                  | 384  | Based on infloat/e5-small-unsupervised, does n... | 0.130      |
+| BAAI/bge-small-en                                   | 384  | Fast English model                                | 0.130      |
+| BAAI/bge-base-en-v1.5                               | 768  | Base English model, v1.5                          | 0.210      |
+| sentence-transformers/paraphrase-multilingual-mpnet | 384  | Sentence Transformer model, paraphrase-multili... | 0.220      |
+| BAAI/bge-base-en                                    | 768  | Base English model                                | 0.420      |
+| snowflake/snowflake-arctic-embed-m                  | 768  | Based on intfloat/e5-base-unsupervised model, ... | 0.430      |
+| jinaai/jina-embeddings-v2-base-en                   | 768  | English embedding model supporting 8192 sequen... | 0.520      |
+| nomic-ai/nomic-embed-text-v1                        | 768  | 8192 context length english model                 | 0.520      |
+| nomic-ai/nomic-embed-text-v1.5                      | 768  | 8192 context length english model                 | 0.520      |
+| snowflake/snowflake-arctic-embed-m-long             | 768  | Based on nomic-ai/nomic-embed-text-v1-unsuperv... | 0.540      |
+| mixedbread-ai/mxbai-embed-large-v1                  | 1024 | MixedBread Base sentence embedding model, does... | 0.640      |
+| sentence-transformers/paraphrase-multilingual-mpnet | 768  | Sentence-transformers model for tasks like clu... | 1.000      |
+| snowflake/snowflake-arctic-embed-l                  | 1024 | Based on intfloat/e5-large-unsupervised, large... | 1.020      |
+| BAAI/bge-large-en-v1.5                              | 1024 | Large English model, v1.5                         | 1.200      |
+| thenlper/gte-large                                  | 1024 | Large general text embeddings model               | 1.200      |
+| intfloat/multilingual-e5-large                      | 1024 | Multilingual model, e5-large. Recommend using ... | 2.240      |
 
 ---
 
