@@ -7,17 +7,12 @@ services:
     depends_on:
       - qdrant
     ports:
-      - "8060:8060"
+      - "8060:8888"
     environment:
       QDRANT_HOST: "http://qdrant:6333"
-<<<<<<< HEAD
-      BASE_URL: http://memories-api
-=======
-      BASE_URL: http://memories-api/memory
-      ROOT_PATH: /memory
->>>>>>> main
+      BASE_URL: http://memories-api/
       QDRANT_API_KEY:
-      #MEMORIES_API_KEY: Optional API key to connect to api
+      MEMORIES_API_KEY: Optional API key to connect to api
       WORKERS: 1 #uvicorn workers 1 should be enough for personal use
       UVICORN_CONCURRENCY: 64 #this controls the mac connections. Anything over the API_concurrancy value is put in query pool. Anything over this number is rejected.
       EMBEDDING_ENDPOINT: True
