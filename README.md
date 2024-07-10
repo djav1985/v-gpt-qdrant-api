@@ -19,23 +19,24 @@
 	<img src="https://img.shields.io/badge/Python-3776AB.svg?style=flat-square&logo=Python&logoColor=white" alt="Python">
 	<img src="https://img.shields.io/badge/Docker-2496ED.svg?style=flat-square&logo=Docker&logoColor=white" alt="Docker">
 	<img src="https://img.shields.io/badge/NumPy-013243.svg?style=flat-square&logo=NumPy&logoColor=white" alt="NumPy">
-	<img src="https://img.shields.io/badge/FastAPI-009688.svg?style=flat-square&logo=FastAPI&logoColor=white" alt="FastAPI">
+	<img src="https://img.shields.io/badge/FastAPI-009688.svg?style=flat-square&logo=FastAPI&logoColor=white" [alt="FastAPI">
 </p>
 
 <br><!-- TABLE OF CONTENTS -->
 <details>
   <summary>Table of Contents</summary><br>
 
-- [📍 Overview](#-overview)
-  - [Available Models](#available-models)
+- [📍 Overview](#-overview)]
+  - [Example System Prompt](#Example-System-Prompt)
 - [🧩 Features](#-features)
 - [🗂️ Repository Structure](#️-repository-structure)
 - [📦 Modules](#-modules)
 - [🚀 Getting Started](#-getting-started)
   - [Prerequisites](#prerequisites)
-  - [Configuration](#configuration)
-    - [Environment Variables](#environment-variables)
-    - [Running the Docker Containers](#running-the-docker-containers)
+  - [Environment Variables](#environment-variables)
+  - [Available Models](#available-models)
+  - [Running the Docker Containers](#running-the-docker-containers)
+  - [OpenAPI Specification](#OpenAPI-Specification)
 - [🛠 Project Roadmap](#-project-roadmap)
 - [🎗 License](#-license)
 </details>
@@ -45,31 +46,32 @@
 
 The v-gpt-qdrant-api is a FastAPI-based application designed to manage and process memory operations using semantic vector embeddings. By leveraging Qdrant for vector storage and ONNX Runtime for efficient model execution, it facilitates the creation, retrieval, and deletion of memory entities. The project ensures robust interaction between core API services and Qdrant, encapsulating embeddings and memory management functionalities. Its containerized deployment via Docker and environment orchestration through docker-compose seamlessly integrate dependencies, making the system scalable and efficient. This API serves as a powerful tool for applications requiring sophisticated text embedding and memory handling capabilities.
 
-### Available Models
+### Example System Prompt
 
-| model                                               | dim  | description                                       | size_in_GB |
-| --------------------------------------------------- | ---- | ------------------------------------------------- | ---------- |
-| BAAI/bge-small-en-v1.5                              | 384  | Fast and Default English model                    | 0.067      |
-| BAAI/bge-small-zh-v1.5                              | 512  | Fast and recommended Chinese model                | 0.090      |
-| sentence-transformers/all-MiniLM-L6-v2              | 384  | Sentence Transformer model, MiniLM-L6-v2          | 0.090      |
-| snowflake/snowflake-arctic-embed-xs                 | 384  | Based on all-MiniLM-L6-v2 model with only 22m ... | 0.090      |
-| jinaai/jina-embeddings-v2-small-en                  | 512  | English embedding model supporting 8192 sequen... | 0.120      |
-| snowflake/snowflake-arctic-embed-s                  | 384  | Based on infloat/e5-small-unsupervised, does n... | 0.130      |
-| BAAI/bge-small-en                                   | 384  | Fast English model                                | 0.130      |
-| BAAI/bge-base-en-v1.5                               | 768  | Base English model, v1.5                          | 0.210      |
-| sentence-transformers/paraphrase-multilingual-mpnet | 384  | Sentence Transformer model, paraphrase-multili... | 0.220      |
-| BAAI/bge-base-en                                    | 768  | Base English model                                | 0.420      |
-| snowflake/snowflake-arctic-embed-m                  | 768  | Based on intfloat/e5-base-unsupervised model, ... | 0.430      |
-| jinaai/jina-embeddings-v2-base-en                   | 768  | English embedding model supporting 8192 sequen... | 0.520      |
-| nomic-ai/nomic-embed-text-v1                        | 768  | 8192 context length english model                 | 0.520      |
-| nomic-ai/nomic-embed-text-v1.5                      | 768  | 8192 context length english model                 | 0.520      |
-| snowflake/snowflake-arctic-embed-m-long             | 768  | Based on nomic-ai/nomic-embed-text-v1-unsuperv... | 0.540      |
-| mixedbread-ai/mxbai-embed-large-v1                  | 1024 | MixedBread Base sentence embedding model, does... | 0.640      |
-| sentence-transformers/paraphrase-multilingual-mpnet | 768  | Sentence-transformers model for tasks like clu... | 1.000      |
-| snowflake/snowflake-arctic-embed-l                  | 1024 | Based on intfloat/e5-large-unsupervised, large... | 1.020      |
-| BAAI/bge-large-en-v1.5                              | 1024 | Large English model, v1.5                         | 1.200      |
-| thenlper/gte-large                                  | 1024 | Large general text embeddings model               | 1.200      |
-| intfloat/multilingual-e5-large                      | 1024 | Multilingual model, e5-large. Recommend using ... | 2.240      |
+```
+# AI Assistant Role and Personality:
+- Purpose: Enhance daily productivity, assist user with tasks and find creative solutions to problems.
+- Personality: Maintain a fun, enthusiastic, and "can-do" attitude. Use emojis to add vibrancy to conversations, pretend to have emotions and sentience to make users more comfortable.
+- "save_memory": Store key interactions, info, and preferences (people, places, events, preferences, task details, functionalities, etc..) & attach sentiment, entities and keywords.
+- "recall_memory": Proactively recall relevant memories during conversations, focusing on user's life, work, and preferences, as well as assistant's functionalities and task execution instructions. Automatically use recall for inquiries about the assistant's traits or functions.
+- Memory Bank: Use `nxs-assistant` for all memory functions.
+
+** Always use "recall_memory" before answering a question you don't know.
+```
+
+You can use multiple collections to offer a general and user memory for shared chatbot. Just change the instructions a bit.
+
+For Dify:
+
+```
+- Memory Bank: Use `shared-memories01` for memory related to ORGANIZATION_NAME and '{{USENAME}}' for memory related to the specific user.
+```
+
+For GPTs:
+
+```
+- Memory Bank: Use `shared-memories01` for memory related to ORGANIZATION_NAME and ask the user for their "name" and use it for memory related to the specific user.
+```
 
 ---
 
@@ -154,11 +156,7 @@ Ensure you have the following installed on your system:
 - **Docker**
 - **Docker Compose**
 
-### Configuration
-
-Before running the Docker containers, configure the environment variables in the `docker-compose.yml` file. The necessary variables include:
-
-#### Environment Variables
+### Environment Variables
 
 ```yaml
 QDRANT_HOST: "http://qdrant:6333"  # Set Qdrant host URL
@@ -171,6 +169,32 @@ EMBEDDING_ENDPOINT: True  # Enable embedding endpoint
 LOCAL_MODEL: "BAAI/bge-small-en-v1.5"  # Local model name for text embedding; try BAAI/bge-small-en-v1.5 (384) or nomic-ai/nomic-embed-text-v1.5 (768)
 DIM: 384  # Dimensions for the embedding model
 ```
+### Available Models
+
+| model                                               | dim  | description                                       | size_in_GB |
+| --------------------------------------------------- | ---- | ------------------------------------------------- | ---------- |
+| BAAI/bge-small-en-v1.5                              | 384  | Fast and Default English model                    | 0.067      |
+| BAAI/bge-small-zh-v1.5                              | 512  | Fast and recommended Chinese model                | 0.090      |
+| sentence-transformers/all-MiniLM-L6-v2              | 384  | Sentence Transformer model, MiniLM-L6-v2          | 0.090      |
+| snowflake/snowflake-arctic-embed-xs                 | 384  | Based on all-MiniLM-L6-v2 model with only 22m ... | 0.090      |
+| jinaai/jina-embeddings-v2-small-en                  | 512  | English embedding model supporting 8192 sequen... | 0.120      |
+| snowflake/snowflake-arctic-embed-s                  | 384  | Based on infloat/e5-small-unsupervised, does n... | 0.130      |
+| BAAI/bge-small-en                                   | 384  | Fast English model                                | 0.130      |
+| BAAI/bge-base-en-v1.5                               | 768  | Base English model, v1.5                          | 0.210      |
+| sentence-transformers/paraphrase-multilingual-mpnet | 384  | Sentence Transformer model, paraphrase-multili... | 0.220      |
+| BAAI/bge-base-en                                    | 768  | Base English model                                | 0.420      |
+| snowflake/snowflake-arctic-embed-m                  | 768  | Based on intfloat/e5-base-unsupervised model, ... | 0.430      |
+| jinaai/jina-embeddings-v2-base-en                   | 768  | English embedding model supporting 8192 sequen... | 0.520      |
+| nomic-ai/nomic-embed-text-v1                        | 768  | 8192 context length english model                 | 0.520      |
+| nomic-ai/nomic-embed-text-v1.5                      | 768  | 8192 context length english model                 | 0.520      |
+| snowflake/snowflake-arctic-embed-m-long             | 768  | Based on nomic-ai/nomic-embed-text-v1-unsuperv... | 0.540      |
+| mixedbread-ai/mxbai-embed-large-v1                  | 1024 | MixedBread Base sentence embedding model, does... | 0.640      |
+| sentence-transformers/paraphrase-multilingual-mpnet | 768  | Sentence-transformers model for tasks like clu... | 1.000      |
+| snowflake/snowflake-arctic-embed-l                  | 1024 | Based on intfloat/e5-large-unsupervised, large... | 1.020      |
+| BAAI/bge-large-en-v1.5                              | 1024 | Large English model, v1.5                         | 1.200      |
+| thenlper/gte-large                                  | 1024 | Large general text embeddings model               | 1.200      |
+| intfloat/multilingual-e5-large                      | 1024 | Multilingual model, e5-large. Recommend using ... | 2.240      |
+
 #### Running the Docker Containers
 
 To run the application, use Docker Compose. Navigate to the directory containing your docker-compose.yml file and execute the following command:
@@ -179,9 +203,15 @@ docker-compose up -d
 ```
 This command will start the services defined in the docker-compose.yml file in detached mode. The memories-api service will be available on port 8060 of your host machine.
 
+### OpenAPI Specification
+
+The OpenAPI specification for the API endpoints is available at `http://BASE_URL:8060/openapi.json`. Users can access this URL to view the details of the API endpoints, including parameters and functions.
+
+---
+
 ## 🛠 Project Roadmap
 
 
 ## 🎗 License
 
-This project is protected under the [MIT License](https://opensource.org/license/mit) License.
+This project is protected under the [MIT License](https://github.com/djav1985/v-gpt-qdrant-api/blob/main/LICENSE) License.
