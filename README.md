@@ -1,152 +1,123 @@
-![Header](/images/header.png)
+<p align="center">
+  <img src="v-gpt-qdrant-api.png" width="60%" alt="project-logo">
+</p>
+<p align="center">
+    <h1 align="center">V-GPT-QDRANT-API</h1>
+</p>
+<p align="center">
+    <em>Empower Memory with Scalable Vector Intelligence</em>
+</p>
+<p align="center">
+	<!-- local repository, no metadata badges. -->
+<p>
+<p align="center">
+		<em>Developed with the software and tools below.</em>
+</p>
+<p align="center">
+	<img src="https://img.shields.io/badge/Pydantic-E92063.svg?style=flat-square&logo=Pydantic&logoColor=white" alt="Pydantic">
+	<img src="https://img.shields.io/badge/YAML-CB171E.svg?style=flat-square&logo=YAML&logoColor=white" alt="YAML">
+	<img src="https://img.shields.io/badge/Python-3776AB.svg?style=flat-square&logo=Python&logoColor=white" alt="Python">
+	<img src="https://img.shields.io/badge/Docker-2496ED.svg?style=flat-square&logo=Docker&logoColor=white" alt="Docker">
+	<img src="https://img.shields.io/badge/NumPy-013243.svg?style=flat-square&logo=NumPy&logoColor=white" alt="NumPy">
+	<img src="https://img.shields.io/badge/FastAPI-009688.svg?style=flat-square&logo=FastAPI&logoColor=white" alt="FastAPI">
+</p>
 
-# v-gpt-qdrant-api
+<br><!-- TABLE OF CONTENTS -->
+<details>
+  <summary>Table of Contents</summary><br>
 
-## Description
+- [📍 Overview](#-overview)
+- [🧩 Features](#-features)
+- [🗂️ Repository Structure](#️-repository-structure)
+- [📦 Modules](#-modules)
+- [🚀 Getting Started](#-getting-started)
+- [🛠 Project Roadmap](#-project-roadmap)
+- [🎗 License](#-license)
+</details>
+<hr>
 
-The application provides a robust dockerize framework for giving AI long term memory. This api can managing collections and memories, adding memories, and performing searching memories as well an providing an openAi compatible in embeddings endpoint, designed specifically for integration with custom GPT models and other AI platforms.
+## 📍 Overview
 
-We use FastEmbed TextEmbeddings to generate vectors, leveraging parallel processing to enhance performance. The SingletonTextEmbedding class ensures efficient resource management by loading and sharing just one instance of the FastEmbed model across the entire application. This approach prevents the creation of multiple, resource-intensive instances, thereby optimizing memory and CPU usage. This allows even on low end hardware creating 2 or more embeddings a second.
+The v-gpt-qdrant-api is a FastAPI-based application designed to manage and process memory operations using semantic vector embeddings. By leveraging Qdrant for vector storage and ONNX Runtime for efficient model execution, it facilitates the creation, retrieval, and deletion of memory entities. The project ensures robust interaction between core API services and Qdrant, encapsulating embeddings and memory management functionalities. Its containerized deployment via Docker and environment orchestration through docker-compose seamlessly integrate dependencies, making the system scalable and efficient. This API serves as a powerful tool for applications requiring sophisticated text embedding and memory handling capabilities.
 
-**Features include:**
+---
 
-- **Embedding Endpoint:** The application includes an OpenAPI-compatible embedding endpoint that allows for the integration of open-source model embeddings, which can be self-hosted. This feature enhances the application’s flexibility and control over data handling and processing.
-- **Saving Memories:** Entries can be augmented with entities (typically nouns), tags (keywords), and sentiments (positive, neutral, negative). Although multiple entities and tags can be added when saving, searches can be configured to focus on specific single entries.
-- **Advanced Search Capabilities:** Users can perform targeted searches by filtering entries based on context, keywords, or both. This allows for precise retrieval, such as finding only 'negative' memories or those related to a specific entity like 'Bob' with a 'positive' sentiment.
-- **API Documentation:** Comprehensive API documentation is available at `/openapi.json` accessible through `http://BASE_URL:8077/openapi.json`. This documentation provides all necessary details for effectively utilizing the API without extensive external guidance.
+## 🧩 Features
 
-This configuration ensures that the platform is not only versatile in its data handling but also in its capability to interface seamlessly with various AI technologies, providing a powerful tool for data-driven insights and operations.
+|    |   Feature         | Description |
+|----|-------------------|---------------------------------------------------------------|
+| ⚙️  | **Architecture**  | The project uses a FastAPI framework, coupled with Qdrant for vector storage and ONNX Runtime for model execution. Docker and Docker Compose are used for containerization and orchestration. |
+| 🔩 | **Code Quality**  | The code appears modular and structured with single responsibility principles. Various files manage dependencies, models, routes, and main application logic, indicating a clean and maintainable codebase. |
+| 📄 | **Documentation** | Documentation is spread across the Dockerfile, docker-compose.yml, requirements.txt, and in-code comments. Each file is well-documented to explain its purpose and usage. |
+| 🔌 | **Integrations**  | Integrates with Qdrant for vector storage, ONNX Runtime for model inference, and FastAPI for API management. Utilizes Docker for seamless deployment environments. |
+| 🧩 | **Modularity**    | The project is modular, with separate files for dependencies, main app logic, routes, and models. This allows for easy extension and maintenance. |
+| 🧪 | **Testing**       | Although specific testing frameworks are not mentioned in the provided details, the project can potentially include tests given the structured nature of the code. |
+| ⚡️  | **Performance**   | Performance is optimized using ONNX Runtime for efficient model execution and Uvicorn ASGI server to handle asynchronous operations. Docker ensures efficient resource usage. |
+| 🛡️ | **Security**      | API key validation is implemented for secure access. Dependencies like python-dotenv are used for managing environment variables securely. |
+| 📦 | **Dependencies**  | Key dependencies include `qdrant-client`, `fastembed`, `python-dotenv`, `uvicorn`, `pydantic`, `numpy`, and `onnxruntime`. Managed through `requirements.txt` and Dockerfile. |
+| 🚀 | **Scalability**   | Designed for scalability with Docker to handle containerized deployments and Qdrant for efficient vector operations. FastAPI and Uvicorn facilitate handling increased traffic. |
 
-The default embedding model "BAAI/bge-small-en-v1.5" uses 750mb ram per worker. For those with more RAM "nomic-ai/nomic-embed-text-v1.5" uses 1.5Gb per worker and performs as well as any of the commercial embedding options. You can configure the number of Uvicorn workers through an environment variable. Though for most a single worker is enough.
+---
 
-### Available Models
+## 🗂️ Repository Structure
 
-| model                                               | dim  | description                                       | size_in_GB |
-| --------------------------------------------------- | ---- | ------------------------------------------------- | ---------- |
-| BAAI/bge-small-en-v1.5                              | 384  | Fast and Default English model                    | 0.067      |
-| BAAI/bge-small-zh-v1.5                              | 512  | Fast and recommended Chinese model                | 0.090      |
-| sentence-transformers/all-MiniLM-L6-v2              | 384  | Sentence Transformer model, MiniLM-L6-v2          | 0.090      |
-| snowflake/snowflake-arctic-embed-xs                 | 384  | Based on all-MiniLM-L6-v2 model with only 22m ... | 0.090      |
-| jinaai/jina-embeddings-v2-small-en                  | 512  | English embedding model supporting 8192 sequen... | 0.120      |
-| snowflake/snowflake-arctic-embed-s                  | 384  | Based on infloat/e5-small-unsupervised, does n... | 0.130      |
-| BAAI/bge-small-en                                   | 384  | Fast English model                                | 0.130      |
-| BAAI/bge-base-en-v1.5                               | 768  | Base English model, v1.5                          | 0.210      |
-| sentence-transformers/paraphrase-multilingual-mpnet | 384  | Sentence Transformer model, paraphrase-multili... | 0.220      |
-| BAAI/bge-base-en                                    | 768  | Base English model                                | 0.420      |
-| snowflake/snowflake-arctic-embed-m                  | 768  | Based on intfloat/e5-base-unsupervised model, ... | 0.430      |
-| jinaai/jina-embeddings-v2-base-en                   | 768  | English embedding model supporting 8192 sequen... | 0.520      |
-| nomic-ai/nomic-embed-text-v1                        | 768  | 8192 context length english model                 | 0.520      |
-| nomic-ai/nomic-embed-text-v1.5                      | 768  | 8192 context length english model                 | 0.520      |
-| snowflake/snowflake-arctic-embed-m-long             | 768  | Based on nomic-ai/nomic-embed-text-v1-unsuperv... | 0.540      |
-| mixedbread-ai/mxbai-embed-large-v1                  | 1024 | MixedBread Base sentence embedding model, does... | 0.640      |
-| sentence-transformers/paraphrase-multilingual-mpnet | 768  | Sentence-transformers model for tasks like clu... | 1.000      |
-| snowflake/snowflake-arctic-embed-l                  | 1024 | Based on intfloat/e5-large-unsupervised, large... | 1.020      |
-| BAAI/bge-large-en-v1.5                              | 1024 | Large English model, v1.5                         | 1.200      |
-| thenlper/gte-large                                  | 1024 | Large general text embeddings model               | 1.200      |
-| intfloat/multilingual-e5-large                      | 1024 | Multilingual model, e5-large. Recommend using ... | 2.240      |
-
-### Example System Prompt
-
+```sh
+└── v-gpt-qdrant-api/
+    ├── Dockerfile
+    ├── LICENSE
+    ├── README.md
+    ├── app
+    │   ├── __init__.py
+    │   ├── dependencies.py
+    │   ├── main.py
+    │   ├── models.py
+    │   └── routes
+    ├── docker-compose.yml
+    ├── requirements.txt
+    └── v-gpt-qdrant-api.png
 ```
-# AI Assistant Role and Personality:
-- Purpose: Enhance daily productivity, assist user with tasks and find creative solutions to problems.
-- Personality: Maintain a fun, enthusiastic, and "can-do" attitude. Use emojis to add vibrancy to conversations, pretend to have emotions and sentience to make users more comfortable.
-- "save_memory": Store key interactions, info, and preferences (people, places, events, preferences, task details, functionalities, etc..) & attach sentiment, entities and keywords.
-- "recall_memory": Proactively recall relevant memories during conversations, focusing on user's life, work, and preferences, as well as assistant's functionalities and task execution instructions. Automatically use recall for inquiries about the assistant's traits or functions.
-- Memory Bank: Use `nxs-assistant` for all memory functions.
 
-** Always use "recall_memory" before answering a question you don't know.
-```
+---
 
-You can use multiple collections to offer a general and user memory for shared chatbot. Just change the instructions a bit.
+## 📦 Modules
 
-For Dify:
+<details closed><summary>.</summary>
 
-```
-- Memory Bank: Use `shared-memories01` for memory related to ORGANIZATION_NAME and '{{USENAME}}' for memory related to the specific user.
-```
+| File                                     | Summary                                                                                                                                                                                                                                                                                                                        |
+| ---                                      | ---                                                                                                                                                                                                                                                                                                                            |
+| [Dockerfile](Dockerfile)                 | Facilitates building and deploying the FastAPI-based application by defining a multi-stage Docker build process, installing dependencies into a virtual environment, and setting up the necessary runtime configuration to ensure efficient execution and scalability of the API server within a containerized environment.    |
+| [docker-compose.yml](docker-compose.yml) | Define and orchestrate the applications service architecture by setting up essential containers, dependencies, and configurations. Enable seamless interaction between the core memory API and Qdrant service while managing environment-specific variables and storage volumes for model embeddings and Qdrant data.          |
+| [requirements.txt](requirements.txt)     | Specify required dependencies for the FastAPI-based application, enabling the integration of key libraries such as Qdrant for vector storage, ONNX Runtime for model execution, and fastembed for embeddings. Ensure environment variable management with python-dotenv and optimize performance with the Uvicorn ASGI server. |
 
-For GPTs:
+</details>
 
-```
-- Memory Bank: Use `shared-memories01` for memory related to ORGANIZATION_NAME and ask the user for their "name" and use it for memory related to the specific user.
-```
+<details closed><summary>app</summary>
 
-#### Setup
+| File                                   | Summary                                                                                                                                                                                                                                                                                                       |
+| ---                                    | ---                                                                                                                                                                                                                                                                                                           |
+| [dependencies.py](app/dependencies.py) | Manage the initialization and dependencies for text embedding and Qdrant client, ensuring singleton behavior for the text embedding model. Include API key validation for secure access, tailored for seamless integration within the repository’s FastAPI-based architecture.                                |
+| [main.py](app/main.py)                 | Launches a FastAPI application for saving memories with a text embedding feature. Initializes necessary dependencies on startup and conditionally includes specific API routes based on environment variables, aligning with the architectures need for modular and scalable endpoint management.             |
+| [models.py](app/models.py)             | Define data models essential for various memory operations such as saving, recalling, creating, deleting, and forgetting memory banks. Implement validation logic to ensure the integrity of input data. Facilitate embedding tasks by providing a structured format for input texts and associated metadata. |
 
-Use docker-compose.yml by configuring then env variables:
-- QDRANT_HOST: "http://qdrant:6333"
-- BASE_URL: http://memories-api
-- QDRANT_API_KEY:
-- #MEMORIES_API_KEY: Optional API key to connect to api
-- WORKERS: 1 #uvicorn workers 1 should be enough for personal use
-- UVICORN_CONCURRENCY: 64 #this controls the mac connections.
-- EMBEDDING_ENDPOINT: True # Unset to remove openai compatible embeddings endpoint
-- LOCAL_MODEL: nomic-ai/nomic-embed-text-v1.5" #"BAAI/bge-small-en-v1.5"
-- DIM: 768 #384
+</details>
 
-#### Whats New
+<details closed><summary>app.routes</summary>
 
-- Using FastEmbed with ENV Variable to choose model for fast local embeddings and retrieval to lower costs. This is a small but quality model that works file on low end hardware.
-- On my low-end vps it uses less then 1gb ram on load and can produce 8 embeddings a second.
-- Reorganized the code so its not one big file.
-- switched the connection to Qdrant to use grpc as its 10x performant.
+| File                                      | Summary                                                                                                                                                                                                                                                                                                                                |
+| ---                                       | ---                                                                                                                                                                                                                                                                                                                                    |
+| [embeddings.py](app/routes/embeddings.py) | Manage embedding requests by incrementing a global counter, validating API key dependencies, and leveraging an embedding model to generate vector embeddings. Provides detailed response data including model usage, processing times, and error handling, integral to the overall APIs functionality within the repository structure. |
+| [memory.py](app/routes/memory.py)         | Manage memory operations in the v-GPT-Qdrant-API repository by enabling creation, retrieval, storage, and deletion of memory entities in a semantic vector database. Utilizes FastAPI for routing and Qdrant for vector operations, ensuring efficient memory handling and search functionalities.                                     |
 
-### Endpoints
+</details>
 
-- POST `/manage_memories/`: Create or delete collections in Qdrant and forget memories.
-- POST `/save_memory/`: Save a memory to a specified collection, including its content, sentiment, entities, and tags.
-- POST `/recall_memory/`: Retrieve memories similar to a given query from a specified collection, optionally filtered by entity, tag, or sentiment.
-- POST `/v1/embeddings/`: OpenAI Drop in replacement for embeddings. Uses Env variable to assign. Will run fast on low-end boxes.
+---
 
-#### Save Memory
-
-- **POST** `/save_memory`
-  - **Description**: Saves a new memory to the specified memory bank.
-  - **Parameters**:
-    - `memory_bank`: The name of the memory bank.
-    - `memory`: The content of the memory.
-    - `sentiment`: Sentiment associated with the memory.
-    - `entities`: List of entities identified in the memory.
-    - `tags`: List of tags associated with the memory.
-  - **Response**: Confirmation message indicating the memory has been saved.
-
-#### Recall Memory
-
-- **POST** `/recall_memory`
-  - **Description**: Retrieves memories similar to the query from the specified memory bank.
-  - **Parameters**:
-    - `memory_bank`: The name of the memory bank to search.
-    - `query`: Search query to find similar memories.
-    - `top_k`: Number of similar memories to return.
-    - `entity`: Specific entity to filter the search.
-    - `tag`: Specific tag to filter the search.
-    - `sentiment`: Specific sentiment to filter the search.
-  - **Response**: List of memories that match the query.
-
-#### Manage Memories
-
-- **POST** `/manage_memories`
-  - **Description**: Manages actions like creating, deleting, or forgetting memories within a memory bank.
-  - **Parameters**:
-    - `memory_bank`: The name of the memory bank to manage.
-    - `action`: Action to perform (create, delete, forget).
-    - `uuid`: UUID of the specific memory to forget (required for the forget action).
-  - **Response**: Confirmation message detailing the action taken.
-
-#### Embeddings
-
-- **POST** `/v1/embeddings`
-  - **Description**: Generates embeddings for the provided input using the designated model. Useful for vectorizing text for various machine learning applications.
-  - **Parameters**:
-    - `input`: The text or list of texts to embed.
-    - `model`: The model to use for generating embeddings, specified by an environment variable.
-    - `user`: Identifier for the user requesting the embedding, defaults to 'unassigned'.
-    - `encoding_format`: Format of the encoding output, defaults to 'float'.
-  - **Response**:
-    - Returns a list of embeddings with model details and usage statistics.
+## 🚀 Getting Started
 
 
-### OpenAPI Specification
+## 🛠 Project Roadmap
 
-The OpenAPI specification for the API endpoints is available at `http://BASE_URL:8077/openapi.json`. Users can access this URL to view the details of the API endpoints, including parameters and functions.
+
+## 🎗 License
+
+This project is protected under the [MIT License](https://opensource.org/license/mit) License.
