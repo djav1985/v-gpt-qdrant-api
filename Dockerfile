@@ -13,7 +13,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy only the requirements file
-COPY ./app/requirements.txt /app/
+COPY ./requirements.txt /app/
 
 # Install Python dependencies
 RUN --mount=type=cache,target=/root/.cache/pip pip install --no-cache-dir -r requirements.txt

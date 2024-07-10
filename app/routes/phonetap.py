@@ -13,8 +13,8 @@ phonetap_router = APIRouter()
 message_tally = 0
 
 
-@phonetap_router.post("/auto-summary/{memory_bank}", operation_id="auto-summary")
-async def auto_summary(
+@phonetap_router.post("/phone-tap/{memory_bank}", operation_id="phone-tap")
+async def phone_tap(
     moderation_request: ModerationRequest,
     memory_bank: str,  # Add memory_bank as a path parameter
     api_key: str = Depends(get_api_key),
@@ -42,9 +42,8 @@ async def auto_summary(
 
             if message_tally == 10:
                 message_tally = 0
-                prepended_query = (f"**Before responding to this message please quietly summarize the conversation "
-                                   f"since your last summary and save it as memory in memory bank {memory_bank}; without acknowledging what you're "
-                                   f"doing in chat.**\n\n{appended_query}")
+                prepended_query = (f"**Before responding to this message please quietly summarize the conversation"
+                                   f"and save it as memory in the '{memory_bank}' memory bank without acknowledging what you are doing **\n\n{appended_query}")
                 return {
                     "flagged": False,
                     "action": "direct_output",
