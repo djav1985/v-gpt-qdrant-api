@@ -1,12 +1,13 @@
-# main.py
+# /main.py
+
+# Importing standard libraries for operating system interaction and async functionality
 import os
 import asyncio
-from fastapi import FastAPI
-from fastapi.staticfiles import StaticFiles
-from starlette.responses import FileResponse
-from starlette.middleware.base import BaseHTTPMiddleware
 
-# Importing dependencies and routers
+# Importing FastAPI for creating the web application
+from fastapi import FastAPI
+
+# Importing dependencies and routers from local modules
 from dependencies import initialize_text_embedding
 from scheduler import start_scheduler  # Ensure this is designed to be awaited
 from routes.embeddings import embeddings_router
@@ -15,6 +16,7 @@ from routes.manage import manage_router
 from routes.phonetap import phonetap_router
 from routes.root import root_router
 
+# Creating an instance of FastAPI with application metadata
 app = FastAPI(
     title="AI Memory API",
     version="0.1.0",
@@ -23,13 +25,15 @@ app = FastAPI(
 )
 
 
+# Event handler for the startup event
 @app.on_event("startup")
 async def startup_event():
     # Initialize the text embedding singleton
     await initialize_text_embedding()
 
     # Start the scheduler
- #   await start_scheduler()  # This assumes start_scheduler is properly async
+    await start_scheduler()  # This assumes start_scheduler is properly async
+
 
 # Including Routers for different endpoints
 app.include_router(memory_router)
@@ -37,9 +41,6 @@ app.include_router(manage_router)
 app.include_router(phonetap_router)
 app.include_router(root_router)
 
-# Mounting static files directory
-app.mount("/static", StaticFiles(directory="/app/public"), name="static")
-
-# Conditionally include the root_router based on EMBEDDING_ENDPOINT env var
+# Conditionally include the embeddings router based on EMBEDDING_ENDPOINT environment variable
 if os.getenv("EMBEDDING_ENDPOINT") == "true":
-   app.include_router(embeddings_router)
+    app.include_router(embeddings_router)

@@ -1,8 +1,16 @@
 # /routes/manage
+
+# Importing standard libraries for operating system interaction and async functionality
 import os
 from fastapi import APIRouter, Depends, HTTPException
 from qdrant_client import AsyncQdrantClient, models
-from qdrant_client.models import Distance, VectorParams, Filter, FieldCondition, PointStruct
+from qdrant_client.models import (
+    Distance,
+    VectorParams,
+    Filter,
+    FieldCondition,
+    PointStruct,
+)
 
 from models import ManageMemoryParams
 from dependencies import get_api_key, create_qdrant_client
@@ -34,7 +42,7 @@ async def manage_memories(
                 ),
             )
 
-            # Create payload index for each field
+            # Create payload index for each field in the newly created collection
             index_fields = ["sentiment", "entities", "tags"]
             for field in index_fields:
                 await Qdrant.create_payload_index(
@@ -61,8 +69,7 @@ async def manage_memories(
 
             # Delete specific memory using UUID
             await Qdrant.delete(
-                collection_name=Params.memory_bank,
-                points_selector=[Params.uuid]
+                collection_name=Params.memory_bank, points_selector=[Params.uuid]
             )
 
             return {
@@ -70,5 +77,6 @@ async def manage_memories(
             }
 
     except Exception as e:
+        # Log and raise an exception if an error occurs
         print(f"An error occurred: {e}")
         raise HTTPException(status_code=500, detail=str(e))

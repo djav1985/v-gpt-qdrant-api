@@ -1,4 +1,6 @@
 # /routes/memory.py
+
+# Importing standard libraries for operating system interaction and async functionality
 import uuid
 import asyncio
 from datetime import datetime
@@ -21,16 +23,16 @@ async def save_memory(
     Qdrant: AsyncQdrantClient = Depends(create_qdrant_client),
 ):
     try:
-        # Get model and generate embeddings
+        # Get model and generate embeddings for the given memory text
         model = get_embeddings_model()
         embeddings_generator = await asyncio.to_thread(model.embed, Params.memory)
         vector = next(embeddings_generator)
 
-        # Create unique id and timestamp
+        # Create unique id and timestamp for the memory
         timestamp = datetime.utcnow().isoformat()
         unique_id = str(uuid.uuid4())
 
-        # Save memory in Qdrant
+        # Save memory in Qdrant with the generated vector, metadata, and unique identifier
         await Qdrant.upsert(
             collection_name=Params.memory_bank,
             points=[
@@ -50,6 +52,7 @@ async def save_memory(
         return {"message": "Memory saved successfully"}
 
     except Exception as e:
+        # Log and raise an exception if an error occurs during memory saving
         print(f"An error occurred: {e}")
         raise HTTPException(
             status_code=500, detail=f"Error processing request: {str(e)}"
@@ -64,12 +67,12 @@ async def recall_memory(
     Qdrant: AsyncQdrantClient = Depends(create_qdrant_client),
 ):
     try:
-        # Get model and generate embeddings
+        # Get model and generate embeddings for the search query
         model = get_embeddings_model()
         embeddings_generator = await asyncio.to_thread(model.embed, Params.query)
         vector = next(embeddings_generator)
 
-        # Create filter conditions
+        # Create filter conditions based on provided search parameters
         filter_conditions = []
         if Params.entity:
             filter_conditions.append(
@@ -90,7 +93,7 @@ async def recall_memory(
                 )
             )
 
-        # Perform search in Qdrant
+        # Perform search in Qdrant using the generated vector and filter conditions
         search_filter = models.Filter(must=filter_conditions)
         hits = await Qdrant.search(
             collection_name=Params.memory_bank,
@@ -105,7 +108,7 @@ async def recall_memory(
             ),
         )
 
-        # Format results
+        # Format the search results to include memory details and scores
         results = [
             {
                 "id": hit.id,
@@ -122,5 +125,6 @@ async def recall_memory(
         return {"results": results}
 
     except Exception as e:
+        # Log and raise an exception if an error occurs during memory recall
         print(f"An error occurred: {e}")
         raise HTTPException(status_code=500, detail=str(e))

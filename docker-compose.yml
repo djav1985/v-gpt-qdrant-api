@@ -1,39 +1,40 @@
-version: "3.8"
+version: "3.8"  # Specify the version of Docker Compose
+
 services:
   memories-api:
-    container_name: memories-api
-    image: vontainment/v-gpt-qdrant-api:dev2 # Use your appropriate image
-    restart: always
+    container_name: memories-api  # Name the container "memories-api"
+    image: vontainment/v-gpt-qdrant-api:dev2  # Use the specified Docker image
+    restart: always  # Always restart the container if it stops
     depends_on:
-      - qdrant
+      - qdrant  # Ensure the qdrant service starts before this service
     ports:
-      - "8060:8888"
+      - "8060:8888"  # Map port 8060 on the host to port 8888 in the container
     environment:
-      QDRANT_HOST: "http://qdrant:6333"
-      BASE_URL: http://memories-api/
-      QDRANT_API_KEY:
-      MEMORIES_API_KEY: Optional API key to connect to api
-      WORKERS: 1 #uvicorn workers 1 should be enough for personal use
-      UVICORN_CONCURRENCY: 64 #this controls the mac connections. Anything over the API_concurrancy value is put in query pool. Anything over this number is rejected.
-      EMBEDDING_ENDPOINT: True
-      LOCAL_MODEL: nomic-ai/nomic-embed-text-v1.5" #"BAAI/bge-small-en-v1.5"
-      DIM: 768 #384
+      QDRANT_HOST: http://qdrant:6333  # Set Qdrant host URL
+      BASE_URL: http://memories-api/  # Base URL for the API
+      QDRANT_API_KEY:  # Environment variable for Qdrant API key (value should be provided)
+      MEMORIES_API_KEY: Optional API key to connect to api  # Optional API key for authentication
+      WORKERS: 1  # Number of uvicorn workers; 1 is sufficient for personal use
+      UVICORN_CONCURRENCY: 64  # Max connections; excess requests are queued or rejected
+      EMBEDDING_ENDPOINT: True  # Enable embedding endpoint
+      LOCAL_MODEL: BAAI/bge-small-en-v1.5 # Local model name for text embedding try BAAI/bge-small-en-v1.5 (384)  or nomic-ai/nomic-embed-text-v1.5 (768)
+      DIM: 384  # Dimensions for the embedding model
     volumes:
-      - embedding-model:/app/models
+      - embedding-model:/app/models  # Bind mount for storing models
 
   qdrant:
-    image: langgenius/qdrant:latest
-    container_name: qdrant
-    restart: always
+    image: langgenius/qdrant:latest  # Use the latest Qdrant image
+    container_name: qdrant  # Name the container "qdrant"
+    restart: always  # Always restart the container if it stops
     #ports:
-    #- "8060:6333"
+    #- "8060:6333"  # Port mapping commented out
     environment:
-      QDRANT_API_KEY:
+      QDRANT_API_KEY:  # Environment variable for Qdrant API key (value should be provided)
     volumes:
-      - qdrant-data:/qdrant/storage
-      - qdrant-config:/qdrant/config/
+      - qdrant-data:/qdrant/storage  # Bind mount for Qdrant storage
+      - qdrant-config:/qdrant/config/  # Bind mount for Qdrant configuration
 
 volumes:
-  embedding-model:
-  qdrant-data:
-  qdrant-config:
+  embedding-model:  # Volume for model storage
+  qdrant-data:  # Volume for Qdrant data storage
+  qdrant-config:  # Volume for Qdrant configuration

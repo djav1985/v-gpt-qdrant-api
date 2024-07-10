@@ -1,10 +1,10 @@
-# Build stage
+# Build stage: Use a Python 3.10 slim image as the base for this stage
 FROM python:3.10-slim as builder
 
-# Set the working directory
+# Set the working directory to /app
 WORKDIR /app
 
-# Copy the requirements file and cache
+# Copy the cache and requirements file to the working directory
 COPY /cache /app/cache
 COPY requirements.txt /app
 
@@ -13,19 +13,19 @@ RUN python -m venv /app/venv && \
     . /app/venv/bin/activate && \
     pip install --no-index --find-links /app/cache -r requirements.txt
 
-# Final stage
+# Final stage: Use a Python 3.10 slim image as the base for this stage
 FROM python:3.10-slim
 
-# Set the working directory
+# Set the working directory to /app
 WORKDIR /app
 
-# Copy the virtual environment from the builder stage
+# Copy the virtual environment from the builder stage to the current stage
 COPY --from=builder /app/venv /app/venv
 
-# Copy the rest of the application
+# Copy the rest of the application code to the working directory
 COPY ./app /app
 
-# Expose port 8040 to the outside world
+# Expose port 8888 to the outside world
 EXPOSE 8888
 
 # Define environment variables
