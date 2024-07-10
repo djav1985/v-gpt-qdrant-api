@@ -6,4 +6,7 @@ python-dotenv==1.0.1
 onnxruntime==1.17.3
 fastembed==0.2.7
 numpy==1.26.4
+<<<<<<< HEAD
 apscheduler==3.10.4
+=======
+>>>>>>> main
