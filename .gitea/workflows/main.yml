@@ -5,6 +5,7 @@ on:
     branches:
       - "main"
       - "dev"
+      - "phonetap"
   release:
     types: [published]
 
@@ -39,6 +40,7 @@ jobs:
           tags: |
             type=raw,value=main,enable=${{ gitea.ref == 'refs/heads/main' }}
             type=raw,value=dev,enable=${{ gitea.ref == 'refs/heads/dev' }}
+            type=raw,value=dev,enable=${{ gitea.ref == 'refs/heads/phonetap' }}
             type=sha,priority=100,enable=${{ gitea.event_name == 'push' }}            
 
       - name: Build and push Docker image
