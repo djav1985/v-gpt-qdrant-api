@@ -1,12 +1,14 @@
 # ;routes/embeddings.py
-
-# Importing standard libraries for operating system interaction and async functionality
 import os
 import asyncio
 import time
+
+from typing import Any, Dict
+
 from fastapi import APIRouter, Depends, HTTPException
 
 from fastembed import TextEmbedding
+
 from models import EmbeddingParams
 from dependencies import get_api_key, get_embeddings_model
 
@@ -21,7 +23,7 @@ current_embeddings = 0
 @embeddings_router.post("/embeddings", operation_id="create-embedding")
 async def embedding_request(
     Params: EmbeddingParams, api_key: str = Depends(get_api_key)
-):
+) -> Dict[str, Any]:
     global current_embeddings
     start_time = time.time()  # Capture the start time of the request
 
@@ -38,7 +40,7 @@ async def embedding_request(
         vector = next(embeddings_generator)
 
         # Prepare the response data
-        response_data = {
+        response_data: Dict[str, Any] = {
             "object": "list",
             "data": [{"object": "embedding", "embedding": vector.tolist(), "index": 0}],
             "model": os.getenv("LOCAL_MODEL"),

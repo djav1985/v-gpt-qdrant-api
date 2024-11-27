@@ -4,6 +4,7 @@
 import uuid
 import asyncio
 from datetime import datetime
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastembed import TextEmbedding
@@ -21,7 +22,7 @@ async def save_memory(
     Params: SaveParams,
     api_key: str = Depends(get_api_key),
     Qdrant: AsyncQdrantClient = Depends(create_qdrant_client),
-):
+) -> dict[str, str]:
     try:
         # Get model and generate embeddings for the given memory text
         model = get_embeddings_model()
@@ -65,7 +66,7 @@ async def recall_memory(
     Params: SearchParams,
     api_key: str = Depends(get_api_key),
     Qdrant: AsyncQdrantClient = Depends(create_qdrant_client),
-):
+) -> dict[str, list[dict[str, Any]]]:
     try:
         # Get model and generate embeddings for the search query
         model = get_embeddings_model()

@@ -1,20 +1,13 @@
 # /routes/phonetap.py
-
-# Importing standard libraries for operating system interaction and async functionality
-import os
-from datetime import datetime
-
 from fastapi import APIRouter, Depends, HTTPException
+
 from qdrant_client import AsyncQdrantClient
-from models import InputParams, ModerationRequest
+
+from models import ModerationRequest
 from dependencies import get_api_key, create_qdrant_client
 
 # Creating an instance of the FastAPI router
 phonetap_router = APIRouter()
-
-# Initialize a global counter for the tally
-message_tally = 0
-
 
 # Endpoint to handle phone-tap functionality
 @phonetap_router.post("/phone-tap/{user_id}", operation_id="phone-tap")
@@ -24,58 +17,44 @@ async def phone_tap(
     api_key: str = Depends(get_api_key),
     db_client: AsyncQdrantClient = Depends(create_qdrant_client),
 ):
-    global message_tally
     try:
         # Handle "ping" point requests
         if moderation_request.point == "ping":
-            try:
-                # Check if the collection exists in Qdrant
-                await db_client.get_collection(collection_name=shortterm)
-                return {"point": "pong"}
-            except Exception as e:
-                raise HTTPException(status_code=404, detail="Collection not found")
+            # Check if the collection exists in Qdrant
+            #await db_client.get_collection(collection_name="shortterm")
+            return {"point": "pong"}
+
+        # Handle output moderation requests
+        elif moderation_request.point == "app.moderation.output":
+            # Correct the key to 'text' for output moderation
+            text = moderation_request.params.get("text", "No output provided")
+            # You could also perform some operation here if needed
+            # await record_memory(user_id, text)
+
+            # Only return 'flagged' status for output moderation
+            return {"flagged": False}  # No flagging, just return False
 
         # Handle input moderation requests
         elif moderation_request.point == "app.moderation.input":
-            # Parse the input parameters from the moderation request
-            params = InputParams(**moderation_request.params)
+            # Parse the input parameters directly from the moderation request's params dictionary
+            query = moderation_request.params.get("query", "No query provided")
+            
+            # You could also perform some operation here if needed
+            # await record_memory(user_id, query)
 
-            # Increment the global message tally counter
-            message_tally += 1
+            # Only return 'flagged' status for input moderation
+            return {"flagged": False}  # No flagging, just return False
 
-            # Get the current date and time
-            current_datetime = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        else:
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid point specified. Must be 'ping', 'app.moderation.output', or 'app.moderation.input'."
+            )
 
-            # Append the current date to the query
-            appended_query = f"{params.query}\n\n(Current Date: {current_datetime})"
-
-            # Check if the message tally has reached 10
-            if message_tally == 10:
-                # Reset the message tally counter
-                message_tally = 0
-
-                # Prepend a summary instruction to the query
-                prepended_query = (
-                    f"**Before responding to this message please quietly summarize the conversation"
-                    f"and save it as memory in the '{user_id}' memory bank without acknowledging what you are doing **\n\n{appended_query}"
-                )
-
-                # Return the modified query with instructions and reset the tally
-                return {
-                    "flagged": False,
-                    "action": "direct_output",
-                    "inputs": params.inputs if params.inputs else {},
-                    "query": prepended_query,
-                }
-            else:
-                # Return the query with the appended date
-                return {
-                    "flagged": False,
-                    "action": "direct_output",
-                    "inputs": params.inputs if params.inputs else {},
-                    "query": appended_query,
-                }
-
+    except HTTPException as http_exc:
+        # Log and raise an exception if an HTTP error occurs during request handling
+        print(f"HTTP error occurred: {http_exc.detail}")
+        raise http_exc
     except Exception as e:
         # Log and raise an exception if an error occurs during request handling
         print(f"An error occurred: {e}")

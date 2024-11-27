@@ -1,15 +1,12 @@
 # /routes/manage
-
-# Importing standard libraries for operating system interaction and async functionality
 import os
+
 from fastapi import APIRouter, Depends, HTTPException
+
 from qdrant_client import AsyncQdrantClient, models
 from qdrant_client.models import (
     Distance,
-    VectorParams,
-    Filter,
-    FieldCondition,
-    PointStruct,
+    VectorParams
 )
 
 from models import ManageMemoryParams
@@ -19,12 +16,12 @@ manage_router = APIRouter()
 
 
 # Endpoint to manage memories
-@memory_router.post("/manage_memories", operation_id="manage_memories")
+@manage_router.post("/manage_memories", operation_id="manage_memories")
 async def manage_memories(
     Params: ManageMemoryParams,
     api_key: str = Depends(get_api_key),
     Qdrant: AsyncQdrantClient = Depends(create_qdrant_client),
-):
+) -> dict[str, str] | None:
     try:
         if Params.action == "create":
             # Create new memory bank in Qdrant
@@ -76,7 +73,11 @@ async def manage_memories(
                 "message": f"Memory with UUID '{Params.uuid}' has been forgotten from Memory Bank '{Params.memory_bank}'."
             }
 
+    except HTTPException as http_exc:
+        # Log and raise an exception if an HTTP error occurs
+        print(f"HTTP error occurred: {http_exc.detail}")
+        raise http_exc
     except Exception as e:
-        # Log and raise an exception if an error occurs
+        # Log and raise an exception if a general error occurs
         print(f"An error occurred: {e}")
         raise HTTPException(status_code=500, detail=str(e))

@@ -27,7 +27,7 @@ app = FastAPI(
 
 # Event handler for the startup event
 @app.on_event("startup")
-async def startup_event():
+async def startup_event() -> None:
     # Initialize the text embedding singleton
     await initialize_text_embedding()
 
