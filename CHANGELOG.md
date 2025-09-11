@@ -17,4 +17,5 @@ See [standard-version](https://github.com/conventional-changelog/standard-versio
 - adopt OpenAPI 3.1 with tag metadata and expanded models
 - remove redis-based rate limiting and associated dependencies
 - refactor startup to use FastAPI's lifespan context manager
+- load TextEmbedding in a background thread, simplify initialization calls, and manage Qdrant client via async generator
 

@@ -1,9 +1,8 @@
 # dependencies.py
 import os
-from typing import Optional
-
 import asyncio
-from contextlib import asynccontextmanager
+from typing import AsyncGenerator, Optional
+
 from fastapi import HTTPException, Security
 from fastapi.security import APIKeyHeader
 from fastembed import TextEmbedding
@@ -33,17 +32,20 @@ class SingletonTextEmbedding:
     def initialize(cls) -> None:
         """Initializes the singleton instance using environment configuration."""
         if cls._instance is None:
-            cls._instance = TextEmbedding(
-                model_name=os.getenv("LOCAL_MODEL"),
-                cache_dir="/app/models",
-                parallel="none",
-                threads=3,
+            cls._instance = asyncio.run(
+                asyncio.to_thread(
+                    TextEmbedding,
+                    model_name=os.getenv("LOCAL_MODEL"),
+                    cache_dir="/app/models",
+                    parallel="none",
+                    threads=3,
+                )
             )
 
 
-async def initialize_text_embedding() -> None:
+def initialize_text_embedding() -> None:
     """Initialize the TextEmbedding singleton at application startup."""
-    await asyncio.to_thread(SingletonTextEmbedding.initialize)
+    SingletonTextEmbedding.initialize()
 
 
 def get_embeddings_model() -> TextEmbedding:
@@ -53,8 +55,7 @@ def get_embeddings_model() -> TextEmbedding:
     return SingletonTextEmbedding.get_instance()
 
 
-@asynccontextmanager
-async def create_qdrant_client() -> AsyncQdrantClient:
+async def create_qdrant_client() -> AsyncGenerator[AsyncQdrantClient, None]:
     """FastAPI dependency that yields an async Qdrant client and closes it afterwards."""
     client = AsyncQdrantClient(
         url=os.getenv("QDRANT_HOST", "http://qdrant:6333"),

@@ -21,7 +21,7 @@ async def test_lifespan_calls_initialize(monkeypatch):
 
     init_called = False
 
-    async def fake_initialize():
+    def fake_initialize():
         nonlocal init_called
         init_called = True
 
