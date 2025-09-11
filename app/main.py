@@ -36,12 +36,6 @@ async def lifespan(app: FastAPI):
                 raise RuntimeError("DIM must be an integer") from exc
         raise RuntimeError(str(exc)) from exc
 
-    required = ["API_KEY", "DIM", "QDRANT_HOST"]
-    missing = [name for name in required if getattr(settings, name) in (None, "")]
-    if missing:
-        raise RuntimeError(
-            f"Missing required environment variables: {', '.join(missing)}"
-        )
     app.state.dim = settings.DIM
     app.state.settings = settings
     await initialize_text_embedding()

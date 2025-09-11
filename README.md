@@ -18,7 +18,6 @@
 	<img src="https://img.shields.io/badge/YAML-CB171E.svg?style=flat-square&logo=YAML&logoColor=white" alt="YAML">
 	<img src="https://img.shields.io/badge/Python-3776AB.svg?style=flat-square&logo=Python&logoColor=white" alt="Python">
 	<img src="https://img.shields.io/badge/Docker-2496ED.svg?style=flat-square&logo=Docker&logoColor=white" alt="Docker">
-	<img src="https://img.shields.io/badge/NumPy-013243.svg?style=flat-square&logo=NumPy&logoColor=white" alt="NumPy">
 	<img src="https://img.shields.io/badge/FastAPI-009688.svg?style=flat-square&logo=FastAPI&logoColor=white" [alt="FastAPI">
 </p>
 
@@ -26,7 +25,7 @@
 <details>
   <summary>Table of Contents</summary><br>
 
-- [📍 Overview](#-overview)]
+- [📍 Overview](#-overview)
   - [Example System Prompt](#Example-System-Prompt)
 - [🧩 Features](#-features)
 - [🗂️ Repository Structure](#️-repository-structure)
@@ -87,7 +86,7 @@ For GPTs:
 | 🧪   | **Testing**       | Although specific testing frameworks are not mentioned in the provided details, the project can potentially include tests given the structured nature of the code.                                          |
 | ⚡️   | **Performance**   | Performance is optimized using ONNX Runtime for efficient model execution and Uvicorn ASGI server to handle asynchronous operations. Docker ensures efficient resource usage.                               |
 | 🛡️   | **Security**      | API key validation is implemented for secure access. Dependencies like python-dotenv are used for managing environment variables securely.                                                                  |
-| 📦   | **Dependencies**  | Key dependencies include `qdrant-client`, `fastembed`, `python-dotenv`, `uvicorn`, `pydantic`, `numpy`, and `onnxruntime`. Managed through `requirements.txt` and Dockerfile.                               |
+| 📦   | **Dependencies**  | Key dependencies include `qdrant-client`, `fastembed`, `python-dotenv`, `uvicorn`, `pydantic`, and `onnxruntime`. Managed through `requirements.txt` and Dockerfile.                               |
 | 🚀   | **Scalability**   | Designed for scalability with Docker to handle containerized deployments and Qdrant for efficient vector operations. FastAPI and Uvicorn facilitate handling increased traffic.                             |
 
 ---

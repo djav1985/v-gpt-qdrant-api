@@ -1,8 +1,9 @@
 # models.py
 from enum import Enum
-from typing import Optional
+from typing import Optional, Annotated
 from uuid import UUID
 from datetime import datetime
+import keyword
 
 from pydantic import (
     BaseModel,
@@ -14,7 +15,6 @@ from pydantic import (
     conlist,
     conint,
 )
-from typing import Annotated
 
 
 class ActionEnum(str, Enum):
@@ -33,7 +33,7 @@ def is_valid_identifier(value: str) -> bool:
     """
     Check if a string is a valid Python identifier.
     """
-    return value.isidentifier()
+    return value.isidentifier() and not keyword.iskeyword(value)
 
 
 class StrictBaseModel(BaseModel):
@@ -197,6 +197,9 @@ class MemoryRecord(StrictBaseModel):
 class SaveMemoryResponse(StrictBaseModel):
     message: Annotated[str, constr(min_length=1)] = Field(
         ..., description="Result of the save operation", json_schema_extra={"example": "Memory saved successfully"}
+    )
+    uuid: UUID = Field(
+        ..., description="Unique identifier for the saved memory", json_schema_extra={"example": "123e4567-e89b-12d3-a456-426614174000"}
     )
 
 

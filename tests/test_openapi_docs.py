@@ -1,15 +1,17 @@
 import importlib
 
-from app import main
-
 
 def test_openapi_includes_error_response_and_examples(monkeypatch):
+    for var in ["API_KEY", "QDRANT_HOST"]:
+        monkeypatch.setenv(var, "value")
+    monkeypatch.setenv("DIM", "10")
     monkeypatch.setenv("EMBEDDING_ENDPOINT", "1")
     from app.config import get_settings
 
     get_settings.cache_clear()
-    importlib.reload(main)
-    openapi = main.app.openapi()
+    import app.main as main_module
+    importlib.reload(main_module)
+    openapi = main_module.app.openapi()
 
     assert openapi["openapi"] == "3.1.0"
     assert {t["name"] for t in openapi["tags"]} >= {"memory", "embedding"}

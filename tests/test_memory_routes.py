@@ -1,8 +1,8 @@
+import os
 import uuid
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock
 
-import numpy as np
 from datetime import datetime, timezone
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
@@ -23,11 +23,13 @@ from qdrant_client import models
 
 class DummyModel:
     def embed(self, text: str):
-        return np.array([0.1, 0.2, 0.3])
+        return [0.1, 0.2, 0.3]
 
 
 def create_client(model_cls=DummyModel):
     get_settings.cache_clear()
+    os.environ.setdefault("DIM", "3")
+    os.environ.setdefault("QDRANT_HOST", "http://localhost")
     mock_qdrant = Mock()
     mock_qdrant.upsert = AsyncMock()
     mock_qdrant.search = AsyncMock()
@@ -106,7 +108,8 @@ def test_save_memory_success(monkeypatch):
         headers=_headers("correct"),
     )
     assert resp.status_code == 200
-    SaveMemoryResponse.model_validate(resp.json())
+    data = SaveMemoryResponse.model_validate(resp.json())
+    assert data.uuid
     mock_qdrant.upsert.assert_awaited_once()
 
 
@@ -276,3 +279,56 @@ def test_manage_memories_rejects_extra_field(monkeypatch):
         headers=_headers("correct"),
     )
     assert resp.status_code == 422
+
+
+def test_manage_memories_delete_failure(monkeypatch):
+    monkeypatch.setenv("API_KEY", "correct")
+    client, mock_qdrant = create_client()
+    mock_qdrant.delete_collection.side_effect = QdrantException("fail")
+    resp = client.post(
+        "/manage_memories",
+        json={"memory_bank": "bank", "action": "delete"},
+        headers=_headers("correct"),
+    )
+    assert resp.status_code == 500
+    assert resp.json()["detail"]["code"] == "qdrant_delete_failed"
+
+
+def test_recall_memory_skips_invalid_payload(monkeypatch):
+    monkeypatch.setenv("API_KEY", "correct")
+    client, mock_qdrant = create_client()
+    bad_hit = SimpleNamespace(
+        id=str(uuid.uuid4()),
+        payload={"memory": "hi", "timestamp": "not-a-date", "sentiment": "neutral"},
+        score=0.1,
+    )
+    mock_qdrant.search.return_value = [bad_hit]
+    resp = client.post(
+        "/recall_memory",
+        json={"memory_bank": "bank", "query": "hi"},
+        headers=_headers("correct"),
+    )
+    assert resp.status_code == 200
+    assert resp.json()["results"] == []
+
+
+def test_recall_memory_invalid_sentiment(monkeypatch):
+    monkeypatch.setenv("API_KEY", "correct")
+    client, mock_qdrant = create_client()
+    bad_hit = SimpleNamespace(
+        id=str(uuid.uuid4()),
+        payload={
+            "memory": "hi",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "sentiment": "bad",
+        },
+        score=0.1,
+    )
+    mock_qdrant.search.return_value = [bad_hit]
+    resp = client.post(
+        "/recall_memory",
+        json={"memory_bank": "bank", "query": "hi"},
+        headers=_headers("correct"),
+    )
+    assert resp.status_code == 200
+    assert resp.json()["results"] == []

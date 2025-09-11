@@ -3,7 +3,6 @@ import logging
 import uuid
 from datetime import datetime, timezone
 
-import numpy as np
 from fastapi import APIRouter, Depends, HTTPException
 from qdrant_client import AsyncQdrantClient, models
 from qdrant_client.http.exceptions import ApiException as QdrantException
@@ -50,8 +49,9 @@ async def save_memory(
     """
     model = get_embeddings_model()
     raw_vector = await asyncio.to_thread(model.embed, params.memory)
-    vector = np.array(raw_vector, dtype=float).flatten().tolist()
-    uuid_str = str(uuid.uuid4())
+    vector = raw_vector[0] if isinstance(raw_vector[0], (list, tuple)) else raw_vector
+    vector = list(map(float, vector))
+    memory_id = uuid.uuid4()
     timestamp = datetime.now(timezone.utc).isoformat()
 
     try:
@@ -59,7 +59,7 @@ async def save_memory(
             collection_name=params.memory_bank,
             points=[
                 models.PointStruct(
-                    id=uuid_str,
+                    id=str(memory_id),
                     vector=vector,
                     payload={
                         "memory": params.memory,
@@ -90,4 +90,4 @@ async def save_memory(
                 detail=str(exc),
             ).model_dump(),
         ) from exc
-    return SaveMemoryResponse(message="Memory saved successfully")
+    return SaveMemoryResponse(message="Memory saved successfully", uuid=memory_id)

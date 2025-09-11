@@ -5,6 +5,13 @@ from app import dependencies
 from app.config import get_settings
 
 
+@pytest.fixture(autouse=True)
+def default_env(monkeypatch):
+    monkeypatch.setenv("DIM", "3")
+    monkeypatch.setenv("QDRANT_HOST", "http://localhost")
+    monkeypatch.setenv("API_KEY", "secret")
+
+
 class DummyEmbed:
     def embed(self, text: str):
         return [0.1]

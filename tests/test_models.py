@@ -1,6 +1,6 @@
 import pytest
 from datetime import datetime
-from uuid import uuid4
+from uuid import uuid4, UUID
 
 from pydantic import ValidationError
 
@@ -40,6 +40,21 @@ def test_save_params_splits_comma_separated_fields():
     )
     assert params.entities == ["alice", "bob"]
     assert params.tags == ["tag1", "tag2"]
+
+
+def test_memory_bank_rejects_keywords():
+    with pytest.raises(ValidationError):
+        SaveParams(
+            memory_bank="class",
+            memory="hello",
+            sentiment="neutral",
+            entities=["a"],
+            tags=["t"],
+        )
+    with pytest.raises(ValidationError):
+        SearchParams(memory_bank="for", query="q")
+    with pytest.raises(ValidationError):
+        ManageMemoryParams(memory_bank="def", action="create")
 
 
 def test_models_reject_extra_fields():
@@ -194,8 +209,9 @@ def test_memoryrecord_type_enforcement():
 
 
 def test_response_models():
-    save_resp = SaveMemoryResponse(message="ok")
+    save_resp = SaveMemoryResponse(message="ok", uuid=uuid4())
     assert save_resp.message == "ok"
+    assert isinstance(save_resp.uuid, UUID)
 
     item_id = uuid4()
     item = MemoryRecord(

@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
 ## Unreleased
+- enforce required environment settings via Pydantic
+- disallow Python keywords in memory bank identifiers
+- handle Qdrant failures in manage_memories and validate recall payload fields
+- replace NumPy dependency with native list conversions and return memory UUID on save
+- optimize Docker build and compose files, fix README links, and remove landing page background image
 - move runtime imports to module scope in memory routes
 - handle Qdrant errors explicitly and log unexpected failures when saving memories
 - protect TextEmbedding initialization with an asyncio lock
