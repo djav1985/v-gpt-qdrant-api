@@ -36,6 +36,15 @@ async def manage_memories(
     params: ManageMemoryParams,
     qdrant: AsyncQdrantClient = Depends(create_qdrant_client),
 ) -> ManageMemoryResponse:
+    """Create, delete, or forget memories within a memory bank.
+
+    Args:
+        params: Memory bank action and related parameters.
+        qdrant: Async Qdrant client dependency.
+
+    Returns:
+        ManageMemoryResponse: Result of the management action.
+    """
     if params.action is ActionEnum.CREATE:
         await asyncio.gather(
             qdrant.create_collection(
@@ -46,13 +55,13 @@ async def manage_memories(
                 ),
             ),
             *[
-                qdrant.create_payload_index(
-                    collection_name=params.memory_bank,
-                    field_name=field,
-                    field_schema=models.KeywordIndexParams(type=models.KeywordIndexType.KEYWORD),
-                )
-                for field in ["sentiment", "entities", "tags"]
-            ],
+            qdrant.create_payload_index(
+                collection_name=params.memory_bank,
+                field_name=field,
+                field_schema=models.PayloadSchemaType.KEYWORD,
+            )
+            for field in ["sentiment", "entities", "tags"]
+        ],
         )
         return ManageMemoryResponse(
             message=f"Memory Bank '{params.memory_bank}' created successfully"

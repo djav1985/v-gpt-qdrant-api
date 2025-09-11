@@ -1,10 +1,12 @@
 import asyncio
+import logging
 import uuid
 from datetime import datetime, timezone
 
 import numpy as np
 from fastapi import APIRouter, Depends, HTTPException
 from qdrant_client import AsyncQdrantClient, models
+from qdrant_client.http.exceptions import ApiException as QdrantException
 
 from app.models import SaveParams, SaveMemoryResponse, ErrorResponse
 from app.dependencies import (
@@ -37,6 +39,15 @@ async def save_memory(
     params: SaveParams,
     qdrant: AsyncQdrantClient = Depends(create_qdrant_client),
 ) -> SaveMemoryResponse:
+    """Store a memory with associated metadata in a memory bank.
+
+    Args:
+        params: Memory content and metadata.
+        qdrant: Async Qdrant client dependency.
+
+    Returns:
+        SaveMemoryResponse: Confirmation message on success.
+    """
     model = get_embeddings_model()
     raw_vector = await asyncio.to_thread(model.embed, params.memory)
     vector = np.array(raw_vector, dtype=float).flatten().tolist()
@@ -60,12 +71,22 @@ async def save_memory(
                 )
             ],
         )
-    except Exception as exc:
+    except QdrantException as exc:
         raise HTTPException(
             status_code=500,
             detail=ErrorResponse(
                 status=500,
                 code="qdrant_upsert_failed",
+                detail=str(exc),
+            ).model_dump(),
+        ) from exc
+    except Exception as exc:  # pragma: no cover - unexpected
+        logging.getLogger(__name__).exception("Unexpected error during memory save")
+        raise HTTPException(
+            status_code=500,
+            detail=ErrorResponse(
+                status=500,
+                code="unexpected_error",
                 detail=str(exc),
             ).model_dump(),
         ) from exc

@@ -6,6 +6,7 @@ import numpy as np
 from datetime import datetime, timezone
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
+from qdrant_client.http.exceptions import ApiException as QdrantException
 
 from app.routes.save_memory import router as save_memory_router
 from app.routes.recall_memory import router as recall_memory_router
@@ -130,7 +131,7 @@ def test_save_memory_flattens_vector(monkeypatch):
 def test_save_memory_upsert_failure(monkeypatch):
     monkeypatch.setenv("API_KEY", "correct")
     client, mock_qdrant = create_client()
-    mock_qdrant.upsert.side_effect = Exception("fail")
+    mock_qdrant.upsert.side_effect = QdrantException("fail")
     resp = client.post(
         "/save_memory",
         json=_payload(),

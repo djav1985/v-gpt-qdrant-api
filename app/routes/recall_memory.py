@@ -1,8 +1,17 @@
 import asyncio
+from datetime import datetime
+from uuid import UUID
+
+import numpy as np
 from fastapi import APIRouter, Depends
 from qdrant_client import AsyncQdrantClient, models
 
-from app.models import SearchParams, RecallMemoryResponse, MemoryRecord
+from app.models import (
+    SearchParams,
+    RecallMemoryResponse,
+    MemoryRecord,
+    SentimentEnum,
+)
 from app.dependencies import get_embeddings_model, create_qdrant_client, get_api_key
 from app.routes.common import ERROR_RESPONSES
 
@@ -29,10 +38,18 @@ async def recall_memory(
     params: SearchParams,
     qdrant: AsyncQdrantClient = Depends(create_qdrant_client),
 ) -> RecallMemoryResponse:
+    """Retrieve memories similar to a query from a memory bank.
+
+    Args:
+        params: Search parameters including query text and filters.
+        qdrant: Async Qdrant client dependency.
+
+    Returns:
+        RecallMemoryResponse: Matching memories and scores.
+    """
     model = get_embeddings_model()
     vector = await asyncio.to_thread(model.embed, params.query)
     # Ensure vector is a numpy array before calling tolist
-    import numpy as np
     query_vector = np.array(vector, dtype=float).flatten().tolist()
 
     filters = []
@@ -64,9 +81,6 @@ async def recall_memory(
         limit=params.top_k,
     )
     results = []
-    from uuid import UUID
-    from app.models import SentimentEnum
-    from datetime import datetime
     for hit in hits:
         payload = hit.payload or {}
         # Defensive defaults for all fields
