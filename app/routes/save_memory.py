@@ -1,5 +1,4 @@
 import asyncio
-import os
 import uuid
 from datetime import datetime, timezone
 
@@ -45,35 +44,41 @@ async def save_memory(
     params: SaveParams,
     qdrant: AsyncQdrantClient = Depends(create_qdrant_client),
 ) -> SaveMemoryResponse:
-    if not params.memory.strip():
-        raise HTTPException(
-            status_code=400,
-            detail=ErrorResponse(
-                status=400,
-                code="memory_empty",
-                detail="Memory content cannot be empty",
-            ).model_dump(),
-        )
-
     model = get_embeddings_model()
-    vector = await asyncio.to_thread(model.embed, params.memory)
+    raw_vector = await asyncio.to_thread(model.embed, params.memory)
+    if hasattr(raw_vector, "tolist"):
+        raw_vector = raw_vector.tolist()
+    vector = list(raw_vector)
+    if vector and isinstance(vector[0], (list, tuple)):
+        vector = list(vector[0])
+    vector = [float(v) for v in vector]
     uuid_str = str(uuid.uuid4())
     timestamp = datetime.now(timezone.utc).isoformat()
 
-    await qdrant.upsert(
-        collection_name=params.memory_bank,
-        points=[
-            models.PointStruct(
-                id=uuid_str,
-                vector=vector.tolist(),
-                payload={
-                    "memory": params.memory,
-                    "timestamp": timestamp,
-                    "sentiment": params.sentiment,
-                    "entities": params.entities,
-                    "tags": params.tags,
-                },
-            )
-        ],
-    )
+    try:
+        await qdrant.upsert(
+            collection_name=params.memory_bank,
+            points=[
+                models.PointStruct(
+                    id=uuid_str,
+                    vector=vector,
+                    payload={
+                        "memory": params.memory,
+                        "timestamp": timestamp,
+                        "sentiment": params.sentiment,
+                        "entities": params.entities,
+                        "tags": params.tags,
+                    },
+                )
+            ],
+        )
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail=ErrorResponse(
+                status=500,
+                code="qdrant_upsert_failed",
+                detail=str(exc),
+            ).model_dump(),
+        ) from exc
     return SaveMemoryResponse(message="Memory saved successfully")

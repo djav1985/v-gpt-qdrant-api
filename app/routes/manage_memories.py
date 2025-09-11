@@ -1,10 +1,11 @@
 import asyncio
 import os
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from qdrant_client import AsyncQdrantClient, models
 from qdrant_client.models import Distance, VectorParams
 
 from models import (
+    ActionEnum,
     ManageMemoryParams,
     ManageMemoryResponse,
     ErrorResponse,
@@ -48,17 +49,7 @@ async def manage_memories(
     params: ManageMemoryParams,
     qdrant: AsyncQdrantClient = Depends(create_qdrant_client),
 ) -> ManageMemoryResponse:
-    if not params.memory_bank.isidentifier():
-        raise HTTPException(
-            status_code=400,
-            detail=ErrorResponse(
-                status=400,
-                code="invalid_memory_bank",
-                detail="Invalid memory bank name",
-            ).model_dump(),
-        )
-
-    if params.action == "create":
+    if params.action is ActionEnum.CREATE:
         await asyncio.gather(
             qdrant.create_collection(
                 collection_name=params.memory_bank,
@@ -80,22 +71,12 @@ async def manage_memories(
             message=f"Memory Bank '{params.memory_bank}' created successfully"
         )
 
-    elif params.action == "delete":
+    if params.action is ActionEnum.DELETE:
         await qdrant.delete_collection(collection_name=params.memory_bank)
         return ManageMemoryResponse(
             message=f"Memory Bank '{params.memory_bank}' has been deleted."
         )
-
-    elif params.action == "forget":
-        if not params.uuid:
-            raise HTTPException(
-                status_code=400,
-                detail=ErrorResponse(
-                    status=400,
-                    code="missing_uuid",
-                    detail="UUID must be provided for forget action",
-                ).model_dump(),
-            )
+    if params.action is ActionEnum.FORGET:
         await qdrant.delete(
             collection_name=params.memory_bank,
             points_selector=models.PointIdsList(points=[str(params.uuid)]),
