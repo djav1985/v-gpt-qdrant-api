@@ -6,14 +6,10 @@ WORKDIR /app
 
 COPY requirements.txt .
 
-ARG GITEA_REPOSITORY
-ARG GITEA_REF_NAME
-
-# Mount pip cache at repo/branch path
-RUN --mount=type=cache,target=/opt/hostedtoolcache/${GITEA_REPOSITORY}/${GITEA_REF_NAME}/pip \
-    python -m venv /app/venv && \
+# Install dependencies into venv – build cache will reuse this layer
+RUN python -m venv /app/venv && \
     . /app/venv/bin/activate && \
-    pip install --cache-dir=/opt/hostedtoolcache/${GITEA_REPOSITORY}/${GITEA_REF_NAME}/pip -r requirements.txt
+    pip install -r requirements.txt
 
 FROM python:3.10-slim
 

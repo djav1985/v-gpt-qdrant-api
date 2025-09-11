@@ -5,7 +5,6 @@ on:
     branches:
       - "main"
       - "dev"
-
   release:
     types: [published]
 
@@ -15,14 +14,6 @@ jobs:
     steps:
       - name: Check out code
         uses: actions/checkout@v3
-
-      - name: Cache pip dependencies
-        uses: actions/cache@v3
-        with:
-          path: /opt/hostedtoolcache/${{ gitea.repository }}/${{ gitea.ref_name }}/pip
-          key: pip-${{ runner.os }}-${{ hashFiles('**/requirements.txt') }}
-          restore-keys: |
-            pip-${{ runner.os }}-
 
       - name: Set up Docker
         uses: docker/setup-buildx-action@v3
@@ -60,9 +51,6 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          build-args: |
-            GITEA_REPOSITORY=${{ gitea.repository }}
-            GITEA_REF_NAME=${{ gitea.ref_name }}
           cache-from: type=local,src=/opt/hostedtoolcache/${{ gitea.repository }}/${{ gitea.ref_name }}/build
           cache-to: type=local,dest=/opt/hostedtoolcache/${{ gitea.repository }}/${{ gitea.ref_name }}/build-new,mode=max
 
