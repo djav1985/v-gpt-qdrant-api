@@ -1,16 +1,17 @@
+"""Application entry point configuring routes and startup behavior."""
+
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.openapi.utils import get_openapi
 from fastapi.responses import JSONResponse
 
-from app.dependencies import initialize_text_embedding
-from app.config import get_settings
-from app.routes.save_memory import router as save_memory_router  # noqa: E402
-from app.routes.recall_memory import router as recall_memory_router  # noqa: E402
-from app.routes.manage_memories import (  # noqa: E402
-    router as manage_memories_router,
-)
-from app.routes.root import root_router  # noqa: E402
+from .config import get_settings
+from .dependencies import initialize_text_embedding
+from .routes.manage_memories import router as manage_memories_router
+from .routes.recall_memory import router as recall_memory_router
+from .routes.root import root_router
+from .routes.save_memory import router as save_memory_router
 
 tags_metadata = [
     {
@@ -42,11 +43,13 @@ async def lifespan(app: FastAPI):
     yield
 
 
+# FastAPI application instance
 _settings = get_settings()
 app = FastAPI(
     title="AI Memory API",
     version="0.1.0",
     description="A FastAPI application that allows users to save memories ...",
+    openapi_version="3.1.0",
     openapi_tags=tags_metadata,
     root_path=_settings.ROOT_PATH,
     root_path_in_servers=False,
@@ -59,6 +62,7 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# Include routers
 app.include_router(save_memory_router)
 app.include_router(recall_memory_router)
 app.include_router(manage_memories_router)
@@ -72,23 +76,25 @@ app.include_router(root_router)
 
 
 def custom_openapi() -> dict:
+    """Generate and cache a custom OpenAPI schema for the app."""
     if app.openapi_schema:
         return app.openapi_schema
-    from fastapi.openapi.utils import get_openapi
-
     openapi_schema = get_openapi(
         title=app.title,
         version=app.version,
         description=app.description,
         routes=app.routes,
         tags=tags_metadata,
+        servers=app.servers,
     )
+    # Add API key authentication scheme
     openapi_schema.setdefault("components", {}).setdefault(
         "securitySchemes", {}
     )["ApiKeyAuth"] = {
         "type": "apiKey",
         "name": "X-API-Key",
         "in": "header",
+        "description": "Provide the API key via the X-API-Key header"
     }
     openapi_schema["openapi"] = "3.1.0"
     app.openapi_schema = openapi_schema
@@ -99,9 +105,8 @@ app.openapi = custom_openapi
 
 
 @app.exception_handler(HTTPException)
-async def http_exception_handler(request: Request, exc: HTTPException):
+def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:
+    """Return JSON errors for HTTPException instances."""
     if isinstance(exc.detail, dict):
         return JSONResponse(status_code=exc.status_code, content=exc.detail)
-    return JSONResponse(
-        status_code=exc.status_code, content={"detail": exc.detail}
-    )
+    return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})

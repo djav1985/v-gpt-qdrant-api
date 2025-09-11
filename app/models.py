@@ -1,4 +1,5 @@
-# models.py
+"""Common data models and request/response schemas."""
+
 from enum import Enum
 from typing import Optional, Annotated
 from uuid import UUID
@@ -15,6 +16,18 @@ from pydantic import (
     conlist,
     conint,
 )
+
+
+class ErrorResponse(BaseModel):
+    """Standard error response format across all apps."""
+    status: int = Field(..., description="HTTP status code of the error")
+    code: str = Field(..., description="Application-specific error identifier")
+    message: str = Field(..., description="Human-readable summary of the error")
+    details: Optional[str] = Field(
+        None, description="Additional information that may help resolve the error"
+    )
+
+    model_config = ConfigDict(extra="forbid")
 
 
 class ActionEnum(str, Enum):
@@ -227,13 +240,13 @@ class EmbeddingResponse(StrictBaseModel):
     )
 
 
-class ErrorResponse(StrictBaseModel):
-    status: Annotated[int, conint(ge=100, le=599)] = Field(
-        ..., description="HTTP status code of the error", json_schema_extra={"example": 400}
+class ErrorResponse(BaseModel):
+    """Standard error response format across all apps."""
+    status: int = Field(..., description="HTTP status code of the error")
+    code: str = Field(..., description="Application-specific error identifier")
+    message: str = Field(..., description="Human-readable summary of the error")
+    details: Optional[str] = Field(
+        None, description="Additional information that may help resolve the error"
     )
-    code: Annotated[str, constr(min_length=1, pattern=r"^[a-z_]+$")] = Field(
-        ..., description="Application-specific error code", json_schema_extra={"example": "invalid_api_key"}
-    )
-    detail: Annotated[str, constr(min_length=1)] = Field(
-        ..., description="Explanation of the error", json_schema_extra={"example": "Invalid API key"}
-    )
+
+    model_config = ConfigDict(extra="forbid")

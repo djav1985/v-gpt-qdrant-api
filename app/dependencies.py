@@ -1,4 +1,5 @@
-# dependencies.py
+"""Application dependencies and utility functions."""
+
 import asyncio
 import os
 from typing import AsyncGenerator, Optional
@@ -8,8 +9,8 @@ from fastapi.security import APIKeyHeader
 from fastembed import TextEmbedding
 from qdrant_client import AsyncQdrantClient
 
-from app.config import get_settings
-from app.models import ErrorResponse
+from .config import get_settings
+from .models import ErrorResponse
 
 
 _embedding_lock = asyncio.Lock()
