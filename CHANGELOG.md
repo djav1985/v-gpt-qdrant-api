@@ -16,4 +16,5 @@ See [standard-version](https://github.com/conventional-changelog/standard-versio
 - add shared error model and examples for memory management operations
 - adopt OpenAPI 3.1 with tag metadata and expanded models
 - remove redis-based rate limiting and associated dependencies
+- refactor startup to use FastAPI's lifespan context manager
 

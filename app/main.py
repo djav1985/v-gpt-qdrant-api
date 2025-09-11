@@ -1,5 +1,6 @@
 # main.py
 import os
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
@@ -7,7 +8,9 @@ from fastapi.responses import JSONResponse
 from dependencies import initialize_text_embedding
 from routes.save_memory import router as save_memory_router  # noqa: E402
 from routes.recall_memory import router as recall_memory_router  # noqa: E402
-from routes.manage_memories import router as manage_memories_router  # noqa: E402
+from routes.manage_memories import (  # noqa: E402
+    router as manage_memories_router,
+)
 from routes.root import root_router  # noqa: E402
 
 tags_metadata = [
@@ -21,24 +24,9 @@ tags_metadata = [
     },
 ]
 
-app = FastAPI(
-    title="AI Memory API",
-    version="0.1.0",
-    description="A FastAPI application that allows users to save memories ...",
-    openapi_tags=tags_metadata,
-    root_path=os.getenv("ROOT_PATH", ""),
-    root_path_in_servers=False,
-    servers=[
-        {
-            "url": f"{os.getenv('BASE_URL', '')}{os.getenv('ROOT_PATH', '')}",
-            "description": "Base API server",
-        }
-    ]
-)
 
-
-@app.on_event("startup")
-async def startup_event() -> None:
+@asynccontextmanager
+async def lifespan(app: FastAPI):
     required_env_vars = ["API_KEY", "DIM", "QDRANT_HOST"]
     missing = [v for v in required_env_vars if not os.getenv(v)]
     if missing:
@@ -51,6 +39,29 @@ async def startup_event() -> None:
         raise RuntimeError("DIM must be an integer") from exc
     app.state.dim = dim
     await initialize_text_embedding()
+    yield
+
+
+app = FastAPI(
+    title="AI Memory API",
+    version="0.1.0",
+    description="A FastAPI application that allows users to save memories ...",
+    openapi_tags=tags_metadata,
+    root_path=os.getenv("ROOT_PATH", ""),
+    root_path_in_servers=False,
+    servers=[
+        {
+            "url": f"{os.getenv('BASE_URL', '')}{os.getenv('ROOT_PATH', '')}",
+            "description": "Base API server",
+        }
+    ],
+    lifespan=lifespan,
+)
+
+
+async def startup_event() -> None:
+    async with lifespan(app):
+        pass
 
 app.include_router(save_memory_router)
 app.include_router(recall_memory_router)
@@ -82,7 +93,9 @@ def custom_openapi() -> dict:
         .get("HTTPBearer", {})
     )
     if security_scheme:
-        security_scheme["description"] = "Provide the API key as a Bearer token"
+        security_scheme["description"] = (
+            "Provide the API key as a Bearer token"
+        )
         security_scheme["bearerFormat"] = "API Key"
     openapi_schema["openapi"] = "3.1.0"
     app.openapi_schema = openapi_schema
@@ -96,4 +109,6 @@ app.openapi = custom_openapi
 async def http_exception_handler(request: Request, exc: HTTPException):
     if isinstance(exc.detail, dict):
         return JSONResponse(status_code=exc.status_code, content=exc.detail)
-    return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
+    return JSONResponse(
+        status_code=exc.status_code, content={"detail": exc.detail}
+    )
