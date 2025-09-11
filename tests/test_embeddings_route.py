@@ -1,4 +1,3 @@
-import numpy as np
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
@@ -6,15 +5,18 @@ from app.routes.embeddings import router as embeddings_router
 from app.dependencies import get_embeddings_model
 from app.models import EmbeddingResponse
 from app.config import get_settings
+import os
 
 
 class DummyModel:
     def embed(self, text: str):
-        return np.array([0.1, 0.2])
+        return [0.1, 0.2]
 
 
 def create_client():
     get_settings.cache_clear()
+    os.environ.setdefault("DIM", "3")
+    os.environ.setdefault("QDRANT_HOST", "http://localhost")
     app = FastAPI()
     app.include_router(embeddings_router)
     app.dependency_overrides[get_embeddings_model] = lambda: DummyModel()

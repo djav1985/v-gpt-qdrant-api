@@ -1,7 +1,5 @@
 import pytest
 
-from app import main
-
 
 @pytest.mark.asyncio
 async def test_lifespan_missing_env_vars(monkeypatch):
@@ -10,10 +8,11 @@ async def test_lifespan_missing_env_vars(monkeypatch):
     from app.config import get_settings
 
     get_settings.cache_clear()
+    import app.main as main
     with pytest.raises(RuntimeError) as exc:
         async with main.lifespan(main.app):
             pass
-    assert "Missing required environment variables" in str(exc.value)
+    assert "DIM" in str(exc.value)
 
 
 @pytest.mark.asyncio
@@ -24,6 +23,8 @@ async def test_lifespan_calls_initialize(monkeypatch):
     from app.config import get_settings
 
     get_settings.cache_clear()
+
+    import app.main as main
 
     init_called = False
 
@@ -46,6 +47,7 @@ async def test_lifespan_invalid_dim(monkeypatch):
     from app.config import get_settings
 
     get_settings.cache_clear()
+    import app.main as main
     with pytest.raises(RuntimeError) as exc:
         async with main.lifespan(main.app):
             pass

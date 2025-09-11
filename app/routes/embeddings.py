@@ -1,5 +1,4 @@
 import asyncio
-import numpy as np
 from fastapi import APIRouter, Depends
 
 from app.models import EmbeddingRequest, EmbeddingResponse
@@ -36,5 +35,6 @@ async def create_embedding(payload: EmbeddingRequest) -> EmbeddingResponse:
     """
     model = get_embeddings_model()
     vector = await asyncio.to_thread(model.embed, payload.text)
-    vector_list = np.array(vector, dtype=float).flatten().tolist()
+    vector = vector[0] if isinstance(vector[0], (list, tuple)) else vector
+    vector_list = list(map(float, vector))
     return EmbeddingResponse(embedding=vector_list)

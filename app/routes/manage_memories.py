@@ -1,7 +1,9 @@
 import asyncio
+import logging
 from fastapi import APIRouter, Depends, HTTPException
 from qdrant_client import AsyncQdrantClient, models
 from qdrant_client.models import Distance, VectorParams
+from qdrant_client.http.exceptions import ApiException as QdrantException
 
 from app.config import get_settings
 from app.models import ActionEnum, ManageMemoryParams, ManageMemoryResponse, ErrorResponse
@@ -56,38 +58,104 @@ async def manage_memories(
                     detail="Embedding dimension (DIM) is not set in environment/config.",
                 ).model_dump(),
             )
-        await asyncio.gather(
-            qdrant.create_collection(
-                collection_name=params.memory_bank,
-                vectors_config=VectorParams(
-                    size=dim,
-                    distance=Distance.COSINE,
+        try:
+            await asyncio.gather(
+                qdrant.create_collection(
+                    collection_name=params.memory_bank,
+                    vectors_config=VectorParams(
+                        size=dim,
+                        distance=Distance.COSINE,
+                    ),
                 ),
-            ),
-            *[
-            qdrant.create_payload_index(
-                collection_name=params.memory_bank,
-                field_name=field,
-                field_schema=models.PayloadSchemaType.KEYWORD,
+                *[
+                    qdrant.create_payload_index(
+                        collection_name=params.memory_bank,
+                        field_name=field,
+                        field_schema=models.PayloadSchemaType.KEYWORD,
+                    )
+                    for field in ["sentiment", "entities", "tags"]
+                ],
             )
-            for field in ["sentiment", "entities", "tags"]
-        ],
-        )
+        except QdrantException as exc:
+            raise HTTPException(
+                status_code=500,
+                detail=ErrorResponse(
+                    status=500,
+                    code="qdrant_create_failed",
+                    detail=str(exc),
+                ).model_dump(),
+            ) from exc
+        except Exception as exc:  # pragma: no cover - unexpected
+            logging.getLogger(__name__).exception(
+                "Unexpected error during memory bank creation"
+            )
+            raise HTTPException(
+                status_code=500,
+                detail=ErrorResponse(
+                    status=500,
+                    code="unexpected_error",
+                    detail=str(exc),
+                ).model_dump(),
+            ) from exc
         return ManageMemoryResponse(
             message=f"Memory Bank '{params.memory_bank}' created successfully"
         )
 
     elif params.action is ActionEnum.DELETE:
-        await qdrant.delete_collection(collection_name=params.memory_bank)
+        try:
+            await qdrant.delete_collection(collection_name=params.memory_bank)
+        except QdrantException as exc:
+            raise HTTPException(
+                status_code=500,
+                detail=ErrorResponse(
+                    status=500,
+                    code="qdrant_delete_failed",
+                    detail=str(exc),
+                ).model_dump(),
+            ) from exc
+        except Exception as exc:  # pragma: no cover - unexpected
+            logging.getLogger(__name__).exception(
+                "Unexpected error during memory bank deletion"
+            )
+            raise HTTPException(
+                status_code=500,
+                detail=ErrorResponse(
+                    status=500,
+                    code="unexpected_error",
+                    detail=str(exc),
+                ).model_dump(),
+            ) from exc
         return ManageMemoryResponse(
             message=f"Memory Bank '{params.memory_bank}' has been deleted."
         )
 
     elif params.action is ActionEnum.FORGET:
-        await qdrant.delete(
-            collection_name=params.memory_bank,
-            points_selector=models.PointIdsList(points=[str(params.uuid)]),
-        )
+        try:
+            await qdrant.delete(
+                collection_name=params.memory_bank,
+                points_selector=models.PointIdsList(points=[str(params.uuid)]),
+            )
+        except QdrantException as exc:
+            raise HTTPException(
+                status_code=500,
+                detail=ErrorResponse(
+                    status=500,
+                    code="qdrant_forget_failed",
+                    detail=str(exc),
+                ).model_dump(),
+            ) from exc
+        except Exception as exc:  # pragma: no cover - unexpected
+            logging.getLogger(__name__).exception(
+                "Unexpected error during memory deletion"
+            )
+            raise HTTPException(
+                status_code=500,
+                detail=ErrorResponse(
+                    status=500,
+                    code="unexpected_error",
+                    detail=str(exc),
+                ).model_dump(),
+            ) from exc
         return ManageMemoryResponse(
             message=(
                 f"Memory with UUID '{params.uuid}' has been forgotten from Memory Bank '{params.memory_bank}'."

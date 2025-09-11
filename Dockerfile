@@ -9,19 +9,22 @@ COPY requirements.txt .
 # Install dependencies into venv – build cache will reuse this layer
 RUN python -m venv /app/venv && \
     . /app/venv/bin/activate && \
-    pip install -r requirements.txt
+    pip install --no-cache-dir -r requirements.txt
 
 FROM python:3.10-slim
 
 WORKDIR /app
 
 COPY --from=builder /app/venv /app/venv
+COPY requirements.txt ./
 COPY ./app /app
 
 EXPOSE 8060
 
-ENV WORKERS=2
-ENV UVICORN_CONCURRENCY=32
-ENV PATH="/app/venv/bin:$PATH"
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    WORKERS=2 \
+    UVICORN_CONCURRENCY=32 \
+    PATH="/app/venv/bin:$PATH"
 
 CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port 8060 --workers $WORKERS --limit-concurrency $UVICORN_CONCURRENCY"]

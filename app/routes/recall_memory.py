@@ -2,7 +2,6 @@ import asyncio
 from datetime import datetime
 from uuid import UUID
 
-import numpy as np
 from fastapi import APIRouter, Depends
 from qdrant_client import AsyncQdrantClient, models
 
@@ -49,8 +48,8 @@ async def recall_memory(
     """
     model = get_embeddings_model()
     vector = await asyncio.to_thread(model.embed, params.query)
-    # Ensure vector is a numpy array before calling tolist
-    query_vector = np.array(vector, dtype=float).flatten().tolist()
+    vector = vector[0] if isinstance(vector[0], (list, tuple)) else vector
+    query_vector = list(map(float, vector))
 
     filters = []
     if params.entity:
@@ -83,21 +82,19 @@ async def recall_memory(
     results = []
     for hit in hits:
         payload = hit.payload or {}
-        # Defensive defaults for all fields
         try:
             uuid_val = UUID(str(hit.id))
+            sentiment_val = SentimentEnum(payload["sentiment"])
+            ts_raw = payload.get("timestamp")
+            if isinstance(ts_raw, str):
+                timestamp_val = datetime.fromisoformat(ts_raw)
+            elif isinstance(ts_raw, datetime):
+                timestamp_val = ts_raw
+            else:
+                raise ValueError("invalid timestamp")
+            memory_val = payload["memory"]
         except Exception:
-            uuid_val = UUID("00000000-0000-0000-0000-000000000000")
-        memory_val = payload.get("memory") or ""
-        timestamp_val = payload.get("timestamp")
-        if isinstance(timestamp_val, str):
-            try:
-                timestamp_val = datetime.fromisoformat(timestamp_val)
-            except Exception:
-                timestamp_val = datetime.now()
-        elif not isinstance(timestamp_val, datetime):
-            timestamp_val = datetime.now()
-        sentiment_val = payload.get("sentiment") or SentimentEnum.NEUTRAL
+            continue
         entities_val = payload.get("entities") or []
         tags_val = payload.get("tags") or []
         results.append(
