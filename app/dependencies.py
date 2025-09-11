@@ -6,6 +6,7 @@ from fastapi import HTTPException, Security
 from fastapi.security import APIKeyHeader
 from fastembed import TextEmbedding
 from qdrant_client import AsyncQdrantClient
+from models import ErrorResponse
 
 
 class SingletonTextEmbedding:
@@ -74,6 +75,11 @@ def get_api_key(
     expected = os.getenv("API_KEY")
     if expected and api_key != expected:
         raise HTTPException(
-            status_code=403, detail="Invalid or missing API key"
+            status_code=403,
+            detail=ErrorResponse(
+                status=403,
+                code="invalid_api_key",
+                detail="Invalid or missing API key",
+            ).model_dump(),
         )
     return api_key

@@ -6,8 +6,21 @@ from fastapi_limiter import FastAPILimiter
 import redis.asyncio as redis
 
 from dependencies import initialize_text_embedding
-from routes.memory import memory_router  # noqa: E402
+from routes.save_memory import router as save_memory_router  # noqa: E402
+from routes.recall_memory import router as recall_memory_router  # noqa: E402
+from routes.manage_memories import router as manage_memories_router  # noqa: E402
 from routes.root import root_router  # noqa: E402
+
+tags_metadata = [
+    {
+        "name": "memory",
+        "description": "Operations related to memory management.",
+    },
+    {
+        "name": "embedding",
+        "description": "Endpoints for generating embeddings.",
+    },
+]
 
 app = FastAPI(
     title="AI Memory API",
@@ -17,6 +30,8 @@ app = FastAPI(
     servers=[
         {"url": os.getenv("BASE_URL", ""), "description": "Base API server"}
     ],
+    openapi_version="3.1.0",
+    openapi_tags=tags_metadata,
 )
 
 
@@ -35,11 +50,50 @@ async def startup_event() -> None:
     await FastAPILimiter.init(redis_client)
     await initialize_text_embedding()
 
+app.include_router(save_memory_router)
+app.include_router(recall_memory_router)
+app.include_router(manage_memories_router)
 
-app.include_router(memory_router)
 if os.getenv("EMBEDDING_ENDPOINT"):
-    from routes.embeddings import embeddings_router
+    from routes.embeddings import router as embeddings_router
 
     app.include_router(embeddings_router)
 
 app.include_router(root_router)
+
+
+def custom_openapi() -> dict:
+    if app.openapi_schema:
+        return app.openapi_schema
+    from fastapi.openapi.utils import get_openapi
+
+    openapi_schema = get_openapi(
+        title=app.title,
+        version=app.version,
+        description=app.description,
+        routes=app.routes,
+        tags=tags_metadata,
+    )
+    openapi_schema.setdefault("components", {})
+    openapi_schema["components"].setdefault("headers", {})
+    openapi_schema["components"]["headers"].update(
+        {
+            "X-RateLimit-Limit": {
+                "description": "Maximum requests allowed in a time window.",
+                "schema": {"type": "integer", "example": 5},
+            },
+            "X-RateLimit-Remaining": {
+                "description": "Remaining requests in the current window.",
+                "schema": {"type": "integer", "example": 4},
+            },
+            "X-RateLimit-Reset": {
+                "description": "UTC epoch time when the rate limit resets.",
+                "schema": {"type": "integer", "example": 1700000000},
+            },
+        }
+    )
+    app.openapi_schema = openapi_schema
+    return app.openapi_schema
+
+
+app.openapi = custom_openapi

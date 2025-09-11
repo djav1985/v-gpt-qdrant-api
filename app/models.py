@@ -33,6 +33,8 @@ class SaveParams(BaseModel):
 
     memory_bank: str = Field(
         ...,
+        min_length=1,
+        pattern=r"^[A-Za-z_][A-Za-z0-9_]*$",
         description="The name of the memory bank where the memory will be stored.",  # noqa: E501
         example="personal_bank",
     )
@@ -49,11 +51,13 @@ class SaveParams(BaseModel):
     )
     entities: List[str] = Field(
         ...,
+        min_length=1,
         description="A list of entities identified in the memory.",
         example=["alice"],
     )
     tags: List[str] = Field(
         ...,
+        min_length=1,
         description="A list of tags associated with the memory.",
         example=["friends"],
     )
@@ -89,6 +93,8 @@ class SearchParams(BaseModel):
 
     memory_bank: str = Field(
         ...,
+        min_length=1,
+        pattern=r"^[A-Za-z_][A-Za-z0-9_]*$",
         description="The name of the memory bank to search in.",
         example="personal_bank",
     )
@@ -106,10 +112,16 @@ class SearchParams(BaseModel):
         example=5,
     )
     entity: Optional[str] = Field(
-        None, description="An entity to filter the search.", example="alice"
+        None,
+        min_length=1,
+        description="An entity to filter the search.",
+        example="alice",
     )
     tag: Optional[str] = Field(
-        None, description="A tag to filter the search.", example="friends"
+        None,
+        min_length=1,
+        description="A tag to filter the search.",
+        example="friends",
     )
     sentiment: Optional[SentimentEnum] = Field(
         None,
@@ -139,6 +151,8 @@ class ManageMemoryParams(BaseModel):
 
     memory_bank: str = Field(
         ...,
+        min_length=1,
+        pattern=r"^[A-Za-z_][A-Za-z0-9_]*$",
         description="The name of the memory bank to manage.",
         example="personal_bank",
     )
@@ -191,6 +205,7 @@ class MemoryRecord(BaseModel):
     )
     memory: str = Field(
         ...,
+        min_length=1,
         description="Stored memory text",
         example="Met Alice at the park",
     )
@@ -206,11 +221,13 @@ class MemoryRecord(BaseModel):
     )
     entities: List[str] = Field(
         ...,
+        min_length=1,
         description="Recognized entities in the memory",
         example=["alice"],
     )
     tags: List[str] = Field(
         ...,
+        min_length=1,
         description="Tags associated with the memory",
         example=["friends"],
     )
@@ -226,6 +243,7 @@ class MemoryRecord(BaseModel):
 class SaveMemoryResponse(BaseModel):
     message: str = Field(
         ...,
+        min_length=1,
         description="Result of the save operation",
         example="Memory saved successfully",
     )
@@ -240,14 +258,45 @@ class RecallMemoryResponse(BaseModel):
 class ManageMemoryResponse(BaseModel):
     message: str = Field(
         ...,
+        min_length=1,
         description="Result of the management operation",
         example="Memory Bank 'personal_bank' created successfully",
     )
 
 
+class EmbeddingRequest(BaseModel):
+    text: str = Field(
+        ...,
+        min_length=1,
+        description="Text for which to generate an embedding.",
+        example="Hello world",
+    )
+
+
+class EmbeddingResponse(BaseModel):
+    embedding: List[float] = Field(
+        ..., min_length=1, description="Embedding vector", example=[0.1, 0.2]
+    )
+
+
 class ErrorResponse(BaseModel):
+    status: int = Field(
+        ...,
+        ge=100,
+        le=599,
+        description="HTTP status code of the error",
+        example=400,
+    )
+    code: str = Field(
+        ...,
+        min_length=1,
+        pattern=r"^[a-z_]+$",
+        description="Application-specific error code",
+        example="invalid_api_key",
+    )
     detail: str = Field(
         ...,
+        min_length=1,
         description="Explanation of the error",
         example="Invalid API key",
     )

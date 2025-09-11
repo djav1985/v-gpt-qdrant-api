@@ -12,6 +12,9 @@ from models import (
     RecallMemoryResponse,
     ManageMemoryResponse,
     MemoryRecord,
+    EmbeddingRequest,
+    EmbeddingResponse,
+    ErrorResponse,
 )
 
 
@@ -195,3 +198,14 @@ def test_response_models():
 
     manage_resp = ManageMemoryResponse(message="done")
     assert manage_resp.message == "done"
+
+
+def test_embedding_models_and_error_response():
+    req = EmbeddingRequest(text="hello")
+    assert req.text == "hello"
+    resp = EmbeddingResponse(embedding=[0.1, 0.2])
+    assert resp.embedding == [0.1, 0.2]
+    err = ErrorResponse(status=400, code="bad_request", detail="oops")
+    assert err.status == 400
+    assert err.code == "bad_request"
+    assert err.detail == "oops"
