@@ -9,7 +9,13 @@ from fastapi import APIRouter, Depends, HTTPException
 from qdrant_client import AsyncQdrantClient, models
 from qdrant_client.models import Distance, VectorParams
 
-from models import SaveParams, SearchParams, ManageMemoryParams
+from models import (
+    SaveParams,
+    SearchParams,
+    ManageMemoryParams,
+    MessageResponse,
+    RecallMemoryResponse,
+)
 from dependencies import get_api_key, get_embeddings_model, create_qdrant_client
 
 
@@ -17,12 +23,23 @@ memory_router = APIRouter()
 
 
 # --- Save Memory ---
-@memory_router.post("/save_memory", operation_id="save_memory")
+@memory_router.post(
+    "/save_memory",
+    operation_id="save_memory",
+    summary="Store a memory",
+    response_model=MessageResponse,
+    tags=["memory"],
+    responses={
+        400: {"description": "Memory content cannot be empty"},
+        500: {"description": "Error saving memory"},
+    },
+)
 async def save_memory(
     params: SaveParams,
     api_key: str = Depends(get_api_key),
     qdrant: AsyncQdrantClient = Depends(create_qdrant_client),
-) -> Dict[str, str]:
+) -> MessageResponse:
+    """Store a new memory in the specified memory bank."""
     if not params.memory.strip():
         raise HTTPException(status_code=400, detail="Memory content cannot be empty")
 
@@ -57,12 +74,20 @@ async def save_memory(
 
 
 # --- Recall Memory ---
-@memory_router.post("/recall_memory", operation_id="recall_memory")
+@memory_router.post(
+    "/recall_memory",
+    operation_id="recall_memory",
+    summary="Recall memories",
+    response_model=RecallMemoryResponse,
+    tags=["memory"],
+    responses={500: {"description": "Error recalling memory"}},
+)
 async def recall_memory(
     params: SearchParams,
     api_key: str = Depends(get_api_key),
     qdrant: AsyncQdrantClient = Depends(create_qdrant_client),
-) -> Dict[str, List[Dict[str, Any]]]:
+) -> RecallMemoryResponse:
+    """Retrieve memories similar to the provided query."""
     try:
         model = get_embeddings_model()
         embeddings_generator = await asyncio.to_thread(model.embed, params.query)
@@ -121,12 +146,20 @@ async def recall_memory(
 
 
 # --- Manage Memories ---
-@memory_router.post("/manage_memories", operation_id="manage_memories")
+@memory_router.post(
+    "/manage_memories",
+    operation_id="manage_memories",
+    summary="Manage memory banks",
+    response_model=MessageResponse,
+    tags=["memory"],
+    responses={500: {"description": "Error managing memories"}},
+)
 async def manage_memories(
     params: ManageMemoryParams,
     api_key: str = Depends(get_api_key),
     qdrant: AsyncQdrantClient = Depends(create_qdrant_client),
-) -> Dict[str, str]:
+) -> MessageResponse:
+    """Create, delete, or forget memories within a memory bank."""
     try:
         if params.action == "create":
             await qdrant.create_collection(

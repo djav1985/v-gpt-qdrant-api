@@ -1,7 +1,7 @@
 # models.py
 import os
 from enum import Enum
-from typing import List, Optional, Union
+from typing import List, Optional, Union, Literal
 from pydantic import BaseModel, Field, field_validator
 
 
@@ -129,3 +129,69 @@ class EmbeddingParams(BaseModel):
                 f"Model does not match environment variable LOCAL_MODEL ({expected})"
             )
         return value
+
+
+class MessageResponse(BaseModel):
+    """Standard response containing a status message."""
+
+    message: str = Field(..., description="Human-readable description of the result")
+
+
+class MemoryRecord(BaseModel):
+    """Representation of a single stored memory item."""
+
+    id: str = Field(..., description="Unique identifier of the memory")
+    memory: str = Field(..., description="Original memory content")
+    timestamp: str = Field(..., description="ISO-8601 timestamp when the memory was stored")
+    sentiment: Optional[str] = Field(
+        None, description="Sentiment label associated with the memory"
+    )
+    entities: Optional[List[str]] = Field(
+        default=None, description="Entities extracted from the memory"
+    )
+    tags: Optional[List[str]] = Field(
+        default=None, description="Tags associated with the memory"
+    )
+    score: Optional[float] = Field(
+        None, description="Vector similarity score returned by the search"
+    )
+
+
+class RecallMemoryResponse(BaseModel):
+    """Response containing search results for memory recall."""
+
+    results: List[MemoryRecord] = Field(
+        ..., description="List of memories ranked by similarity"
+    )
+
+
+class EmbeddingUsage(BaseModel):
+    """Token usage statistics for an embedding request."""
+
+    prompt_tokens: int = Field(..., description="Number of tokens in the input text")
+    total_tokens: int = Field(..., description="Total tokens processed including output")
+
+
+class EmbeddingData(BaseModel):
+    """Embedding vector returned by the service."""
+
+    object: Literal["embedding"] = Field(
+        "embedding", description="Type of the returned object"
+    )
+    embedding: List[float] = Field(
+        ..., description="Embedding vector representing the input text"
+    )
+    index: int = Field(..., description="Index of the embedding in the batch")
+
+
+class EmbeddingResponse(BaseModel):
+    """Response model for embedding generation requests."""
+
+    object: Literal["list"] = Field("list", description="Type of the top-level object")
+    data: List[EmbeddingData] = Field(
+        ..., description="List containing embedding information for each input"
+    )
+    model: str = Field(..., description="Name of the embedding model used")
+    usage: EmbeddingUsage = Field(
+        ..., description="Token usage statistics for the request"
+    )
