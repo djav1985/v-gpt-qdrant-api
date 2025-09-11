@@ -1,5 +1,6 @@
 import pytest
 from fastapi import HTTPException
+
 import dependencies
 
 
@@ -15,8 +16,7 @@ def reset_singleton():
     dependencies.SingletonTextEmbedding._instance = None
 
 
-@pytest.mark.asyncio
-async def test_get_instance_pre_init_raises():
+def test_get_instance_pre_init_raises():
     with pytest.raises(RuntimeError):
         dependencies.SingletonTextEmbedding.get_instance()
 
@@ -29,6 +29,25 @@ async def test_get_instance_after_initialize(monkeypatch):
     await dependencies.initialize_text_embedding()
     instance = dependencies.SingletonTextEmbedding.get_instance()
     assert isinstance(instance, DummyEmbed)
+
+
+class DummyClient:
+    def __init__(self):
+        self.closed = False
+
+    async def close(self):
+        self.closed = True
+
+
+@pytest.mark.asyncio
+async def test_create_qdrant_client_closes(monkeypatch):
+    dummy = DummyClient()
+    monkeypatch.setattr(
+        dependencies, "AsyncQdrantClient", lambda *args, **kwargs: dummy
+    )
+    async with dependencies.create_qdrant_client() as client:
+        assert client is dummy
+    assert dummy.closed
 
 
 def test_get_api_key_valid(monkeypatch):

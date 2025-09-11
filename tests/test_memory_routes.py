@@ -24,7 +24,7 @@ class DummyModel:
         return np.array([0.1, 0.2, 0.3])
 
 
-def create_client():
+def create_client(model_cls=DummyModel):
     mock_qdrant = Mock()
     mock_qdrant.upsert = AsyncMock()
     mock_qdrant.search = AsyncMock()
@@ -37,13 +37,17 @@ def create_client():
     app.include_router(save_memory_router)
     app.include_router(recall_memory_router)
     app.include_router(manage_memories_router)
-    app.dependency_overrides[create_qdrant_client] = lambda: mock_qdrant
-    app.dependency_overrides[get_embeddings_model] = lambda: DummyModel()
+
+    async def override_qdrant():
+        yield mock_qdrant
+
+    app.dependency_overrides[create_qdrant_client] = override_qdrant
+    app.dependency_overrides[get_embeddings_model] = lambda: model_cls()
 
     import routes.save_memory as save_module
     import routes.recall_memory as recall_module
-    save_module.get_embeddings_model = lambda: DummyModel()
-    recall_module.get_embeddings_model = lambda: DummyModel()
+    save_module.get_embeddings_model = lambda: model_cls()
+    recall_module.get_embeddings_model = lambda: model_cls()
 
     client = TestClient(app)
     return client, mock_qdrant
@@ -101,6 +105,37 @@ def test_save_memory_success(monkeypatch):
     assert resp.status_code == 200
     SaveMemoryResponse.model_validate(resp.json())
     mock_qdrant.upsert.assert_awaited_once()
+
+
+def test_save_memory_flattens_vector(monkeypatch):
+    monkeypatch.setenv("API_KEY", "correct")
+
+    class NestedModel:
+        def embed(self, text: str):
+            return [[0.4, 0.5]]
+
+    client, mock_qdrant = create_client(model_cls=NestedModel)
+    resp = client.post(
+        "/save_memory",
+        json=_payload(),
+        headers=_headers("correct"),
+    )
+    assert resp.status_code == 200
+    args, kwargs = mock_qdrant.upsert.await_args
+    assert kwargs["points"][0].vector == [0.4, 0.5]
+
+
+def test_save_memory_upsert_failure(monkeypatch):
+    monkeypatch.setenv("API_KEY", "correct")
+    client, mock_qdrant = create_client()
+    mock_qdrant.upsert.side_effect = Exception("fail")
+    resp = client.post(
+        "/save_memory",
+        json=_payload(),
+        headers=_headers("correct"),
+    )
+    assert resp.status_code == 500
+    assert resp.json()["detail"]["code"] == "qdrant_upsert_failed"
 
 
 def test_recall_memory(monkeypatch):
@@ -188,6 +223,17 @@ def test_manage_memories_forget_missing_uuid(monkeypatch):
     resp = client.post(
         "/manage_memories",
         json={"memory_bank": "bank", "action": "forget"},
+        headers=_headers("correct"),
+    )
+    assert resp.status_code == 422
+
+
+def test_manage_memories_invalid_action(monkeypatch):
+    monkeypatch.setenv("API_KEY", "correct")
+    client, _ = create_client()
+    resp = client.post(
+        "/manage_memories",
+        json={"memory_bank": "bank", "action": "invalid"},
         headers=_headers("correct"),
     )
     assert resp.status_code == 422

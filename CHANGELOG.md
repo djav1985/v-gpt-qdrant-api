@@ -8,6 +8,7 @@ See [standard-version](https://github.com/conventional-changelog/standard-versio
 - add unit tests for pydantic model validators
 - document memory API responses and security scheme
 - pin Pydantic to v2
+- refactor dependencies and routes for robust embedding and qdrant client lifecycle management
 - restrict Pydantic dependency to <3 and tighten model validations (UUIDs, datetimes, sentiment enum, non-empty strings, memory bank checks)
 - add optional embeddings endpoint gated by EMBEDDING_ENDPOINT flag
 - fix Qdrant deletion selector and use timezone-aware timestamps

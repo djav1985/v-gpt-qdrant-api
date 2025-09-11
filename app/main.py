@@ -45,6 +45,11 @@ async def startup_event() -> None:
         raise RuntimeError(
             f"Missing required environment variables: {', '.join(missing)}"
         )
+    try:
+        dim = int(os.getenv("DIM", ""))
+    except ValueError as exc:
+        raise RuntimeError("DIM must be an integer") from exc
+    app.state.dim = dim
     await initialize_text_embedding()
 
 app.include_router(save_memory_router)
