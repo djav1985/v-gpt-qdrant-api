@@ -4,7 +4,18 @@ from typing import List, Optional, Union
 from uuid import UUID
 from datetime import datetime
 
-from pydantic import BaseModel, Field, ConfigDict, field_validator, model_validator
+from pydantic import BaseModel, Field, ConfigDict, field_validator, model_validator, constr, conlist, conint
+from typing import Annotated
+
+# Type aliases for Pydantic v2 constraints
+MemoryBankStr = constr(min_length=1)
+MemoryBankPatternStr = constr(min_length=1, pattern=r"^[A-Za-z_][A-Za-z0-9_]*$")
+NonEmptyStr = constr(min_length=1)
+NonEmptyStrList = conlist(str, min_length=1)
+NonEmptyFloatList = conlist(float, min_length=1)
+TopKInt = conint(ge=1, le=100)
+StatusInt = conint(ge=100, le=599)
+ErrorCodeStr = constr(min_length=1, pattern=r"^[a-z_]+$")
 
 
 class ActionEnum(str, Enum):
@@ -30,49 +41,30 @@ class SaveParams(BaseModel):
     """
     Parameters required to save a memory.
     """
-
-    memory_bank: str = Field(
-        ...,
-        min_length=1,
-        pattern=r"^[A-Za-z_][A-Za-z0-9_]*$",
-        description="The name of the memory bank where the memory will be stored.",  # noqa: E501
-        example="personal_bank",
+    memory_bank: Annotated[str, constr(min_length=1)] = Field(
+        ..., description="The name of the memory bank where the memory will be stored.", json_schema_extra={"example": "personal_bank"}
     )
     memory: str = Field(
-        ...,
-        min_length=1,
-        description="The content of the memory to be stored.",
-        example="Met Alice at the park",
+        ..., description="The content of the memory to be stored.", json_schema_extra={"example": "Met Alice at the park"}
     )
     sentiment: SentimentEnum = Field(
-        ...,
-        description="The sentiment associated with the memory.",
-        example="positive",
+        ..., description="The sentiment associated with the memory.", json_schema_extra={"example": "positive"}
     )
-    entities: List[str] = Field(
-        ...,
-        min_length=1,
-        description="A list of entities identified in the memory.",
-        example=["alice"],
+    entities: Annotated[List[str], conlist(str, min_length=1)] = Field(
+        ..., description="A list of entities identified in the memory.", json_schema_extra={"example": ["alice"]}
     )
-    tags: List[str] = Field(
-        ...,
-        min_length=1,
-        description="A list of tags associated with the memory.",
-        example=["friends"],
+    tags: Annotated[List[str], conlist(str, min_length=1)] = Field(
+        ..., description="A list of tags associated with the memory.", json_schema_extra={"example": ["friends"]}
     )
 
     @field_validator("entities", "tags", mode="before")
-    def split_str_values(cls, v: Union[str, List[str]]) -> List[str]:
-        """
-        Convert comma-separated strings into list format.
-        """
+    def split_str_values(cls, v: Union[str, List[str]]):
         if isinstance(v, str):
             return [item.strip() for item in v.split(",") if item.strip()]
         return v
 
     @field_validator("memory", mode="before")
-    def strip_memory(cls, v: str) -> str:
+    def strip_memory(cls, v):
         if isinstance(v, str):
             v = v.strip()
         if not v:
@@ -80,7 +72,7 @@ class SaveParams(BaseModel):
         return v
 
     @field_validator("memory_bank")
-    def validate_memory_bank(cls, value: str) -> str:
+    def validate_memory_bank(cls, value):
         if not is_valid_identifier(value):
             raise ValueError("Invalid memory bank name.")
         return value
@@ -91,42 +83,23 @@ class SearchParams(BaseModel):
     Parameters required for searching memories.
     """
 
-    memory_bank: str = Field(
-        ...,
-        min_length=1,
-        pattern=r"^[A-Za-z_][A-Za-z0-9_]*$",
-        description="The name of the memory bank to search in.",
-        example="personal_bank",
+    memory_bank: Annotated[str, constr(min_length=1, pattern=r"^[A-Za-z_][A-Za-z0-9_]*$")] = Field(
+        ..., description="The name of the memory bank to search in.", json_schema_extra={"example": "personal_bank"}
     )
-    query: str = Field(
-        ...,
-        min_length=1,
-        description="The search query used to retrieve similar memories.",
-        example="Alice park meeting",
+    query: Annotated[str, constr(min_length=1)] = Field(
+        ..., description="The search query used to retrieve similar memories.", json_schema_extra={"example": "Alice park meeting"}
     )
-    top_k: int = Field(
-        5,
-        ge=1,
-        le=100,
-        description="The number of most similar memories to return (1-100).",
-        example=5,
+    top_k: Annotated[int, conint(ge=1, le=100)] = Field(
+        5, description="The number of most similar memories to return (1-100).", json_schema_extra={"example": 5}
     )
-    entity: Optional[str] = Field(
-        None,
-        min_length=1,
-        description="An entity to filter the search.",
-        example="alice",
+    entity: Optional[Annotated[str, constr(min_length=1)]] = Field(
+        None, description="An entity to filter the search.", json_schema_extra={"example": "alice"}
     )
-    tag: Optional[str] = Field(
-        None,
-        min_length=1,
-        description="A tag to filter the search.",
-        example="friends",
+    tag: Optional[Annotated[str, constr(min_length=1)]] = Field(
+        None, description="A tag to filter the search.", json_schema_extra={"example": "friends"}
     )
     sentiment: Optional[SentimentEnum] = Field(
-        None,
-        description="The sentiment to filter the search.",
-        example="positive",  # noqa: E501
+        None, description="The sentiment to filter the search.", json_schema_extra={"example": "positive"}
     )
 
     @field_validator("query", mode="before")
@@ -149,22 +122,14 @@ class ManageMemoryParams(BaseModel):
     Parameters for managing memories (create, delete, forget).
     """
 
-    memory_bank: str = Field(
-        ...,
-        min_length=1,
-        pattern=r"^[A-Za-z_][A-Za-z0-9_]*$",
-        description="The name of the memory bank to manage.",
-        example="personal_bank",
+    memory_bank: Annotated[str, constr(min_length=1, pattern=r"^[A-Za-z_][A-Za-z0-9_]*$")] = Field(
+        ..., description="The name of the memory bank to manage.", json_schema_extra={"example": "personal_bank"}
     )
     action: ActionEnum = Field(
-        ...,
-        description="Action to perform on the memory bank: create, delete, or forget.",  # noqa: E501
-        example="create",
+        ..., description="Action to perform on the memory bank: create, delete, or forget.", json_schema_extra={"example": "create"}
     )
     uuid: Optional[UUID] = Field(
-        None,
-        description="The UUID of the memory to be forgotten (required for forget).",  # noqa: E501
-        example="123e4567-e89b-12d3-a456-426614174000",
+        None, description="The UUID of the memory to be forgotten (required for forget).", json_schema_extra={"example": "123e4567-e89b-12d3-a456-426614174000"}
     )
 
     model_config = ConfigDict(
@@ -199,104 +164,65 @@ class ManageMemoryParams(BaseModel):
 
 class MemoryRecord(BaseModel):
     id: UUID = Field(
-        ...,
-        description="Unique memory identifier",
-        example="123e4567-e89b-12d3-a456-426614174000",
+        ..., description="Unique memory identifier", json_schema_extra={"example": "123e4567-e89b-12d3-a456-426614174000"}
     )
-    memory: str = Field(
-        ...,
-        min_length=1,
-        description="Stored memory text",
-        example="Met Alice at the park",
+    memory: Annotated[str, constr(min_length=1)] = Field(
+        ..., description="Stored memory text", json_schema_extra={"example": "Met Alice at the park"}
     )
     timestamp: datetime = Field(
-        ...,
-        description="ISO-8601 timestamp when the memory was saved",
-        example="2024-01-01T12:00:00Z",
+        ..., description="ISO-8601 timestamp when the memory was saved", json_schema_extra={"example": "2024-01-01T12:00:00Z"}
     )
     sentiment: SentimentEnum = Field(
-        ...,
-        description="Sentiment label associated with the memory",
-        example="positive",
+        ..., description="Sentiment label associated with the memory", json_schema_extra={"example": "positive"}
     )
-    entities: List[str] = Field(
-        ...,
-        min_length=1,
-        description="Recognized entities in the memory",
-        example=["alice"],
+    entities: Annotated[List[str], conlist(str, min_length=1)] = Field(
+        ..., description="Recognized entities in the memory", json_schema_extra={"example": ["alice"]}
     )
-    tags: List[str] = Field(
-        ...,
-        min_length=1,
-        description="Tags associated with the memory",
-        example=["friends"],
+    tags: Annotated[List[str], conlist(str, min_length=1)] = Field(
+        ..., description="Tags associated with the memory", json_schema_extra={"example": ["friends"]}
     )
     score: float = Field(
-        ...,
-        ge=0,
-        le=1,
-        description="Similarity score for the recalled memory",
-        example=0.85,
+        ..., ge=0, le=1, description="Similarity score for the recalled memory", json_schema_extra={"example": 0.85}
     )
 
 
 class SaveMemoryResponse(BaseModel):
-    message: str = Field(
-        ...,
-        min_length=1,
-        description="Result of the save operation",
-        example="Memory saved successfully",
+    message: Annotated[str, constr(min_length=1)] = Field(
+        ..., description="Result of the save operation", json_schema_extra={"example": "Memory saved successfully"}
     )
 
 
 class RecallMemoryResponse(BaseModel):
-    results: List[MemoryRecord] = Field(
+    results: list[MemoryRecord] = Field(
         ..., description="List of recalled memories matching the query"
     )
 
 
 class ManageMemoryResponse(BaseModel):
-    message: str = Field(
-        ...,
-        min_length=1,
-        description="Result of the management operation",
-        example="Memory Bank 'personal_bank' created successfully",
+    message: Annotated[str, constr(min_length=1)] = Field(
+        ..., description="Result of the management operation", json_schema_extra={"example": "Memory Bank 'personal_bank' created successfully"}
     )
 
 
 class EmbeddingRequest(BaseModel):
-    text: str = Field(
-        ...,
-        min_length=1,
-        description="Text for which to generate an embedding.",
-        example="Hello world",
+    text: Annotated[str, constr(min_length=1)] = Field(
+        ..., description="Text for which to generate an embedding.", json_schema_extra={"example": "Hello world"}
     )
 
 
 class EmbeddingResponse(BaseModel):
-    embedding: List[float] = Field(
-        ..., min_length=1, description="Embedding vector", example=[0.1, 0.2]
+    embedding: Annotated[List[float], conlist(float, min_length=1)] = Field(
+        ..., description="Embedding vector", json_schema_extra={"example": [0.1, 0.2]}
     )
 
 
 class ErrorResponse(BaseModel):
-    status: int = Field(
-        ...,
-        ge=100,
-        le=599,
-        description="HTTP status code of the error",
-        example=400,
+    status: Annotated[int, conint(ge=100, le=599)] = Field(
+        ..., description="HTTP status code of the error", json_schema_extra={"example": 400}
     )
-    code: str = Field(
-        ...,
-        min_length=1,
-        pattern=r"^[a-z_]+$",
-        description="Application-specific error code",
-        example="invalid_api_key",
+    code: Annotated[str, constr(min_length=1, pattern=r"^[a-z_]+$")] = Field(
+        ..., description="Application-specific error code", json_schema_extra={"example": "invalid_api_key"}
     )
-    detail: str = Field(
-        ...,
-        min_length=1,
-        description="Explanation of the error",
-        example="Invalid API key",
+    detail: Annotated[str, constr(min_length=1)] = Field(
+        ..., description="Explanation of the error", json_schema_extra={"example": "Invalid API key"}
     )

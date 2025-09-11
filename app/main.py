@@ -1,7 +1,8 @@
 # main.py
 import os
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import JSONResponse
 from fastapi_limiter import FastAPILimiter
 import redis.asyncio as redis
 
@@ -26,12 +27,15 @@ app = FastAPI(
     title="AI Memory API",
     version="0.1.0",
     description="A FastAPI application that allows users to save memories ...",
-    root_path=os.getenv("ROOT_PATH", ""),
-    servers=[
-        {"url": os.getenv("BASE_URL", ""), "description": "Base API server"}
-    ],
-    openapi_version="3.1.0",
     openapi_tags=tags_metadata,
+    root_path=os.getenv("ROOT_PATH", ""),
+    root_path_in_servers=False,
+    servers=[
+        {
+            "url": f"{os.getenv('BASE_URL', '')}{os.getenv('ROOT_PATH', '')}",
+            "description": "Base API server",
+        }
+    ]
 )
 
 
@@ -74,6 +78,14 @@ def custom_openapi() -> dict:
         routes=app.routes,
         tags=tags_metadata,
     )
+    security_scheme = (
+        openapi_schema.get("components", {})
+        .get("securitySchemes", {})
+        .get("HTTPBearer", {})
+    )
+    if security_scheme:
+        security_scheme["description"] = "Provide the API key as a Bearer token"
+        security_scheme["bearerFormat"] = "API Key"
     openapi_schema.setdefault("components", {})
     openapi_schema["components"].setdefault("headers", {})
     openapi_schema["components"]["headers"].update(
@@ -92,8 +104,16 @@ def custom_openapi() -> dict:
             },
         }
     )
+    openapi_schema["openapi"] = "3.1.0"
     app.openapi_schema = openapi_schema
     return app.openapi_schema
 
 
 app.openapi = custom_openapi
+
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    if isinstance(exc.detail, dict):
+        return JSONResponse(status_code=exc.status_code, content=exc.detail)
+    return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
