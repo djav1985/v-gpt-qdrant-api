@@ -38,7 +38,7 @@ async def lifespan(app: FastAPI):
     except ValueError as exc:
         raise RuntimeError("DIM must be an integer") from exc
     app.state.dim = dim
-    await initialize_text_embedding()
+    initialize_text_embedding()
     yield
 
 

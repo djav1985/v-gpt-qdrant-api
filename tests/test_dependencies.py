@@ -21,12 +21,11 @@ def test_get_instance_pre_init_raises():
         dependencies.SingletonTextEmbedding.get_instance()
 
 
-@pytest.mark.asyncio
-async def test_get_instance_after_initialize(monkeypatch):
+def test_get_instance_after_initialize(monkeypatch):
     monkeypatch.setattr(
         dependencies, "TextEmbedding", lambda *args, **kwargs: DummyEmbed()
     )
-    await dependencies.initialize_text_embedding()
+    dependencies.initialize_text_embedding()
     instance = dependencies.SingletonTextEmbedding.get_instance()
     assert isinstance(instance, DummyEmbed)
 
@@ -45,8 +44,10 @@ async def test_create_qdrant_client_closes(monkeypatch):
     monkeypatch.setattr(
         dependencies, "AsyncQdrantClient", lambda *args, **kwargs: dummy
     )
-    async with dependencies.create_qdrant_client() as client:
-        assert client is dummy
+    gen = dependencies.create_qdrant_client()
+    client = await gen.__anext__()
+    assert client is dummy
+    await gen.aclose()
     assert dummy.closed
 
 
