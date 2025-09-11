@@ -3,8 +3,6 @@ import os
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
-from fastapi_limiter import FastAPILimiter
-import redis.asyncio as redis
 
 from dependencies import initialize_text_embedding
 from routes.save_memory import router as save_memory_router  # noqa: E402
@@ -41,17 +39,12 @@ app = FastAPI(
 
 @app.on_event("startup")
 async def startup_event() -> None:
-    required_env_vars = ["API_KEY", "DIM", "QDRANT_HOST", "REDIS_URL"]
+    required_env_vars = ["API_KEY", "DIM", "QDRANT_HOST"]
     missing = [v for v in required_env_vars if not os.getenv(v)]
     if missing:
         raise RuntimeError(
             f"Missing required environment variables: {', '.join(missing)}"
         )
-    redis_url = os.getenv("REDIS_URL")
-    redis_client = redis.from_url(
-        redis_url, encoding="utf-8", decode_responses=True
-    )
-    await FastAPILimiter.init(redis_client)
     await initialize_text_embedding()
 
 app.include_router(save_memory_router)
@@ -86,24 +79,6 @@ def custom_openapi() -> dict:
     if security_scheme:
         security_scheme["description"] = "Provide the API key as a Bearer token"
         security_scheme["bearerFormat"] = "API Key"
-    openapi_schema.setdefault("components", {})
-    openapi_schema["components"].setdefault("headers", {})
-    openapi_schema["components"]["headers"].update(
-        {
-            "X-RateLimit-Limit": {
-                "description": "Maximum requests allowed in a time window.",
-                "schema": {"type": "integer", "example": 5},
-            },
-            "X-RateLimit-Remaining": {
-                "description": "Remaining requests in the current window.",
-                "schema": {"type": "integer", "example": 4},
-            },
-            "X-RateLimit-Reset": {
-                "description": "UTC epoch time when the rate limit resets.",
-                "schema": {"type": "integer", "example": 1700000000},
-            },
-        }
-    )
     openapi_schema["openapi"] = "3.1.0"
     app.openapi_schema = openapi_schema
     return app.openapi_schema

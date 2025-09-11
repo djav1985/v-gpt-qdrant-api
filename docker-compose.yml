@@ -6,7 +6,6 @@ services:
         restart: always
         depends_on:
             - qdrant
-            - redis
         ports:
             - "8060:8060"
         environment:
@@ -15,7 +14,6 @@ services:
             ROOT_PATH: /memory
             QDRANT_API_KEY:
             #API_KEY: Optional API key to connect to api
-            REDIS_URL: redis://redis:6379/0
             WORKERS: 1 #uvicorn workers 1 should be enough for personal use
             UVICORN_CONCURRENCY: 64 #this controls the mac connections. Anything over the API_concurrancy value is put in query pool. Anything over this number is rejected.
             LOCAL_MODEL: "nomic-ai/nomic-embed-text-v1.5" #"BAAI/bge-small-en-v1.5"
@@ -34,11 +32,6 @@ services:
         volumes:
             - qdrant-data:/qdrant/storage
             - qdrant-config:/qdrant/config/
-
-    redis:
-        image: redis:7-alpine
-        container_name: redis
-        restart: always
 
 volumes:
     embedding-model:

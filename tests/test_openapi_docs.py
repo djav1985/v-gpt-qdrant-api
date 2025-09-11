@@ -17,16 +17,6 @@ def test_openapi_includes_error_response_and_examples(monkeypatch):
     actions = {ex["action"] for ex in examples}
     assert {"create", "delete", "forget"} <= actions
 
-    headers = openapi["components"]["headers"]
-    assert "X-RateLimit-Limit" in headers
-
-    save_responses = openapi["paths"]["/save_memory"]["post"]["responses"]
-    assert (
-        save_responses["200"]["headers"]["X-RateLimit-Limit"]["$ref"]
-        .split("/")[-1]
-        == "X-RateLimit-Limit"
-    )
-
     embed_responses = openapi["paths"]["/embeddings"]["post"]["responses"]
     assert (
         embed_responses["403"]["content"]["application/json"]["schema"]["$ref"]
