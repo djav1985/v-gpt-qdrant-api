@@ -46,11 +46,21 @@ async def manage_memories(
         ManageMemoryResponse: Result of the management action.
     """
     if params.action is ActionEnum.CREATE:
+        dim = get_settings().DIM
+        if dim is None:
+            raise HTTPException(
+                status_code=500,
+                detail=ErrorResponse(
+                    status=500,
+                    code="missing_dim",
+                    detail="Embedding dimension (DIM) is not set in environment/config.",
+                ).model_dump(),
+            )
         await asyncio.gather(
             qdrant.create_collection(
                 collection_name=params.memory_bank,
                 vectors_config=VectorParams(
-                    size=get_settings().DIM,
+                    size=dim,
                     distance=Distance.COSINE,
                 ),
             ),
