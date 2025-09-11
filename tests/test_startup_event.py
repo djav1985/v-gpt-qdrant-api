@@ -7,6 +7,9 @@ def test_lifespan_missing_env_vars(monkeypatch):
     async def run():
         for var in ["API_KEY", "DIM", "QDRANT_HOST"]:
             monkeypatch.delenv(var, raising=False)
+        from app.config import get_settings
+
+        get_settings.cache_clear()
         with pytest.raises(RuntimeError) as exc:
             async with main.lifespan(main.app):
                 pass
@@ -22,6 +25,9 @@ def test_lifespan_calls_initialize(monkeypatch):
         for var in ["API_KEY", "QDRANT_HOST"]:
             monkeypatch.setenv(var, "value")
         monkeypatch.setenv("DIM", "10")
+        from app.config import get_settings
+
+        get_settings.cache_clear()
 
         init_called = False
 
@@ -45,6 +51,9 @@ def test_lifespan_invalid_dim(monkeypatch):
         monkeypatch.setenv("API_KEY", "value")
         monkeypatch.setenv("QDRANT_HOST", "value")
         monkeypatch.setenv("DIM", "notint")
+        from app.config import get_settings
+
+        get_settings.cache_clear()
         with pytest.raises(RuntimeError) as exc:
             async with main.lifespan(main.app):
                 pass

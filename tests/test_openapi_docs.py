@@ -5,6 +5,9 @@ from app import main
 
 def test_openapi_includes_error_response_and_examples(monkeypatch):
     monkeypatch.setenv("EMBEDDING_ENDPOINT", "1")
+    from app.config import get_settings
+
+    get_settings.cache_clear()
     importlib.reload(main)
     openapi = main.app.openapi()
 

@@ -2,6 +2,7 @@ import pytest
 from fastapi import HTTPException
 
 from app import dependencies
+from app.config import get_settings
 
 
 class DummyEmbed:
@@ -49,6 +50,8 @@ def test_create_qdrant_client_closes(monkeypatch):
         monkeypatch.setattr(
             dependencies, "AsyncQdrantClient", lambda *args, **kwargs: dummy
         )
+        monkeypatch.setenv("QDRANT_HOST", "http://example")
+        get_settings.cache_clear()
         gen = dependencies.create_qdrant_client()
         client = await gen.__anext__()
         assert client is dummy
@@ -62,16 +65,19 @@ def test_create_qdrant_client_closes(monkeypatch):
 
 def test_get_api_key_valid(monkeypatch):
     monkeypatch.setenv("API_KEY", "secret")
+    get_settings.cache_clear()
     assert dependencies.get_api_key("secret") == "secret"
 
 
 def test_get_api_key_invalid(monkeypatch):
     monkeypatch.setenv("API_KEY", "secret")
+    get_settings.cache_clear()
     with pytest.raises(HTTPException):
         dependencies.get_api_key("wrong")
 
 
 def test_get_api_key_missing(monkeypatch):
     monkeypatch.setenv("API_KEY", "secret")
+    get_settings.cache_clear()
     with pytest.raises(HTTPException):
         dependencies.get_api_key(None)

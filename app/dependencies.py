@@ -1,5 +1,4 @@
 # dependencies.py
-import os
 import asyncio
 from typing import AsyncGenerator, Optional
 
@@ -8,6 +7,7 @@ from fastapi.security import APIKeyHeader
 from fastembed import TextEmbedding
 from qdrant_client import AsyncQdrantClient
 
+from app.config import get_settings
 from app.models import ErrorResponse
 
 
@@ -33,9 +33,10 @@ class SingletonTextEmbedding:
     async def initialize(cls) -> None:
         """Initializes the singleton instance using environment configuration."""
         if cls._instance is None:
+            settings = get_settings()
             cls._instance = await asyncio.to_thread(
                 TextEmbedding,
-                model_name=os.getenv("LOCAL_MODEL"),
+                model_name=settings.LOCAL_MODEL,
                 cache_dir="/app/models",
                 parallel="none",
                 threads=3,
@@ -56,9 +57,10 @@ def get_embeddings_model() -> TextEmbedding:
 
 async def create_qdrant_client() -> AsyncGenerator[AsyncQdrantClient, None]:
     """FastAPI dependency that yields an async Qdrant client and closes it afterwards."""
+    settings = get_settings()
     client = AsyncQdrantClient(
-        url=os.getenv("QDRANT_HOST", "http://qdrant:6333"),
-        api_key=os.getenv("QDRANT_API_KEY"),
+        url=settings.QDRANT_HOST or "http://qdrant:6333",
+        api_key=settings.QDRANT_API_KEY,
     )
     try:
         yield client
@@ -73,7 +75,7 @@ def get_api_key(
     api_key: Optional[str] = Security(api_key_scheme),
 ) -> Optional[str]:
     """Validate an API key from the request header."""
-    expected = os.getenv("API_KEY")
+    expected = get_settings().API_KEY
     if expected and api_key != expected:
         raise HTTPException(
             status_code=403,

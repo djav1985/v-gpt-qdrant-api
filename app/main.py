@@ -1,11 +1,10 @@
-# main.py
-import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 
 from app.dependencies import initialize_text_embedding
+from app.config import get_settings
 from app.routes.save_memory import router as save_memory_router  # noqa: E402
 from app.routes.recall_memory import router as recall_memory_router  # noqa: E402
 from app.routes.manage_memories import (  # noqa: E402
@@ -27,31 +26,39 @@ tags_metadata = [
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    required_env_vars = ["API_KEY", "DIM", "QDRANT_HOST"]
-    missing = [v for v in required_env_vars if not os.getenv(v)]
+    from pydantic import ValidationError
+
+    try:
+        settings = get_settings()
+    except ValidationError as exc:
+        for err in exc.errors():
+            if err["loc"] == ("DIM",):
+                raise RuntimeError("DIM must be an integer") from exc
+        raise RuntimeError(str(exc)) from exc
+
+    required = ["API_KEY", "DIM", "QDRANT_HOST"]
+    missing = [name for name in required if getattr(settings, name) in (None, "")]
     if missing:
         raise RuntimeError(
             f"Missing required environment variables: {', '.join(missing)}"
         )
-    try:
-        dim = int(os.getenv("DIM", ""))
-    except ValueError as exc:
-        raise RuntimeError("DIM must be an integer") from exc
-    app.state.dim = dim
+    app.state.dim = settings.DIM
+    app.state.settings = settings
     await initialize_text_embedding()
     yield
 
 
+_settings = get_settings()
 app = FastAPI(
     title="AI Memory API",
     version="0.1.0",
     description="A FastAPI application that allows users to save memories ...",
     openapi_tags=tags_metadata,
-    root_path=os.getenv("ROOT_PATH", ""),
+    root_path=_settings.ROOT_PATH,
     root_path_in_servers=False,
     servers=[
         {
-            "url": f"{os.getenv('BASE_URL', '')}{os.getenv('ROOT_PATH', '')}",
+            "url": f"{_settings.BASE_URL}{_settings.ROOT_PATH}",
             "description": "Base API server",
         }
     ],
@@ -62,7 +69,7 @@ app.include_router(save_memory_router)
 app.include_router(recall_memory_router)
 app.include_router(manage_memories_router)
 
-if os.getenv("EMBEDDING_ENDPOINT"):
+if _settings.EMBEDDING_ENDPOINT:
     from app.routes.embeddings import router as embeddings_router
 
     app.include_router(embeddings_router)

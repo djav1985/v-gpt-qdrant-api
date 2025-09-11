@@ -1,9 +1,9 @@
 import asyncio
-import os
 from fastapi import APIRouter, Depends, HTTPException
 from qdrant_client import AsyncQdrantClient, models
 from qdrant_client.models import Distance, VectorParams
 
+from app.config import get_settings
 from app.models import ActionEnum, ManageMemoryParams, ManageMemoryResponse, ErrorResponse
 from app.dependencies import create_qdrant_client, get_api_key
 from app.routes.common import ERROR_RESPONSES
@@ -41,7 +41,7 @@ async def manage_memories(
             qdrant.create_collection(
                 collection_name=params.memory_bank,
                 vectors_config=VectorParams(
-                    size=int(os.getenv("DIM")),
+                    size=get_settings().DIM,
                     distance=Distance.COSINE,
                 ),
             ),

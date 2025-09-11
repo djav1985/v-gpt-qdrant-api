@@ -5,6 +5,7 @@ from fastapi.testclient import TestClient
 from app.routes.embeddings import router as embeddings_router
 from app.dependencies import get_embeddings_model
 from app.models import EmbeddingResponse
+from app.config import get_settings
 
 
 class DummyModel:
@@ -13,6 +14,7 @@ class DummyModel:
 
 
 def create_client():
+    get_settings.cache_clear()
     app = FastAPI()
     app.include_router(embeddings_router)
     app.dependency_overrides[get_embeddings_model] = lambda: DummyModel()
