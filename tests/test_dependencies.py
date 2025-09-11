@@ -1,0 +1,51 @@
+import pytest
+from fastapi import HTTPException
+from fastapi.security import HTTPAuthorizationCredentials
+import dependencies
+
+
+class DummyEmbed:
+    def embed(self, text: str):
+        return [0.1]
+
+
+@pytest.fixture(autouse=True)
+def reset_singleton():
+    dependencies.SingletonTextEmbedding._instance = None
+    yield
+    dependencies.SingletonTextEmbedding._instance = None
+
+
+@pytest.mark.asyncio
+async def test_get_instance_pre_init_raises():
+    with pytest.raises(RuntimeError):
+        dependencies.SingletonTextEmbedding.get_instance()
+
+
+@pytest.mark.asyncio
+async def test_get_instance_after_initialize(monkeypatch):
+    monkeypatch.setattr(
+        dependencies, "TextEmbedding", lambda *args, **kwargs: DummyEmbed()
+    )
+    await dependencies.initialize_text_embedding()
+    instance = dependencies.SingletonTextEmbedding.get_instance()
+    assert isinstance(instance, DummyEmbed)
+
+
+def test_get_api_key_valid(monkeypatch):
+    monkeypatch.setenv("MEMORIES_API_KEY", "secret")
+    creds = HTTPAuthorizationCredentials(scheme="Bearer", credentials="secret")
+    assert dependencies.get_api_key(creds) == "secret"
+
+
+def test_get_api_key_invalid(monkeypatch):
+    monkeypatch.setenv("MEMORIES_API_KEY", "secret")
+    creds = HTTPAuthorizationCredentials(scheme="Bearer", credentials="wrong")
+    with pytest.raises(HTTPException):
+        dependencies.get_api_key(creds)
+
+
+def test_get_api_key_missing(monkeypatch):
+    monkeypatch.setenv("MEMORIES_API_KEY", "secret")
+    with pytest.raises(HTTPException):
+        dependencies.get_api_key(None)
