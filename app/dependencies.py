@@ -2,15 +2,16 @@
 import os
 from typing import Optional
 
-from fastapi import HTTPException, Depends
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi import HTTPException, Security
+from fastapi.security import APIKeyHeader
 from fastembed import TextEmbedding
 from qdrant_client import AsyncQdrantClient
 
 
 class SingletonTextEmbedding:
     """
-    Singleton class to manage a single instance of the FastEmbed TextEmbedding model.
+    Singleton class to manage a single instance of the FastEmbed
+    TextEmbedding model.
     """
 
     _instance: Optional[TextEmbedding] = None
@@ -18,7 +19,8 @@ class SingletonTextEmbedding:
     @classmethod
     def get_instance(cls) -> TextEmbedding:
         """
-        Returns the singleton instance of TextEmbedding, or raises an error if not initialized.
+        Returns the singleton instance of TextEmbedding or raises an error
+        if not initialized.
         """
         if cls._instance is None:
             raise RuntimeError("TextEmbedding model not initialized")
@@ -40,7 +42,7 @@ class SingletonTextEmbedding:
 
 async def initialize_text_embedding() -> None:
     """
-    Triggers initialization of the TextEmbedding singleton at application startup.
+    Initialize the TextEmbedding singleton at application startup.
     """
     await SingletonTextEmbedding.initialize()
 
@@ -62,18 +64,16 @@ async def create_qdrant_client() -> AsyncQdrantClient:
     )
 
 
-def get_api_key(
-    credentials: Optional[HTTPAuthorizationCredentials] = Depends(
-        HTTPBearer(auto_error=False)
-    ),
-) -> Optional[str]:
-    """
-    Validates an API key against the value in the environment.
+api_key_scheme = APIKeyHeader(name="X-API-Key", auto_error=False)
 
-    Raises:
-        HTTPException: If the provided key does not match the expected key.
-    """
-    expected = os.getenv("MEMORIES_API_KEY")
-    if expected and (not credentials or credentials.credentials != expected):
-        raise HTTPException(status_code=403, detail="Invalid or missing API key")
-    return credentials.credentials if credentials else None
+
+def get_api_key(
+    api_key: Optional[str] = Security(api_key_scheme),
+) -> Optional[str]:
+    """Validate an API key from the request header."""
+    expected = os.getenv("API_KEY")
+    if expected and api_key != expected:
+        raise HTTPException(
+            status_code=403, detail="Invalid or missing API key"
+        )
+    return api_key

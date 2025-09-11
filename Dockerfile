@@ -18,10 +18,10 @@ WORKDIR /app
 COPY --from=builder /app/venv /app/venv
 COPY ./app /app
 
-EXPOSE 8888
+EXPOSE 8060
 
 ENV WORKERS=2
 ENV UVICORN_CONCURRENCY=32
 ENV PATH="/app/venv/bin:$PATH"
 
-CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port 8888 --workers $WORKERS --limit-concurrency $UVICORN_CONCURRENCY"]
+CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port 8060 --workers $WORKERS --limit-concurrency $UVICORN_CONCURRENCY"]

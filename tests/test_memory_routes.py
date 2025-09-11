@@ -8,6 +8,7 @@ from fastapi.testclient import TestClient
 
 from routes.memory import memory_router
 from dependencies import create_qdrant_client, get_embeddings_model
+from qdrant_client import models
 
 
 class DummyModel:
@@ -147,6 +148,9 @@ def test_manage_memories_forget(monkeypatch):
     )
     assert resp.status_code == 200
     mock_qdrant.delete.assert_awaited_once()
+    _, kwargs = mock_qdrant.delete.await_args
+    assert isinstance(kwargs["points_selector"], models.PointIdsList)
+    assert kwargs["points_selector"].points == [uid]
 
 
 def test_manage_memories_forget_missing_uuid(monkeypatch):
