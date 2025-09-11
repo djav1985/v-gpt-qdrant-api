@@ -207,6 +207,15 @@ This command will start the services defined in the docker-compose.yml file in d
 
 The OpenAPI specification for the API endpoints is available at `http://BASE_URL:8060/openapi.json`. Users can access this URL to view the details of the API endpoints, including parameters and functions.
 
+### Running Tests
+
+Install test dependencies and run the suite:
+
+```sh
+pip install -r requirements-test.txt
+pytest
+```
+
 ---
 
 ## 🛠 Project Roadmap

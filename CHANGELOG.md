@@ -9,6 +9,7 @@ See [standard-version](https://github.com/conventional-changelog/standard-versio
 - protect TextEmbedding initialization with an asyncio lock
 - pin pydantic and pydantic-settings to exact versions
 - switch tests to pytest's native async support
+- declare pytest-asyncio as a test dependency
 - add docstrings for memory and embedding route handlers
 - add BaseSettings configuration and forbid extra request fields
 - add unit tests for startup events, dependencies, API key validation, memory routes, root endpoint, and models
