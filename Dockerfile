@@ -14,7 +14,9 @@ RUN --mount=type=cache,target=/opt/hostedtoolcache/pip \
     python -m venv /app/venv && \
     . /app/venv/bin/activate && \
     PIP_CACHE_DIR=/opt/hostedtoolcache/${GITEA_REPOSITORY}-${GITEA_REF_NAME}/pip \
+    pip install --no-index --find-links=$PIP_CACHE_DIR -r requirements.txt || \
     pip install -r requirements.txt
+
 
 FROM python:3.10-slim
 
