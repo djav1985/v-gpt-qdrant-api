@@ -1,4 +1,5 @@
 # models.py
+import os
 from enum import Enum
 from typing import List, Optional, Union
 from pydantic import BaseModel, Field, field_validator
@@ -81,16 +82,50 @@ class ManageMemoryParams(BaseModel):
 
     memory_bank: str = Field(..., description="The name of the memory bank to manage.")
     action: ActionEnum = Field(
-        ...,
-        description="Action to perform on the memory bank: create, delete, or forget.",
+        ..., description="Action to perform on the memory bank: create, delete, or forget."
     )
     uuid: Optional[str] = Field(
-        None,
-        description="The UUID of the memory to be forgotten (required for forget).",
+        None, description="The UUID of the memory to be forgotten (required for forget)."
     )
 
     @field_validator("memory_bank")
     def validate_memory_bank(cls, value: str) -> str:
         if not is_valid_identifier(value):
             raise ValueError("Invalid memory bank name.")
+        return value
+
+
+class EmbeddingParams(BaseModel):
+    """
+    Parameters for generating embeddings.
+    """
+
+    input: Union[str, List[str]] = Field(
+        ..., description="The input text or list of texts to embed."
+    )
+    model: str = Field(
+        default=os.getenv("LOCAL_MODEL"),
+        description="The name of the embedding model (must match LOCAL_MODEL).",
+    )
+    user: Optional[str] = Field(
+        default="unassigned",
+        description="Identifier for the user requesting the embedding.",
+    )
+    encoding_format: Optional[str] = Field(
+        default="float", description="Format of the encoding output."
+    )
+
+    @field_validator("input", mode="before")
+    def flatten_input(cls, v):
+        if isinstance(v, list):
+            return " ".join(v)
+        return v
+
+    @field_validator("model")
+    def validate_model(cls, value: str) -> str:
+        expected = os.getenv("LOCAL_MODEL")
+        if expected and value != expected:
+            raise ValueError(
+                f"Model does not match environment variable LOCAL_MODEL ({expected})"
+            )
         return value

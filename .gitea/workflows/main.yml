@@ -5,7 +5,7 @@ on:
     branches:
       - "main"
       - "dev"
-      - "phonetap"
+      
   release:
     types: [published]
 
@@ -35,7 +35,8 @@ jobs:
         uses: docker/metadata-action@v5
         id: meta
         with:
-          images: vontainment/v-gpt-qdrant-api
+          images: vontainment/v-gpt-gdrant-api
+
           flavor: latest=false
           tags: |
             type=raw,value=main,enable=${{ gitea.ref == 'refs/heads/main' }}
