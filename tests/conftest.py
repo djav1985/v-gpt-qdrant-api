@@ -2,8 +2,8 @@ import sys
 from pathlib import Path
 import types
 
-# Ensure modules can be imported as if running from the app directory
-sys.path.append(str(Path(__file__).resolve().parent.parent / "app"))
+# Ensure project root is importable
+sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 # Stub fastembed to avoid heavy dependency during tests
 fastembed_stub = types.ModuleType("fastembed")

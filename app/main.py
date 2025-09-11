@@ -5,13 +5,13 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 
-from dependencies import initialize_text_embedding
-from routes.save_memory import router as save_memory_router  # noqa: E402
-from routes.recall_memory import router as recall_memory_router  # noqa: E402
-from routes.manage_memories import (  # noqa: E402
+from app.dependencies import initialize_text_embedding
+from app.routes.save_memory import router as save_memory_router  # noqa: E402
+from app.routes.recall_memory import router as recall_memory_router  # noqa: E402
+from app.routes.manage_memories import (  # noqa: E402
     router as manage_memories_router,
 )
-from routes.root import root_router  # noqa: E402
+from app.routes.root import root_router  # noqa: E402
 
 tags_metadata = [
     {
@@ -38,7 +38,7 @@ async def lifespan(app: FastAPI):
     except ValueError as exc:
         raise RuntimeError("DIM must be an integer") from exc
     app.state.dim = dim
-    initialize_text_embedding()
+    await initialize_text_embedding()
     yield
 
 
@@ -58,17 +58,12 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-
-async def startup_event() -> None:
-    async with lifespan(app):
-        pass
-
 app.include_router(save_memory_router)
 app.include_router(recall_memory_router)
 app.include_router(manage_memories_router)
 
 if os.getenv("EMBEDDING_ENDPOINT"):
-    from routes.embeddings import router as embeddings_router
+    from app.routes.embeddings import router as embeddings_router
 
     app.include_router(embeddings_router)
 
@@ -87,16 +82,13 @@ def custom_openapi() -> dict:
         routes=app.routes,
         tags=tags_metadata,
     )
-    security_scheme = (
-        openapi_schema.get("components", {})
-        .get("securitySchemes", {})
-        .get("HTTPBearer", {})
-    )
-    if security_scheme:
-        security_scheme["description"] = (
-            "Provide the API key as a Bearer token"
-        )
-        security_scheme["bearerFormat"] = "API Key"
+    openapi_schema.setdefault("components", {}).setdefault(
+        "securitySchemes", {}
+    )["ApiKeyAuth"] = {
+        "type": "apiKey",
+        "name": "X-API-Key",
+        "in": "header",
+    }
     openapi_schema["openapi"] = "3.1.0"
     app.openapi_schema = openapi_schema
     return app.openapi_schema

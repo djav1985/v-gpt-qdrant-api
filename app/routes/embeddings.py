@@ -1,19 +1,11 @@
 import asyncio
 from fastapi import APIRouter, Depends
 
-from models import EmbeddingRequest, EmbeddingResponse, ErrorResponse
-from dependencies import get_embeddings_model, get_api_key
+from app.models import EmbeddingRequest, EmbeddingResponse
+from app.dependencies import get_embeddings_model, get_api_key
+from app.routes.common import ERROR_RESPONSES
 
 router = APIRouter()
-
-ERROR_RESPONSES = {
-    400: {"model": ErrorResponse, "description": "Bad Request"},
-    401: {"model": ErrorResponse, "description": "Unauthorized"},
-    403: {"model": ErrorResponse, "description": "Forbidden"},
-    404: {"model": ErrorResponse, "description": "Not Found"},
-    422: {"model": ErrorResponse, "description": "Validation Error"},
-    500: {"model": ErrorResponse, "description": "Internal Server Error"},
-}
 
 
 @router.post(

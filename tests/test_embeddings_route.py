@@ -2,9 +2,9 @@ import numpy as np
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from routes.embeddings import router as embeddings_router
-from dependencies import get_embeddings_model
-from models import EmbeddingResponse
+from app.routes.embeddings import router as embeddings_router
+from app.dependencies import get_embeddings_model
+from app.models import EmbeddingResponse
 
 
 class DummyModel:
@@ -16,7 +16,7 @@ def create_client():
     app = FastAPI()
     app.include_router(embeddings_router)
     app.dependency_overrides[get_embeddings_model] = lambda: DummyModel()
-    import routes.embeddings as emb_module
+    import app.routes.embeddings as emb_module
     emb_module.get_embeddings_model = lambda: DummyModel()
     return TestClient(app)
 

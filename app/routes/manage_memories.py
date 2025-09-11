@@ -1,27 +1,14 @@
 import asyncio
 import os
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from qdrant_client import AsyncQdrantClient, models
 from qdrant_client.models import Distance, VectorParams
 
-from models import (
-    ActionEnum,
-    ManageMemoryParams,
-    ManageMemoryResponse,
-    ErrorResponse,
-)
-from dependencies import create_qdrant_client, get_api_key
+from app.models import ActionEnum, ManageMemoryParams, ManageMemoryResponse, ErrorResponse
+from app.dependencies import create_qdrant_client, get_api_key
+from app.routes.common import ERROR_RESPONSES
 
 router = APIRouter()
-
-ERROR_RESPONSES = {
-    400: {"model": ErrorResponse, "description": "Bad Request"},
-    401: {"model": ErrorResponse, "description": "Unauthorized"},
-    403: {"model": ErrorResponse, "description": "Forbidden"},
-    404: {"model": ErrorResponse, "description": "Not Found"},
-    422: {"model": ErrorResponse, "description": "Validation Error"},
-    500: {"model": ErrorResponse, "description": "Internal Server Error"},
-}
 
 
 @router.post(
@@ -70,13 +57,12 @@ async def manage_memories(
         return ManageMemoryResponse(
             message=f"Memory Bank '{params.memory_bank}' created successfully"
         )
-
-    if params.action is ActionEnum.DELETE:
+    elif params.action is ActionEnum.DELETE:
         await qdrant.delete_collection(collection_name=params.memory_bank)
         return ManageMemoryResponse(
             message=f"Memory Bank '{params.memory_bank}' has been deleted."
         )
-    if params.action is ActionEnum.FORGET:
+    elif params.action is ActionEnum.FORGET:
         await qdrant.delete(
             collection_name=params.memory_bank,
             points_selector=models.PointIdsList(points=[str(params.uuid)]),
@@ -85,4 +71,13 @@ async def manage_memories(
             message=(
                 f"Memory with UUID '{params.uuid}' has been forgotten from Memory Bank '{params.memory_bank}'."
             )
+        )
+    else:
+        raise HTTPException(
+            status_code=400,
+            detail=ErrorResponse(
+                status=400,
+                code="invalid_action",
+                detail=f"Unsupported action: {params.action}",
+            ).model_dump(),
         )

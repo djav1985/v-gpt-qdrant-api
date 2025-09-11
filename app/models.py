@@ -1,21 +1,20 @@
 # models.py
 from enum import Enum
-from typing import List, Optional, Union
+from typing import Optional
 from uuid import UUID
 from datetime import datetime
 
-from pydantic import BaseModel, Field, ConfigDict, field_validator, model_validator, constr, conlist, conint
+from pydantic import (
+    BaseModel,
+    Field,
+    ConfigDict,
+    field_validator,
+    model_validator,
+    constr,
+    conlist,
+    conint,
+)
 from typing import Annotated
-
-# Type aliases for Pydantic v2 constraints
-MemoryBankStr = constr(min_length=1)
-MemoryBankPatternStr = constr(min_length=1, pattern=r"^[A-Za-z_][A-Za-z0-9_]*$")
-NonEmptyStr = constr(min_length=1)
-NonEmptyStrList = conlist(str, min_length=1)
-NonEmptyFloatList = conlist(float, min_length=1)
-TopKInt = conint(ge=1, le=100)
-StatusInt = conint(ge=100, le=599)
-ErrorCodeStr = constr(min_length=1, pattern=r"^[a-z_]+$")
 
 
 class ActionEnum(str, Enum):
@@ -50,15 +49,15 @@ class SaveParams(BaseModel):
     sentiment: SentimentEnum = Field(
         ..., description="The sentiment associated with the memory.", json_schema_extra={"example": "positive"}
     )
-    entities: Annotated[List[str], conlist(str, min_length=1)] = Field(
+    entities: Annotated[list[str], conlist(str, min_length=1)] = Field(
         ..., description="A list of entities identified in the memory.", json_schema_extra={"example": ["alice"]}
     )
-    tags: Annotated[List[str], conlist(str, min_length=1)] = Field(
+    tags: Annotated[list[str], conlist(str, min_length=1)] = Field(
         ..., description="A list of tags associated with the memory.", json_schema_extra={"example": ["friends"]}
     )
 
     @field_validator("entities", "tags", mode="before")
-    def split_str_values(cls, v: Union[str, List[str]]):
+    def split_str_values(cls, v: str | list[str]):
         if isinstance(v, str):
             return [item.strip() for item in v.split(",") if item.strip()]
         return v
@@ -89,8 +88,12 @@ class SearchParams(BaseModel):
     query: Annotated[str, constr(min_length=1)] = Field(
         ..., description="The search query used to retrieve similar memories.", json_schema_extra={"example": "Alice park meeting"}
     )
-    top_k: TopKInt = Field(
-        5, description="The number of most similar memories to return (1-100).", json_schema_extra={"example": 5}
+    top_k: int = Field(
+        5,
+        ge=1,
+        le=100,
+        description="The number of most similar memories to return (1-100).",
+        json_schema_extra={"example": 5},
     )
     entity: Optional[Annotated[str, constr(min_length=1)]] = Field(
         None, description="An entity to filter the search.", json_schema_extra={"example": "alice"}
@@ -175,10 +178,10 @@ class MemoryRecord(BaseModel):
     sentiment: SentimentEnum = Field(
         ..., description="Sentiment label associated with the memory", json_schema_extra={"example": "positive"}
     )
-    entities: Annotated[List[str], conlist(str, min_length=1)] = Field(
+    entities: Annotated[list[str], conlist(str, min_length=1)] = Field(
         ..., description="Recognized entities in the memory", json_schema_extra={"example": ["alice"]}
     )
-    tags: Annotated[List[str], conlist(str, min_length=1)] = Field(
+    tags: Annotated[list[str], conlist(str, min_length=1)] = Field(
         ..., description="Tags associated with the memory", json_schema_extra={"example": ["friends"]}
     )
     score: float = Field(
@@ -211,7 +214,7 @@ class EmbeddingRequest(BaseModel):
 
 
 class EmbeddingResponse(BaseModel):
-    embedding: Annotated[List[float], conlist(float, min_length=1)] = Field(
+    embedding: Annotated[list[float], conlist(float, min_length=1)] = Field(
         ..., description="Embedding vector", json_schema_extra={"example": [0.1, 0.2]}
     )
 

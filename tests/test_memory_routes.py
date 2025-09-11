@@ -7,11 +7,11 @@ from datetime import datetime, timezone
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from routes.save_memory import router as save_memory_router
-from routes.recall_memory import router as recall_memory_router
-from routes.manage_memories import router as manage_memories_router
-from dependencies import create_qdrant_client, get_embeddings_model
-from models import (
+from app.routes.save_memory import router as save_memory_router
+from app.routes.recall_memory import router as recall_memory_router
+from app.routes.manage_memories import router as manage_memories_router
+from app.dependencies import create_qdrant_client, get_embeddings_model
+from app.models import (
     SaveMemoryResponse,
     RecallMemoryResponse,
     ManageMemoryResponse,
@@ -44,8 +44,8 @@ def create_client(model_cls=DummyModel):
     app.dependency_overrides[create_qdrant_client] = override_qdrant
     app.dependency_overrides[get_embeddings_model] = lambda: model_cls()
 
-    import routes.save_memory as save_module
-    import routes.recall_memory as recall_module
+    import app.routes.save_memory as save_module
+    import app.routes.recall_memory as recall_module
     save_module.get_embeddings_model = lambda: model_cls()
     recall_module.get_embeddings_model = lambda: model_cls()
 

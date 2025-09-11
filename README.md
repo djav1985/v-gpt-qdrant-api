@@ -162,7 +162,7 @@ Ensure you have the following installed on your system:
 QDRANT_HOST: "http://qdrant:6333"  # Set Qdrant host URL
 BASE_URL: "http://memories-api/"  # Base URL for the API
 QDRANT_API_KEY: "your-qdrant-api-key"  # Environment variable for Qdrant API key (value should be provided)
-API_KEY: "your-optional-api-key"  # Optional API key for authentication
+API_KEY: "your-optional-api-key"  # Optional API key for authentication; clients send via X-API-Key header
 WORKERS: 1  # Number of uvicorn workers; 1 is sufficient for personal use
 UVICORN_CONCURRENCY: 64  # Max connections; excess requests are queued or rejected
 EMBEDDING_ENDPOINT: True  # Enable embedding endpoint

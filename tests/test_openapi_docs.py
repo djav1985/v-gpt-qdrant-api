@@ -1,5 +1,6 @@
 import importlib
-import main
+
+from app import main
 
 
 def test_openapi_includes_error_response_and_examples(monkeypatch):
@@ -9,6 +10,11 @@ def test_openapi_includes_error_response_and_examples(monkeypatch):
 
     assert openapi["openapi"] == "3.1.0"
     assert {t["name"] for t in openapi["tags"]} >= {"memory", "embedding"}
+
+    scheme = openapi["components"]["securitySchemes"]["ApiKeyAuth"]
+    assert scheme["type"] == "apiKey"
+    assert scheme["name"] == "X-API-Key"
+    assert scheme["in"] == "header"
 
     schemas = openapi["components"]["schemas"]
     assert "ErrorResponse" in schemas
