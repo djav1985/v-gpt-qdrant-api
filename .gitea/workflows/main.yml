@@ -5,24 +5,22 @@ on:
     branches:
       - "main"
       - "dev"
+
   release:
     types: [published]
 
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
-    env:
-      RUNNER_TOOL_CACHE: /opt/hostedtoolcache
-      ACT_CACHE_DIR: /opt/hostedtoolcache/act
     steps:
       - name: Check out code
         uses: actions/checkout@v3
 
       - name: Download dependencies to cache
         run: |
-          pip download -r requirements.txt --dest $RUNNER_TOOL_CACHE/${{ gitea.repository }}-${{ gitea.ref_name }}/pip/
+          pip download -r requirements.txt --dest /opt/hostedtoolcache/${{ gitea.repository }}-${{ gitea.ref_name }}/pip/
           mkdir -p ${{ gitea.workspace }}/cache
-          cp -r $RUNNER_TOOL_CACHE/${{ gitea.repository }}-${{ gitea.ref_name }}/pip/* ${{ gitea.workspace }}/cache/ || true
+          cp -r /opt/hostedtoolcache/${{ gitea.repository }}-${{ gitea.ref_name }}/pip/* ${{ gitea.workspace }}/cache/
 
       - name: Set up Docker
         uses: docker/setup-buildx-action@v3
@@ -52,10 +50,10 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=local,src=$RUNNER_TOOL_CACHE/${{ gitea.repository }}-${{ gitea.ref_name }}/build/
-          cache-to: type=local,dest=$RUNNER_TOOL_CACHE/${{ gitea.repository }}-${{ gitea.ref_name }}/build-new/
+          cache-from: type=local,src=/opt/hostedtoolcache/${{ gitea.repository }}-${{ gitea.ref_name }}/build/
+          cache-to: type=local,dest=/opt/hostedtoolcache/${{ gitea.repository }}-${{ gitea.ref_name }}/build-new/
 
       - name: Rotate build cache
         run: |
-          rm -rf $RUNNER_TOOL_CACHE/${{ gitea.repository }}-${{ gitea.ref_name }}/build/
-          mv $RUNNER_TOOL_CACHE/${{ gitea.repository }}-${{ gitea.ref_name }}/build-new/ $RUNNER_TOOL_CACHE/${{ gitea.repository }}-${{ gitea.ref_name }}/build/
+          rm -rf /opt/hostedtoolcache/${{ gitea.repository }}-${{ gitea.ref_name }}/build/
+          mv /opt/hostedtoolcache/${{ gitea.repository }}-${{ gitea.ref_name }}/build-new/ /opt/hostedtoolcache/${{ gitea.repository }}-${{ gitea.ref_name }}/build/
