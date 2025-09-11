@@ -36,7 +36,11 @@ def is_valid_identifier(value: str) -> bool:
     return value.isidentifier()
 
 
-class SaveParams(BaseModel):
+class StrictBaseModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+
+class SaveParams(StrictBaseModel):
     """
     Parameters required to save a memory.
     """
@@ -77,7 +81,7 @@ class SaveParams(BaseModel):
         return value
 
 
-class SearchParams(BaseModel):
+class SearchParams(StrictBaseModel):
     """
     Parameters required for searching memories.
     """
@@ -120,7 +124,7 @@ class SearchParams(BaseModel):
         return value
 
 
-class ManageMemoryParams(BaseModel):
+class ManageMemoryParams(StrictBaseModel):
     """
     Parameters for managing memories (create, delete, forget).
     """
@@ -136,6 +140,7 @@ class ManageMemoryParams(BaseModel):
     )
 
     model_config = ConfigDict(
+        extra="forbid",
         json_schema_extra={
             "examples": [
                 {"memory_bank": "personal_bank", "action": "create"},
@@ -146,7 +151,7 @@ class ManageMemoryParams(BaseModel):
                     "uuid": "123e4567-e89b-12d3-a456-426614174000",
                 },
             ]
-        }
+        },
     )
 
     @field_validator("memory_bank")
@@ -165,7 +170,7 @@ class ManageMemoryParams(BaseModel):
         return self
 
 
-class MemoryRecord(BaseModel):
+class MemoryRecord(StrictBaseModel):
     id: UUID = Field(
         ..., description="Unique memory identifier", json_schema_extra={"example": "123e4567-e89b-12d3-a456-426614174000"}
     )
@@ -189,37 +194,37 @@ class MemoryRecord(BaseModel):
     )
 
 
-class SaveMemoryResponse(BaseModel):
+class SaveMemoryResponse(StrictBaseModel):
     message: Annotated[str, constr(min_length=1)] = Field(
         ..., description="Result of the save operation", json_schema_extra={"example": "Memory saved successfully"}
     )
 
 
-class RecallMemoryResponse(BaseModel):
+class RecallMemoryResponse(StrictBaseModel):
     results: list[MemoryRecord] = Field(
         ..., description="List of recalled memories matching the query"
     )
 
 
-class ManageMemoryResponse(BaseModel):
+class ManageMemoryResponse(StrictBaseModel):
     message: Annotated[str, constr(min_length=1)] = Field(
         ..., description="Result of the management operation", json_schema_extra={"example": "Memory Bank 'personal_bank' created successfully"}
     )
 
 
-class EmbeddingRequest(BaseModel):
+class EmbeddingRequest(StrictBaseModel):
     text: Annotated[str, constr(min_length=1)] = Field(
         ..., description="Text for which to generate an embedding.", json_schema_extra={"example": "Hello world"}
     )
 
 
-class EmbeddingResponse(BaseModel):
+class EmbeddingResponse(StrictBaseModel):
     embedding: Annotated[list[float], conlist(float, min_length=1)] = Field(
         ..., description="Embedding vector", json_schema_extra={"example": [0.1, 0.2]}
     )
 
 
-class ErrorResponse(BaseModel):
+class ErrorResponse(StrictBaseModel):
     status: Annotated[int, conint(ge=100, le=599)] = Field(
         ..., description="HTTP status code of the error", json_schema_extra={"example": 400}
     )

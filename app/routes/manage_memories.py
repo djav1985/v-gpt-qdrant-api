@@ -1,9 +1,9 @@
 import asyncio
-import os
 from fastapi import APIRouter, Depends, HTTPException
 from qdrant_client import AsyncQdrantClient, models
 from qdrant_client.models import Distance, VectorParams
 
+from app.config import get_settings
 from app.models import ActionEnum, ManageMemoryParams, ManageMemoryResponse, ErrorResponse
 from app.dependencies import create_qdrant_client, get_api_key
 from app.routes.common import ERROR_RESPONSES
@@ -38,13 +38,13 @@ async def manage_memories(
 ) -> ManageMemoryResponse:
     if params.action is ActionEnum.CREATE:
         await asyncio.gather(
-                qdrant.create_collection(
-                    collection_name=params.memory_bank,
-                    vectors_config=VectorParams(
-                        size=_get_dim_env(),
-                        distance=Distance.COSINE,
-                    ),
+            qdrant.create_collection(
+                collection_name=params.memory_bank,
+                vectors_config=VectorParams(
+                    size=get_settings().DIM,
+                    distance=Distance.COSINE,
                 ),
+            ),
             *[
                 qdrant.create_payload_index(
                     collection_name=params.memory_bank,
@@ -57,11 +57,13 @@ async def manage_memories(
         return ManageMemoryResponse(
             message=f"Memory Bank '{params.memory_bank}' created successfully"
         )
+
     elif params.action is ActionEnum.DELETE:
         await qdrant.delete_collection(collection_name=params.memory_bank)
         return ManageMemoryResponse(
             message=f"Memory Bank '{params.memory_bank}' has been deleted."
         )
+
     elif params.action is ActionEnum.FORGET:
         await qdrant.delete(
             collection_name=params.memory_bank,
@@ -72,6 +74,7 @@ async def manage_memories(
                 f"Memory with UUID '{params.uuid}' has been forgotten from Memory Bank '{params.memory_bank}'."
             )
         )
+
     else:
         raise HTTPException(
             status_code=400,
@@ -81,13 +84,3 @@ async def manage_memories(
                 detail=f"Unsupported action: {params.action}",
             ).model_dump(),
         )
-
-def _get_dim_env() -> int:
-    dim = os.getenv("DIM")
-    if dim is None:
-        raise RuntimeError("Environment variable 'DIM' is not set.")
-    try:
-        return int(dim)
-    except ValueError:
-        raise RuntimeError(f"Environment variable 'DIM' must be an integer, got: {dim}")
-

@@ -4,8 +4,10 @@ All notable changes to this project will be documented in this file.
 See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
 ## Unreleased
+- add BaseSettings configuration and forbid extra request fields
 - add unit tests for startup events, dependencies, API key validation, memory routes, root endpoint, and models
 - add unit tests for pydantic model validators
+- expand tests to ensure recall route rejects unexpected fields
 - document memory API responses and security scheme
 - pin Pydantic to v2
 - refactor dependencies and routes for robust embedding and qdrant client lifecycle management

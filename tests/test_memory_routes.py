@@ -11,6 +11,7 @@ from app.routes.save_memory import router as save_memory_router
 from app.routes.recall_memory import router as recall_memory_router
 from app.routes.manage_memories import router as manage_memories_router
 from app.dependencies import create_qdrant_client, get_embeddings_model
+from app.config import get_settings
 from app.models import (
     SaveMemoryResponse,
     RecallMemoryResponse,
@@ -25,6 +26,7 @@ class DummyModel:
 
 
 def create_client(model_cls=DummyModel):
+    get_settings.cache_clear()
     mock_qdrant = Mock()
     mock_qdrant.upsert = AsyncMock()
     mock_qdrant.search = AsyncMock()
@@ -234,6 +236,42 @@ def test_manage_memories_invalid_action(monkeypatch):
     resp = client.post(
         "/manage_memories",
         json={"memory_bank": "bank", "action": "invalid"},
+        headers=_headers("correct"),
+    )
+    assert resp.status_code == 422
+
+
+def test_recall_memory_rejects_extra_field(monkeypatch):
+    monkeypatch.setenv("API_KEY", "correct")
+    client, _ = create_client()
+    resp = client.post(
+        "/recall_memory",
+        json={"memory_bank": "bank", "query": "hi", "unexpected": "x"},
+        headers=_headers("correct"),
+    )
+    assert resp.status_code == 422
+
+
+def test_save_memory_rejects_extra_field(monkeypatch):
+    monkeypatch.setenv("API_KEY", "correct")
+    client, _ = create_client()
+    data = _payload()
+    data["unexpected"] = "value"
+    resp = client.post(
+        "/save_memory",
+        json=data,
+        headers=_headers("correct"),
+    )
+    assert resp.status_code == 422
+
+
+def test_manage_memories_rejects_extra_field(monkeypatch):
+    monkeypatch.setenv("API_KEY", "correct")
+    monkeypatch.setenv("DIM", "3")
+    client, _ = create_client()
+    resp = client.post(
+        "/manage_memories",
+        json={"memory_bank": "bank", "action": "create", "foo": "bar"},
         headers=_headers("correct"),
     )
     assert resp.status_code == 422

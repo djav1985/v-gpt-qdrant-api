@@ -42,6 +42,20 @@ def test_save_params_splits_comma_separated_fields():
     assert params.tags == ["tag1", "tag2"]
 
 
+def test_models_reject_extra_fields():
+    with pytest.raises(ValidationError):
+        SaveParams(
+            memory_bank="bank",
+            memory="hello",
+            sentiment="neutral",
+            entities=["a"],
+            tags=["t"],
+            extra="x",
+        )
+    with pytest.raises(ValidationError):
+        SearchParams(memory_bank="bank", query="q", unknown=1)
+
+
 def test_save_params_rejects_invalid_memory_bank():
     with pytest.raises(ValidationError):
         SaveParams(

@@ -1,7 +1,6 @@
 import os
 from pathlib import Path
 
-import pytest
 from starlette.responses import FileResponse
 
 from app.routes.root import root
