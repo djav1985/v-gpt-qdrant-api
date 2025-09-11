@@ -13,4 +13,5 @@ See [standard-version](https://github.com/conventional-changelog/standard-versio
 - fix Qdrant deletion selector and use timezone-aware timestamps
 - unify API key handling and standardize container port 8060
 - add shared error model and examples for memory management operations
+- adopt OpenAPI 3.1 with tag metadata, reusable rate-limit headers, and expanded models
 
