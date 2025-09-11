@@ -16,22 +16,6 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v3
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      - name: Cache pip dependencies
-        uses: actions/cache@v3
-        with:
-          path: /opt/hostedtoolcache/${{ github.repository }}-${{ github.ref_name }}/pip
-          key: pip-${{ runner.os }}-${{ hashFiles('**/requirements.txt') }}
-          restore-keys: |
-            pip-${{ runner.os }}-
-
-      - name: Install dependencies
-        run: pip install -r requirements.txt --cache-dir /opt/hostedtoolcache/${{ github.repository }}-${{ github.ref_name }}/pip
-
       - name: Set up Docker
         uses: docker/setup-buildx-action@v3
 
@@ -48,17 +32,17 @@ jobs:
           images: vontainment/v-gpt-qdrant-api
           flavor: latest=false
           tags: |
-            type=raw,value=main,enable=${{ github.ref == 'refs/heads/main' }}
-            type=raw,value=dev,enable=${{ github.ref == 'refs/heads/dev' }}
-            type=sha,priority=100,enable=${{ github.event_name == 'push' }}
+            type=raw,value=main,enable=${{ gitea.ref == 'refs/heads/main' }}
+            type=raw,value=dev,enable=${{ gitea.ref == 'refs/heads/dev' }}
+            type=sha,priority=100,enable=${{ gitea.event_name == 'push' }}
 
       - name: Cache Docker build layers
         uses: actions/cache@v3
         with:
-          path: /opt/hostedtoolcache/${{ github.repository }}-${{ github.ref_name }}/build
-          key: docker-build-${{ runner.os }}-${{ github.sha }}
+          path: /opt/hostedtoolcache/${{ gitea.repository }}-${{ gitea.ref_name }}/build
+          key: build-${{ runner.os }}-${{ gitea.sha }}
           restore-keys: |
-            docker-build-${{ runner.os }}-
+            build-${{ runner.os }}-
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
@@ -68,10 +52,13 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=local,src=/opt/hostedtoolcache/${{ github.repository }}-${{ github.ref_name }}/build
-          cache-to: type=local,dest=/opt/hostedtoolcache/${{ github.repository }}-${{ github.ref_name }}/build-new,mode=max
+          build-args: |
+            GITEA_REPOSITORY=${{ gitea.repository }}
+            GITEA_REF_NAME=${{ gitea.ref_name }}
+          cache-from: type=local,src=/opt/hostedtoolcache/${{ gitea.repository }}-${{ gitea.ref_name }}/build
+          cache-to: type=local,dest=/opt/hostedtoolcache/${{ gitea.repository }}-${{ gitea.ref_name }}/build-new,mode=max
 
       - name: Rotate build cache
         run: |
-          rm -rf /opt/hostedtoolcache/${{ github.repository }}-${{ github.ref_name }}/build
-          mv /opt/hostedtoolcache/${{ github.repository }}-${{ github.ref_name }}/build-new /opt/hostedtoolcache/${{ github.repository }}-${{ github.ref_name }}/build
+          rm -rf /opt/hostedtoolcache/${{ gitea.repository }}-${{ gitea.ref_name }}/build
+          mv /opt/hostedtoolcache/${{ gitea.repository }}-${{ gitea.ref_name }}/build-new /opt/hostedtoolcache/${{ gitea.repository }}-${{ gitea.ref_name }}/build
