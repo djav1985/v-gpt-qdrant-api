@@ -50,7 +50,8 @@ async def save_memory(
 ) -> SaveMemoryResponse:
     if not params.memory.strip():
         raise HTTPException(
-            status_code=400, detail="Memory content cannot be empty"
+            status_code=400,
+            detail="Memory content cannot be empty",
         )
 
     model = get_embeddings_model()
@@ -114,7 +115,8 @@ async def recall_memory(
     if params.tag:
         filters.append(
             models.FieldCondition(
-                key="tags", match=models.MatchAny(any=[params.tag])
+                key="tags",
+                match=models.MatchAny(any=[params.tag]),
             )
         )
 
@@ -196,11 +198,12 @@ async def manage_memories(
     elif params.action == "forget":
         if not params.uuid:
             raise HTTPException(
-                status_code=400, detail="UUID must be provided for forget action"  # noqa: E501
+                status_code=400,
+                detail="UUID must be provided for forget action",  # noqa: E501
             )
         await qdrant.delete(
             collection_name=params.memory_bank,
-            points_selector=models.PointIdsList(points=[params.uuid]),
+            points_selector=models.PointIdsList(points=[str(params.uuid)]),
         )
         return ManageMemoryResponse(
             message=(

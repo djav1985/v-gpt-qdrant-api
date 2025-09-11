@@ -3,6 +3,7 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock
 
 import numpy as np
+from datetime import datetime, timezone
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
@@ -31,6 +32,7 @@ def create_client():
     app.dependency_overrides[get_embeddings_model] = lambda: DummyModel()
     # Patch direct calls within route module
     import routes.memory as memory_module
+
     memory_module.get_embeddings_model = lambda: DummyModel()
     client = TestClient(app)
     return client, mock_qdrant
@@ -54,7 +56,9 @@ def test_save_memory_wrong_api_key(monkeypatch):
     monkeypatch.setenv("API_KEY", "correct")
     client, _ = create_client()
     resp = client.post(
-        "/save_memory", json=_payload(), headers=_headers("wrong")
+        "/save_memory",
+        json=_payload(),
+        headers=_headers("wrong"),
     )
     assert resp.status_code == 403
 
@@ -63,16 +67,20 @@ def test_save_memory_empty_memory(monkeypatch):
     monkeypatch.setenv("API_KEY", "correct")
     client, _ = create_client()
     resp = client.post(
-        "/save_memory", json=_payload(""), headers=_headers("correct")
+        "/save_memory",
+        json=_payload(""),
+        headers=_headers("correct"),
     )
-    assert resp.status_code == 400
+    assert resp.status_code == 422
 
 
 def test_save_memory_success(monkeypatch):
     monkeypatch.setenv("API_KEY", "correct")
     client, mock_qdrant = create_client()
     resp = client.post(
-        "/save_memory", json=_payload(), headers=_headers("correct")
+        "/save_memory",
+        json=_payload(),
+        headers=_headers("correct"),
     )
     assert resp.status_code == 200
     mock_qdrant.upsert.assert_awaited_once()
@@ -82,10 +90,10 @@ def test_recall_memory(monkeypatch):
     monkeypatch.setenv("API_KEY", "correct")
     client, mock_qdrant = create_client()
     hit = SimpleNamespace(
-        id="1",
+        id=str(uuid.uuid4()),
         payload={
             "memory": "hello",
-            "timestamp": "now",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "sentiment": "neutral",
             "entities": ["a"],
             "tags": ["t"],
@@ -106,7 +114,7 @@ def test_recall_memory(monkeypatch):
         headers=_headers("correct"),
     )
     assert resp.status_code == 200
-    assert resp.json()["results"][0]["id"] == "1"
+    assert resp.json()["results"][0]["id"] == hit.id
     _, kwargs = mock_qdrant.search.await_args
     assert len(kwargs["query_filter"].must) == 3
 
@@ -161,4 +169,4 @@ def test_manage_memories_forget_missing_uuid(monkeypatch):
         json={"memory_bank": "bank", "action": "forget"},
         headers=_headers("correct"),
     )
-    assert resp.status_code == 400
+    assert resp.status_code == 422

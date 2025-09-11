@@ -1,13 +1,22 @@
 # models.py
 from enum import Enum
 from typing import List, Optional, Union
-from pydantic import BaseModel, Field, field_validator
+from uuid import UUID
+from datetime import datetime
+
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 class ActionEnum(str, Enum):
     CREATE = "create"
     DELETE = "delete"
     FORGET = "forget"
+
+
+class SentimentEnum(str, Enum):
+    POSITIVE = "positive"
+    NEUTRAL = "neutral"
+    NEGATIVE = "negative"
 
 
 def is_valid_identifier(value: str) -> bool:
@@ -29,10 +38,11 @@ class SaveParams(BaseModel):
     )
     memory: str = Field(
         ...,
+        min_length=1,
         description="The content of the memory to be stored.",
         example="Met Alice at the park",
     )
-    sentiment: str = Field(
+    sentiment: SentimentEnum = Field(
         ...,
         description="The sentiment associated with the memory.",
         example="positive",
@@ -57,6 +67,14 @@ class SaveParams(BaseModel):
             return [item.strip() for item in v.split(",") if item.strip()]
         return v
 
+    @field_validator("memory", mode="before")
+    def strip_memory(cls, v: str) -> str:
+        if isinstance(v, str):
+            v = v.strip()
+        if not v:
+            raise ValueError("memory cannot be blank")
+        return v
+
     @field_validator("memory_bank")
     def validate_memory_bank(cls, value: str) -> str:
         if not is_valid_identifier(value):
@@ -76,6 +94,7 @@ class SearchParams(BaseModel):
     )
     query: str = Field(
         ...,
+        min_length=1,
         description="The search query used to retrieve similar memories.",
         example="Alice park meeting",
     )
@@ -92,9 +111,25 @@ class SearchParams(BaseModel):
     tag: Optional[str] = Field(
         None, description="A tag to filter the search.", example="friends"
     )
-    sentiment: Optional[str] = Field(
-        None, description="The sentiment to filter the search.", example="positive"  # noqa: E501
+    sentiment: Optional[SentimentEnum] = Field(
+        None,
+        description="The sentiment to filter the search.",
+        example="positive",  # noqa: E501
     )
+
+    @field_validator("query", mode="before")
+    def strip_query(cls, v: str) -> str:
+        if isinstance(v, str):
+            v = v.strip()
+        if not v:
+            raise ValueError("query cannot be blank")
+        return v
+
+    @field_validator("memory_bank")
+    def validate_memory_bank(cls, value: str) -> str:
+        if not is_valid_identifier(value):
+            raise ValueError("Invalid memory bank name.")
+        return value
 
 
 class ManageMemoryParams(BaseModel):
@@ -112,7 +147,7 @@ class ManageMemoryParams(BaseModel):
         description="Action to perform on the memory bank: create, delete, or forget.",  # noqa: E501
         example="create",
     )
-    uuid: Optional[str] = Field(
+    uuid: Optional[UUID] = Field(
         None,
         description="The UUID of the memory to be forgotten (required for forget).",  # noqa: E501
         example="123e4567-e89b-12d3-a456-426614174000",
@@ -124,9 +159,18 @@ class ManageMemoryParams(BaseModel):
             raise ValueError("Invalid memory bank name.")
         return value
 
+    @model_validator(mode="after")
+    def check_uuid_action(self):
+        if self.action == ActionEnum.FORGET:
+            if self.uuid is None:
+                raise ValueError("uuid is required when action is forget")
+        elif self.uuid is not None:
+            raise ValueError("uuid is only allowed when action is forget")
+        return self
+
 
 class MemoryRecord(BaseModel):
-    id: str = Field(
+    id: UUID = Field(
         ...,
         description="Unique memory identifier",
         example="123e4567-e89b-12d3-a456-426614174000",
@@ -136,12 +180,12 @@ class MemoryRecord(BaseModel):
         description="Stored memory text",
         example="Met Alice at the park",
     )
-    timestamp: str = Field(
+    timestamp: datetime = Field(
         ...,
         description="ISO-8601 timestamp when the memory was saved",
         example="2024-01-01T12:00:00Z",
     )
-    sentiment: str = Field(
+    sentiment: SentimentEnum = Field(
         ...,
         description="Sentiment label associated with the memory",
         example="positive",
@@ -158,6 +202,8 @@ class MemoryRecord(BaseModel):
     )
     score: float = Field(
         ...,
+        ge=0,
+        le=1,
         description="Similarity score for the recalled memory",
         example=0.85,
     )

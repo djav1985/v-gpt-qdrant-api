@@ -1,4 +1,7 @@
 import pytest
+from datetime import datetime
+from uuid import uuid4
+
 from pydantic import ValidationError
 
 from models import (
@@ -61,21 +64,134 @@ def test_manage_memory_params_invalid_memory_bank():
         ManageMemoryParams(memory_bank="invalid-bank", action="create")
 
 
+def test_search_params_rejects_invalid_memory_bank():
+    with pytest.raises(ValidationError):
+        SearchParams(memory_bank="invalid bank", query="q")
+
+
+def test_manage_memory_params_uuid_rules():
+    valid_uuid = uuid4()
+    # uuid required for forget
+    with pytest.raises(ValidationError):
+        ManageMemoryParams(memory_bank="bank", action="forget")
+    # uuid must be valid
+    with pytest.raises(ValidationError):
+        ManageMemoryParams(
+            memory_bank="bank",
+            action="forget",
+            uuid="not-a-uuid",
+        )
+    # uuid allowed only for forget
+    with pytest.raises(ValidationError):
+        ManageMemoryParams(
+            memory_bank="bank",
+            action="create",
+            uuid=valid_uuid,
+        )
+    # valid cases
+    ManageMemoryParams(
+        memory_bank="bank",
+        action="forget",
+        uuid=valid_uuid,
+    )
+    ManageMemoryParams(memory_bank="bank", action="create")
+
+
+def test_blank_strings_rejected():
+    with pytest.raises(ValidationError):
+        SaveParams(
+            memory_bank="bank",
+            memory="   ",
+            sentiment="neutral",
+            entities=[],
+            tags=[],
+        )
+    with pytest.raises(ValidationError):
+        SearchParams(memory_bank="bank", query="   ")
+
+
+def test_sentiment_enum_enforced():
+    with pytest.raises(ValidationError):
+        SaveParams(
+            memory_bank="bank",
+            memory="m",
+            sentiment="bad",
+            entities=[],
+            tags=[],
+        )
+    with pytest.raises(ValidationError):
+        SearchParams(memory_bank="bank", query="q", sentiment="bad")
+    with pytest.raises(ValidationError):
+        MemoryRecord(
+            id=uuid4(),
+            memory="m",
+            timestamp=datetime.utcnow(),
+            sentiment="bad",
+            entities=[],
+            tags=[],
+            score=0.5,
+        )
+
+
+def test_memoryrecord_type_enforcement():
+    with pytest.raises(ValidationError):
+        MemoryRecord(
+            id="not-uuid",
+            memory="m",
+            timestamp=datetime.utcnow(),
+            sentiment="neutral",
+            entities=[],
+            tags=[],
+            score=0.5,
+        )
+    with pytest.raises(ValidationError):
+        MemoryRecord(
+            id=uuid4(),
+            memory="m",
+            timestamp="not-a-date",
+            sentiment="neutral",
+            entities=[],
+            tags=[],
+            score=0.5,
+        )
+    with pytest.raises(ValidationError):
+        MemoryRecord(
+            id=uuid4(),
+            memory="m",
+            timestamp=datetime.utcnow(),
+            sentiment="neutral",
+            entities=[],
+            tags=[],
+            score=1.5,
+        )
+    with pytest.raises(ValidationError):
+        MemoryRecord(
+            id=uuid4(),
+            memory="m",
+            timestamp=datetime.utcnow(),
+            sentiment="neutral",
+            entities=[],
+            tags=[],
+            score=-0.1,
+        )
+
+
 def test_response_models():
     save_resp = SaveMemoryResponse(message="ok")
     assert save_resp.message == "ok"
 
+    item_id = uuid4()
     item = MemoryRecord(
-        id="1",
+        id=item_id,
         memory="m",
-        timestamp="2024-01-01T00:00:00Z",
+        timestamp=datetime(2024, 1, 1, 0, 0, 0),
         sentiment="neutral",
         entities=["a"],
         tags=["t"],
         score=0.1,
     )
     recall_resp = RecallMemoryResponse(results=[item])
-    assert recall_resp.results[0].id == "1"
+    assert recall_resp.results[0].id == item_id
 
     manage_resp = ManageMemoryResponse(message="done")
     assert manage_resp.message == "done"
