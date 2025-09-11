@@ -5,7 +5,7 @@ on:
     branches:
       - "main"
       - "dev"
-      - "phonetap"
+
   release:
     types: [published]
 
@@ -18,9 +18,9 @@ jobs:
 
       - name: Download dependencies to cache
         run: |
-          pip download -r requirements.txt --dest /opt/hostedtoolcache/${{ gitea.repository }}-${{ gitea.ref_name }}/pip/
-          mkdir -p ${{ gitea.workspace }}/cache
-          cp -r /opt/hostedtoolcache/${{ gitea.repository }}-${{ gitea.ref_name }}/pip/* ${{ gitea.workspace }}/cache/
+          pip download -r requirements.txt --dest /cache/pip/
+          mkdir -p /cache/pip
+          cp -r /cache/pip/* ${{ gitea.workspace }}/cache/
 
       - name: Set up Docker
         uses: docker/setup-buildx-action@v3
@@ -50,10 +50,10 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=local,src=/opt/hostedtoolcache/${{ gitea.repository }}-${{ gitea.ref_name }}/build/
-          cache-to: type=local,dest=/opt/hostedtoolcache/${{ gitea.repository }}-${{ gitea.ref_name }}/build-new/
+          cache-from: type=local,src=/cache/build/
+          cache-to: type=local,dest=/cache/build-new/
 
       - name: Rotate build cache
         run: |
-          rm -rf /opt/hostedtoolcache/${{ gitea.repository }}-${{ gitea.ref_name }}/build/
-          mv /opt/hostedtoolcache/${{ gitea.repository }}-${{ gitea.ref_name }}/build-new/ /opt/hostedtoolcache/${{ gitea.repository }}-${{ gitea.ref_name }}/build/
+          rm -rf /cache/build/
+          mv /cache/build-new/ /cache/build/
