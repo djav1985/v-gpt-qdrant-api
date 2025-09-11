@@ -9,9 +9,10 @@ COPY requirements.txt .
 ARG GITEA_REPOSITORY
 ARG GITEA_REF_NAME
 
-RUN python -m venv /app/venv && \
+# Proper BuildKit cache mount usage
+RUN --mount=type=cache,target=/opt/hostedtoolcache/pip \
+    python -m venv /app/venv && \
     . /app/venv/bin/activate && \
-    --mount=type=cache,target=/opt/hostedtoolcache/pip \
     PIP_CACHE_DIR=/opt/hostedtoolcache/${GITEA_REPOSITORY}-${GITEA_REF_NAME}/pip \
     pip install -r requirements.txt
 
