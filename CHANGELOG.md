@@ -6,3 +6,4 @@ See [standard-version](https://github.com/conventional-changelog/standard-versio
 ## Unreleased
 
 - add unit tests for pydantic model validators
+- document memory API responses and security scheme
