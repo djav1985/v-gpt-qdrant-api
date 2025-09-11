@@ -11,7 +11,6 @@ root_router = APIRouter()
 async def root():
     return FileResponse("/app/public/index.html")
 
-
 # v1 endpoint - Serves the index.html file
 @root_router.get("/v1", include_in_schema=False)
 async def v1():

@@ -1,6 +1,6 @@
 # dependencies.py
 import os
-import asyncio
+from typing import Optional
 
 from fastapi import HTTPException, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -8,48 +8,72 @@ from fastembed import TextEmbedding
 from qdrant_client import AsyncQdrantClient
 
 
-# Singleton class to manage a single instance of TextEmbedding
 class SingletonTextEmbedding:
-    _instance = None
+    """
+    Singleton class to manage a single instance of the FastEmbed TextEmbedding model.
+    """
+
+    _instance: Optional[TextEmbedding] = None
 
     @classmethod
-    def get_instance(cls):
+    def get_instance(cls) -> TextEmbedding:
+        """
+        Returns the singleton instance of TextEmbedding, or raises an error if not initialized.
+        """
         if cls._instance is None:
-            raise Exception("SingletonTextEmbedding has not been initialized")
+            raise RuntimeError("TextEmbedding model not initialized")
         return cls._instance
 
     @classmethod
-    async def initialize(cls):
+    async def initialize(cls) -> None:
+        """
+        Initializes the singleton instance using environment configuration.
+        """
         if cls._instance is None:
             cls._instance = TextEmbedding(
-                model_name=os.getenv("LOCAL_MODEL"), cache_dir="/app/models", parallel="none", threads=3
+                model_name=os.getenv("LOCAL_MODEL"),
+                cache_dir="/app/models",
+                parallel="none",
+                threads=3,
             )
 
 
-# Function to initialize text embedding at app startup
-async def initialize_text_embedding():
+async def initialize_text_embedding() -> None:
+    """
+    Triggers initialization of the TextEmbedding singleton at application startup.
+    """
     await SingletonTextEmbedding.initialize()
 
 
-# Dependency to get embeddings model
-def get_embeddings_model():
+def get_embeddings_model() -> TextEmbedding:
+    """
+    FastAPI dependency to retrieve the initialized TextEmbedding model.
+    """
     return SingletonTextEmbedding.get_instance()
 
 
-# Function to create Qdrant client
-async def create_qdrant_client():
+async def create_qdrant_client() -> AsyncQdrantClient:
+    """
+    FastAPI dependency to create and return an async Qdrant client instance.
+    """
     return AsyncQdrantClient(
         url=os.getenv("QDRANT_HOST", "http://qdrant:6333"),
         api_key=os.getenv("QDRANT_API_KEY"),
     )
 
 
-# This function checks if the provided API key is valid or not
-async def get_api_key(
-    credentials: HTTPAuthorizationCredentials = Depends(HTTPBearer(auto_error=False)),
-):
-    if os.getenv("MEMORIES_API_KEY") and (
-        not credentials or credentials.credentials != os.getenv("MEMORIES_API_KEY")
-    ):
+def get_api_key(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(
+        HTTPBearer(auto_error=False)
+    ),
+) -> Optional[str]:
+    """
+    Validates an API key against the value in the environment.
+
+    Raises:
+        HTTPException: If the provided key does not match the expected key.
+    """
+    expected = os.getenv("MEMORIES_API_KEY")
+    if expected and (not credentials or credentials.credentials != expected):
         raise HTTPException(status_code=403, detail="Invalid or missing API key")
     return credentials.credentials if credentials else None

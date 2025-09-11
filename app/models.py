@@ -1,13 +1,30 @@
 # models.py
 import os
+from enum import Enum
 from typing import List, Optional, Union
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 
 
-# Class representing the parameters required to save a memory
+class ActionEnum(str, Enum):
+    CREATE = "create"
+    DELETE = "delete"
+    FORGET = "forget"
+
+
+def is_valid_identifier(value: str) -> bool:
+    """
+    Check if a string is a valid Python identifier.
+    """
+    return value.isidentifier()
+
+
 class SaveParams(BaseModel):
+    """
+    Parameters required to save a memory.
+    """
+
     memory_bank: str = Field(
-        ..., description="The name of the memory bank to be created."
+        ..., description="The name of the memory bank where the memory will be stored."
     )
     memory: str = Field(..., description="The content of the memory to be stored.")
     sentiment: str = Field(..., description="The sentiment associated with the memory.")
@@ -18,23 +35,39 @@ class SaveParams(BaseModel):
         ..., description="A list of tags associated with the memory."
     )
 
-    # Validator to split string values into a list by commas
-    @validator("entities", "tags", pre=True)
-    def split_str_values(cls, v):
+    @field_validator("entities", "tags", mode="before")
+    def split_str_values(cls, v: Union[str, List[str]]) -> List[str]:
+        """
+        Convert comma-separated strings into list format.
+        """
         if isinstance(v, str):
-            return v.split(",")
+            return [item.strip() for item in v.split(",") if item.strip()]
         return v
 
+    @field_validator("memory_bank")
+    def validate_memory_bank(cls, value: str) -> str:
+        if not is_valid_identifier(value):
+            raise ValueError("Invalid memory bank name.")
+        return value
 
-# Class representing the parameters required for searching memories
+
 class SearchParams(BaseModel):
+    """
+    Parameters required for searching memories.
+    """
+
     memory_bank: str = Field(
         ..., description="The name of the memory bank to search in."
     )
     query: str = Field(
         ..., description="The search query used to retrieve similar memories."
     )
-    top_k: int = Field(5, description="The number of most similar memories to return.")
+    top_k: int = Field(
+        5,
+        ge=1,
+        le=100,
+        description="The number of most similar memories to return (1-100).",
+    )
     entity: Optional[str] = Field(None, description="An entity to filter the search.")
     tag: Optional[str] = Field(None, description="A tag to filter the search.")
     sentiment: Optional[str] = Field(
@@ -42,30 +75,37 @@ class SearchParams(BaseModel):
     )
 
 
-# Class representing the parameters for managing memories (create, delete, forget)
 class ManageMemoryParams(BaseModel):
+    """
+    Parameters for managing memories (create, delete, forget).
+    """
+
     memory_bank: str = Field(..., description="The name of the memory bank to manage.")
-    action: str = Field(
-        ...,
-        description="Action to perform on the memory bank: create, delete, or forget.",
+    action: ActionEnum = Field(
+        ..., description="Action to perform on the memory bank: create, delete, or forget."
     )
     uuid: Optional[str] = Field(
-        None, description="The UUID of the memory you want to delete."
+        None, description="The UUID of the memory to be forgotten (required for forget)."
     )
 
-    # Validator to ensure the action is one of the specified choices
-    @validator("action")
-    def validate_action(cls, v):
-        if v not in ["create", "delete", "forget"]:
-            raise ValueError("Action must be one of: create, delete, forget")
-        return v
+    @field_validator("memory_bank")
+    def validate_memory_bank(cls, value: str) -> str:
+        if not is_valid_identifier(value):
+            raise ValueError("Invalid memory bank name.")
+        return value
 
 
-# Class representing the parameters for generating embeddings
 class EmbeddingParams(BaseModel):
-    input: Union[str, List[str]]  # The input text or list of texts to embed
+    """
+    Parameters for generating embeddings.
+    """
+
+    input: Union[str, List[str]] = Field(
+        ..., description="The input text or list of texts to embed."
+    )
     model: str = Field(
-        os.getenv("LOCAL_MODEL"), description="The name of the embedding model."
+        default=os.getenv("LOCAL_MODEL"),
+        description="The name of the embedding model (must match LOCAL_MODEL).",
     )
     user: Optional[str] = Field(
         default="unassigned",
@@ -75,18 +115,17 @@ class EmbeddingParams(BaseModel):
         default="float", description="Format of the encoding output."
     )
 
-    # Validator to flatten a list of strings into a single string
-    @validator("input", pre=True)
+    @field_validator("input", mode="before")
     def flatten_input(cls, v):
         if isinstance(v, list):
             return " ".join(v)
         return v
 
-    # Validator to check if the model matches the environment variable LOCAL_MODEL
-    @validator("model")
-    def validate_model(cls, value):
-        if value != os.getenv("LOCAL_MODEL"):
+    @field_validator("model")
+    def validate_model(cls, value: str) -> str:
+        expected = os.getenv("LOCAL_MODEL")
+        if expected and value != expected:
             raise ValueError(
-                "Model does not match the environment variable LOCAL_MODEL"
+                f"Model does not match environment variable LOCAL_MODEL ({expected})"
             )
         return value

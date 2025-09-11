@@ -5,6 +5,7 @@ on:
     branches:
       - "main"
       - "dev"
+      
   release:
     types: [published]
 
@@ -35,6 +36,7 @@ jobs:
         id: meta
         with:
           images: vontainment/v-gpt-gdrant-api
+
           flavor: latest=false
           tags: |
             type=raw,value=main,enable=${{ gitea.ref == 'refs/heads/main' }}

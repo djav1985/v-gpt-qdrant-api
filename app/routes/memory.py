@@ -3,105 +3,97 @@ import os
 import uuid
 import asyncio
 from datetime import datetime
+from typing import List, Dict, Any
 
-# Importing necessary libraries and modules
 from fastapi import APIRouter, Depends, HTTPException
-from fastembed import TextEmbedding
 from qdrant_client import AsyncQdrantClient, models
-from qdrant_client.models import Distance, VectorParams, Filter, FieldCondition, PointStruct
+from qdrant_client.models import Distance, VectorParams
 
 from models import SaveParams, SearchParams, ManageMemoryParams
 from dependencies import get_api_key, get_embeddings_model, create_qdrant_client
 
-# Creating an instance of the FastAPI router
+
 memory_router = APIRouter()
 
 
-# Endpoint to save memory
+# --- Save Memory ---
 @memory_router.post("/save_memory", operation_id="save_memory")
 async def save_memory(
-    Params: SaveParams,
+    params: SaveParams,
     api_key: str = Depends(get_api_key),
-    Qdrant: AsyncQdrantClient = Depends(create_qdrant_client),
-):
+    qdrant: AsyncQdrantClient = Depends(create_qdrant_client),
+) -> Dict[str, str]:
+    if not params.memory.strip():
+        raise HTTPException(status_code=400, detail="Memory content cannot be empty")
+
     try:
-        # Get model and generate embeddings
         model = get_embeddings_model()
-        embeddings_generator = await asyncio.to_thread(model.embed, Params.memory)
+        embeddings_generator = await asyncio.to_thread(model.embed, params.memory)
         vector = next(embeddings_generator)
 
-        # Create unique id and timestamp
+        uuid_str = str(uuid.uuid4())
         timestamp = datetime.utcnow().isoformat()
-        unique_id = str(uuid.uuid4())
 
-        # Save memory in Qdrant
-        await Qdrant.upsert(
-            collection_name=Params.memory_bank,
+        await qdrant.upsert(
+            collection_name=params.memory_bank,
             points=[
                 models.PointStruct(
-                    id=unique_id,
-                    payload={
-                        "memory": Params.memory,
-                        "timestamp": timestamp,
-                        "sentiment": Params.sentiment,
-                        "entities": Params.entities,
-                        "tags": Params.tags,
-                    },
+                    id=uuid_str,
                     vector=vector.tolist(),
-                ),
+                    payload={
+                        "memory": params.memory,
+                        "timestamp": timestamp,
+                        "sentiment": params.sentiment,
+                        "entities": params.entities,
+                        "tags": params.tags,
+                    },
+                )
             ],
         )
         return {"message": "Memory saved successfully"}
 
     except Exception as e:
-        print(f"An error occurred: {e}")
-        raise HTTPException(
-            status_code=500, detail=f"Error processing request: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Error saving memory: {str(e)}")
 
 
-# Endpoint to recall memory
+# --- Recall Memory ---
 @memory_router.post("/recall_memory", operation_id="recall_memory")
 async def recall_memory(
-    Params: SearchParams,
+    params: SearchParams,
     api_key: str = Depends(get_api_key),
-    Qdrant: AsyncQdrantClient = Depends(create_qdrant_client),
-):
+    qdrant: AsyncQdrantClient = Depends(create_qdrant_client),
+) -> Dict[str, List[Dict[str, Any]]]:
     try:
-        # Get model and generate embeddings
         model = get_embeddings_model()
-        embeddings_generator = await asyncio.to_thread(model.embed, Params.query)
+        embeddings_generator = await asyncio.to_thread(model.embed, params.query)
         vector = next(embeddings_generator)
 
-        # Create filter conditions
-        filter_conditions = []
-        if Params.entity:
-            filter_conditions.append(
+        filters = []
+        if params.entity:
+            filters.append(
                 models.FieldCondition(
-                    key="entities", match=models.MatchValue(value=Params.entity)
+                    key="entities", match=models.MatchValue(value=params.entity)
                 )
             )
-        if Params.sentiment:
-            filter_conditions.append(
+        if params.sentiment:
+            filters.append(
                 models.FieldCondition(
-                    key="sentiment", match=models.MatchAny(any=[Params.sentiment])
+                    key="sentiment", match=models.MatchAny(any=[params.sentiment])
                 )
             )
-        if Params.tag:
-            filter_conditions.append(
+        if params.tag:
+            filters.append(
                 models.FieldCondition(
-                    key="tags", match=models.MatchAny(any=[Params.tag])
+                    key="tags", match=models.MatchAny(any=[params.tag])
                 )
             )
 
-        # Perform search in Qdrant
-        search_filter = models.Filter(must=filter_conditions)
-        hits = await Qdrant.search(
-            collection_name=Params.memory_bank,
+        hits = await qdrant.search(
+            collection_name=params.memory_bank,
             query_vector=vector.tolist(),
-            query_filter=search_filter,
+            query_filter=models.Filter(must=filters) if filters else None,
             with_payload=True,
-            limit=Params.top_k,
+            limit=params.top_k,
             search_params=models.SearchParams(
                 quantization=models.QuantizationSearchParams(
                     ignore=False, rescore=True, oversampling=2.0
@@ -109,39 +101,36 @@ async def recall_memory(
             ),
         )
 
-        # Format results
-        results = [
-            {
-                "id": hit.id,
-                "memory": hit.payload["memory"],
-                "timestamp": hit.payload["timestamp"],
-                "sentiment": hit.payload["sentiment"],
-                "entities": hit.payload["entities"],
-                "tags": hit.payload["tags"],
-                "score": hit.score,
-            }
-            for hit in hits
-        ]
-
-        return {"results": results}
+        return {
+            "results": [
+                {
+                    "id": hit.id,
+                    "memory": hit.payload.get("memory"),
+                    "timestamp": hit.payload.get("timestamp"),
+                    "sentiment": hit.payload.get("sentiment"),
+                    "entities": hit.payload.get("entities"),
+                    "tags": hit.payload.get("tags"),
+                    "score": hit.score,
+                }
+                for hit in hits
+            ]
+        }
 
     except Exception as e:
-        print(f"An error occurred: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"Error recalling memory: {str(e)}")
 
 
-# Endpoint to manage memories
+# --- Manage Memories ---
 @memory_router.post("/manage_memories", operation_id="manage_memories")
 async def manage_memories(
-    Params: ManageMemoryParams,
+    params: ManageMemoryParams,
     api_key: str = Depends(get_api_key),
-    Qdrant: AsyncQdrantClient = Depends(create_qdrant_client),
-):
+    qdrant: AsyncQdrantClient = Depends(create_qdrant_client),
+) -> Dict[str, str]:
     try:
-        if Params.action == "create":
-            # Create new memory bank in Qdrant
-            await Qdrant.create_collection(
-                collection_name=Params.memory_bank,
+        if params.action == "create":
+            await qdrant.create_collection(
+                collection_name=params.memory_bank,
                 vectors_config=VectorParams(
                     size=int(os.getenv("DIM")), distance=Distance.COSINE
                 ),
@@ -154,41 +143,33 @@ async def manage_memories(
                 ),
             )
 
-            # Create payload index for each field
-            index_fields = ["sentiment", "entities", "tags"]
-            for field in index_fields:
-                await Qdrant.create_payload_index(
-                    collection_name=Params.memory_bank,
+            for field in ["sentiment", "entities", "tags"]:
+                await qdrant.create_payload_index(
+                    collection_name=params.memory_bank,
                     field_name=field,
                     field_schema="keyword",
                 )
 
             return {
-                "message": f"Memory Bank '{Params.memory_bank}' created successfully"
+                "message": f"Memory Bank '{params.memory_bank}' created successfully"
             }
 
-        elif Params.action == "delete":
-            # Delete entire memory bank
-            await Qdrant.delete_collection(collection_name=Params.memory_bank)
+        elif params.action == "delete":
+            await qdrant.delete_collection(collection_name=params.memory_bank)
+            return {"message": f"Memory Bank '{params.memory_bank}' has been deleted."}
 
-            return {"message": f"Memory Bank '{Params.memory_bank}' has been deleted."}
-
-        elif Params.action == "forget":
-            if Params.uuid is None:
+        elif params.action == "forget":
+            if not params.uuid:
                 raise HTTPException(
                     status_code=400, detail="UUID must be provided for forget action"
                 )
-
-            # Delete specific memory using UUID
-            await Qdrant.delete(
-                    collection_name=Params.memory_bank,
-                    points_selector=[Params.uuid]
-                )
-
+            await qdrant.delete(
+                collection_name=params.memory_bank,
+                points_selector=[params.uuid],
+            )
             return {
-                "message": f"Memory with UUID '{Params.uuid}' has been forgotten from Memory Bank '{Params.memory_bank}'."
+                "message": f"Memory with UUID '{params.uuid}' has been forgotten from Memory Bank '{params.memory_bank}'."
             }
-        
+
     except Exception as e:
-        print(f"An error occurred: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"Error managing memories: {str(e)}")
