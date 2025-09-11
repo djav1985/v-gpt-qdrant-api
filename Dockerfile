@@ -4,15 +4,15 @@ FROM python:3.10-slim as builder
 # Set the working directory
 WORKDIR /app
 
-# Copy requirements and cache (if available)
+# Copy the requirements file and cache
 COPY /cache /app/cache
 COPY requirements.txt /app
 
-# Install Python dependencies in a virtual environment (cache-first, fallback to PyPI)
+# Install Python dependencies in a virtual environment
 RUN python -m venv /app/venv && \
     . /app/venv/bin/activate && \
-    pip install --no-cache-dir --find-links /app/cache -r requirements.txt || \
-    pip install --no-cache-dir -r requirements.txt
+    pip install --find-links /app/cache -r requirements.txt || \
+    pip install -r requirements.txt
 
 # Final stage
 FROM python:3.10-slim
@@ -20,24 +20,13 @@ FROM python:3.10-slim
 # Set the working directory
 WORKDIR /app
 
-# Install system dependencies for WeasyPrint and related libraries
-RUN apt-get update && apt-get install -y \
-    libcairo2 \
-    libpango-1.0-0 \
-    libgdk-pixbuf2.0-0 \
-    gir1.2-gtk-3.0 \
-    gobject-introspection \
-    libffi-dev \
-    libxml2-dev \
-    && rm -rf /var/lib/apt/lists/*
-
 # Copy the virtual environment from the builder stage
 COPY --from=builder /app/venv /app/venv
 
 # Copy the rest of the application
 COPY ./app /app
 
-# Expose port 8888 to the outside world
+# Expose port 8888
 EXPOSE 8888
 
 # Define environment variables
@@ -45,5 +34,5 @@ ENV WORKERS=2
 ENV UVICORN_CONCURRENCY=32
 ENV PATH="/app/venv/bin:$PATH"
 
-# Run the FastAPI app with Uvicorn
-CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port 8888 --workers $WORKERS --limit-concurrency $UVICORN_CONCURRENCY --timeout-keep-alive 32"]
+# Run FastAPI with Uvicorn
+CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port 8888 --workers $WORKERS --limit-concurrency $UVICORN_CONCURRENCY"]
