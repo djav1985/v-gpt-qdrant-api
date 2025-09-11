@@ -9,14 +9,11 @@ COPY requirements.txt .
 ARG GITEA_REPOSITORY
 ARG GITEA_REF_NAME
 
-# Proper BuildKit cache mount usage
-RUN --mount=type=cache,target=/opt/hostedtoolcache/pip \
+# Mount pip cache at repo/branch path
+RUN --mount=type=cache,target=/opt/hostedtoolcache/${GITEA_REPOSITORY}/${GITEA_REF_NAME}/pip \
     python -m venv /app/venv && \
     . /app/venv/bin/activate && \
-    PIP_CACHE_DIR=/opt/hostedtoolcache/${GITEA_REPOSITORY}-${GITEA_REF_NAME}/pip \
-    pip install --no-index --find-links=$PIP_CACHE_DIR -r requirements.txt || \
-    pip install -r requirements.txt
-
+    pip install --cache-dir=/opt/hostedtoolcache/${GITEA_REPOSITORY}/${GITEA_REF_NAME}/pip -r requirements.txt
 
 FROM python:3.10-slim
 
