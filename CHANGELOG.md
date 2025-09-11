@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
 ## Unreleased
+- move runtime imports to module scope in memory routes
+- handle Qdrant errors explicitly and log unexpected failures when saving memories
+- protect TextEmbedding initialization with an asyncio lock
+- pin pydantic and pydantic-settings to exact versions
+- switch tests to pytest's native async support
+- add docstrings for memory and embedding route handlers
 - add BaseSettings configuration and forbid extra request fields
 - add unit tests for startup events, dependencies, API key validation, memory routes, root endpoint, and models
 - add unit tests for pydantic model validators

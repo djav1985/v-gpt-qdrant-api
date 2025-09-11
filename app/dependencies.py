@@ -12,6 +12,9 @@ from app.config import get_settings
 from app.models import ErrorResponse
 
 
+_embedding_lock = asyncio.Lock()
+
+
 class SingletonTextEmbedding:
     """
     Singleton class to manage a single instance of the FastEmbed
@@ -33,16 +36,21 @@ class SingletonTextEmbedding:
     @classmethod
     async def initialize(cls) -> None:
         """Initializes the singleton instance using environment configuration."""
-        if cls._instance is None:
-            settings = get_settings()
-            model_name = settings.LOCAL_MODEL or os.getenv("LOCAL_MODEL") or "BAAI/bge-small-en-v1.5"
-            cls._instance = await asyncio.to_thread(
-                TextEmbedding,
-                model_name=model_name,
-                cache_dir="/app/models",
-                parallel="none",
-                threads=3,
-            )
+        async with _embedding_lock:
+            if cls._instance is None:
+                settings = get_settings()
+                model_name = (
+                    settings.LOCAL_MODEL
+                    or os.getenv("LOCAL_MODEL")
+                    or "BAAI/bge-small-en-v1.5"
+                )
+                cls._instance = await asyncio.to_thread(
+                    TextEmbedding,
+                    model_name=model_name,
+                    cache_dir="/app/models",
+                    parallel="none",
+                    threads=3,
+                )
 
 
 async def initialize_text_embedding() -> None:
