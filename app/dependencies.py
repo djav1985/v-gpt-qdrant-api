@@ -67,7 +67,7 @@ def get_embeddings_model() -> TextEmbedding:
 
 
 async def create_qdrant_client() -> AsyncGenerator[AsyncQdrantClient, None]:
-    """FastAPI dependency that yields an async Qdrant client and closes it afterwards."""
+    """FastAPI dependency that yields an async Qdrant client and closes it."""
     settings = get_settings()
     client = AsyncQdrantClient(
         url=settings.QDRANT_HOST or "http://qdrant:6333",
@@ -93,7 +93,8 @@ def get_api_key(
             detail=ErrorResponse(
                 status=403,
                 code="invalid_api_key",
-                detail="Invalid or missing API key",
+                message="Invalid or missing API key",
+                details="Invalid or missing API key",
             ).model_dump(),
         )
     return api_key

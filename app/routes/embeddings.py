@@ -35,6 +35,11 @@ async def create_embedding(payload: EmbeddingRequest) -> EmbeddingResponse:
     """
     model = get_embeddings_model()
     vector = await asyncio.to_thread(model.embed, payload.text)
-    vector = vector[0] if isinstance(vector[0], (list, tuple)) else vector
-    vector_list = list(map(float, vector))
-    return EmbeddingResponse(embedding=vector_list)
+    # Convert iterable to list to enable indexing
+    vector_list = list(vector)
+    if isinstance(vector_list[0], (list, tuple)):
+        vector = vector_list[0]
+    else:
+        vector = vector_list
+    vector_result = list(map(float, vector[0] if len(vector) == 1 else vector))
+    return EmbeddingResponse(embedding=vector_result)

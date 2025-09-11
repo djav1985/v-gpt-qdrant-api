@@ -48,7 +48,12 @@ async def recall_memory(
     """
     model = get_embeddings_model()
     vector = await asyncio.to_thread(model.embed, params.query)
-    vector = vector[0] if isinstance(vector[0], (list, tuple)) else vector
+    # Convert iterable to list to enable indexing
+    vector_list = list(vector)
+    if isinstance(vector_list[0], (list, tuple)):
+        vector = vector_list[0]
+    else:
+        vector = vector_list
     query_vector = list(map(float, vector))
 
     filters = []

@@ -49,7 +49,12 @@ async def save_memory(
     """
     model = get_embeddings_model()
     raw_vector = await asyncio.to_thread(model.embed, params.memory)
-    vector = raw_vector[0] if isinstance(raw_vector[0], (list, tuple)) else raw_vector
+    # Convert iterable to list to enable indexing
+    vector_list = list(raw_vector)
+    if isinstance(vector_list[0], (list, tuple)):
+        vector = vector_list[0]
+    else:
+        vector = vector_list
     vector = list(map(float, vector))
     memory_id = uuid.uuid4()
     timestamp = datetime.now(timezone.utc).isoformat()
@@ -77,7 +82,8 @@ async def save_memory(
             detail=ErrorResponse(
                 status=500,
                 code="qdrant_upsert_failed",
-                detail=str(exc),
+                message="Failed to save memory to Qdrant",
+                details=str(exc),
             ).model_dump(),
         ) from exc
     except Exception as exc:  # pragma: no cover - unexpected
@@ -87,7 +93,8 @@ async def save_memory(
             detail=ErrorResponse(
                 status=500,
                 code="unexpected_error",
-                detail=str(exc),
+                message="Unexpected error during memory save",
+                details=str(exc),
             ).model_dump(),
         ) from exc
     return SaveMemoryResponse(message="Memory saved successfully", uuid=memory_id)

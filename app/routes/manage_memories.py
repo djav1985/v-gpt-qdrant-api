@@ -6,7 +6,12 @@ from qdrant_client.models import Distance, VectorParams
 from qdrant_client.http.exceptions import ApiException as QdrantException
 
 from app.config import get_settings
-from app.models import ActionEnum, ManageMemoryParams, ManageMemoryResponse, ErrorResponse
+from app.models import (
+    ActionEnum,
+    ManageMemoryParams,
+    ManageMemoryResponse,
+    ErrorResponse,
+)
 from app.dependencies import create_qdrant_client, get_api_key
 from app.routes.common import ERROR_RESPONSES
 
@@ -21,9 +26,13 @@ router = APIRouter()
     summary="Manage memory banks",
     description=(
         "Create, delete, or forget memories within a memory bank.\n\n"
-        "**Create**\nRequest:\n``{\"memory_bank\": \"personal_bank\", \"action\": \"create\"}``"
-        "\n**Delete**\nRequest:\n``{\"memory_bank\": \"personal_bank\", \"action\": \"delete\"}``"
-        "\n**Forget**\nRequest:\n``{\"memory_bank\": \"personal_bank\", \"action\": \"forget\", \"uuid\": \"123e4567-e89b-12d3-a456-426614174000\"}``"
+        "**Create**\nRequest:\n"
+        "``{\"memory_bank\": \"personal_bank\", \"action\": \"create\"}``"
+        "\n**Delete**\nRequest:\n"
+        "``{\"memory_bank\": \"personal_bank\", \"action\": \"delete\"}``"
+        "\n**Forget**\nRequest:\n"
+        "``{\"memory_bank\": \"personal_bank\", \"action\": \"forget\", "
+        "\"uuid\": \"123e4567-e89b-12d3-a456-426614174000\"}``"
     ),
     tags=["memory"],
     responses={
@@ -55,7 +64,9 @@ async def manage_memories(
                 detail=ErrorResponse(
                     status=500,
                     code="missing_dim",
-                    detail="Embedding dimension (DIM) is not set in environment/config.",
+                    message="Embedding dimension (DIM) is not set",
+                    details="Embedding dimension (DIM) is not set in "
+                    "environment/config.",
                 ).model_dump(),
             )
         try:
@@ -82,7 +93,8 @@ async def manage_memories(
                 detail=ErrorResponse(
                     status=500,
                     code="qdrant_create_failed",
-                    detail=str(exc),
+                    message="Failed to create memory bank",
+                    details=str(exc),
                 ).model_dump(),
             ) from exc
         except Exception as exc:  # pragma: no cover - unexpected
@@ -94,7 +106,8 @@ async def manage_memories(
                 detail=ErrorResponse(
                     status=500,
                     code="unexpected_error",
-                    detail=str(exc),
+                    message="Unexpected error during memory bank creation",
+                    details=str(exc),
                 ).model_dump(),
             ) from exc
         return ManageMemoryResponse(
@@ -110,7 +123,8 @@ async def manage_memories(
                 detail=ErrorResponse(
                     status=500,
                     code="qdrant_delete_failed",
-                    detail=str(exc),
+                    message="Failed to delete memory bank",
+                    details=str(exc),
                 ).model_dump(),
             ) from exc
         except Exception as exc:  # pragma: no cover - unexpected
@@ -122,7 +136,8 @@ async def manage_memories(
                 detail=ErrorResponse(
                     status=500,
                     code="unexpected_error",
-                    detail=str(exc),
+                    message="Unexpected error during memory bank deletion",
+                    details=str(exc),
                 ).model_dump(),
             ) from exc
         return ManageMemoryResponse(
@@ -141,7 +156,8 @@ async def manage_memories(
                 detail=ErrorResponse(
                     status=500,
                     code="qdrant_forget_failed",
-                    detail=str(exc),
+                    message="Failed to forget memory",
+                    details=str(exc),
                 ).model_dump(),
             ) from exc
         except Exception as exc:  # pragma: no cover - unexpected
@@ -153,12 +169,14 @@ async def manage_memories(
                 detail=ErrorResponse(
                     status=500,
                     code="unexpected_error",
-                    detail=str(exc),
+                    message="Unexpected error during memory deletion",
+                    details=str(exc),
                 ).model_dump(),
             ) from exc
         return ManageMemoryResponse(
             message=(
-                f"Memory with UUID '{params.uuid}' has been forgotten from Memory Bank '{params.memory_bank}'."
+                f"Memory with UUID '{params.uuid}' has been forgotten "
+                f"from Memory Bank '{params.memory_bank}'."
             )
         )
 
@@ -168,6 +186,7 @@ async def manage_memories(
             detail=ErrorResponse(
                 status=400,
                 code="invalid_action",
-                detail=f"Unsupported action: {params.action}",
+                message="Invalid action",
+                details=f"Unsupported action: {params.action}",
             ).model_dump(),
         )
