@@ -78,6 +78,13 @@ LOCAL_MODEL=BAAI/bge-small-en-v1.5
 DIM=384
 ```
 
+Required environment variables:
+
+- `MEMORIES_API_KEY`
+- `LOCAL_MODEL`
+- `DIM`
+- `QDRANT_HOST`
+
 Run with:
 
 ```sh

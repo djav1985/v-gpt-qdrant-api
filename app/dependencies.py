@@ -1,6 +1,6 @@
 # dependencies.py
 import os
-from typing import Optional
+from typing import Optional, AsyncGenerator
 
 from fastapi import HTTPException, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -52,14 +52,16 @@ def get_embeddings_model() -> TextEmbedding:
     return SingletonTextEmbedding.get_instance()
 
 
-async def create_qdrant_client() -> AsyncQdrantClient:
-    """
-    FastAPI dependency to create and return an async Qdrant client instance.
-    """
-    return AsyncQdrantClient(
+async def create_qdrant_client() -> AsyncGenerator[AsyncQdrantClient, None]:
+    """Yield a Qdrant client and ensure it is properly closed."""
+    client = AsyncQdrantClient(
         url=os.getenv("QDRANT_HOST", "http://qdrant:6333"),
         api_key=os.getenv("QDRANT_API_KEY"),
     )
+    try:
+        yield client
+    finally:
+        await client.close()
 
 
 def get_api_key(

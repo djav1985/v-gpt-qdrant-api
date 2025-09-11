@@ -3,20 +3,19 @@ import os
 import uuid
 import asyncio
 from datetime import datetime
-from typing import List, Dict, Any
 
 from fastapi import APIRouter, Depends, HTTPException
 from qdrant_client import AsyncQdrantClient, models
 from qdrant_client.models import Distance, VectorParams
 
-from models import (
+from app.models import (
     SaveParams,
     SearchParams,
     ManageMemoryParams,
     MessageResponse,
     RecallMemoryResponse,
 )
-from dependencies import get_api_key, get_embeddings_model, create_qdrant_client
+from app.dependencies import get_api_key, get_embeddings_model, create_qdrant_client
 
 
 memory_router = APIRouter()
@@ -97,7 +96,8 @@ async def recall_memory(
         if params.entity:
             filters.append(
                 models.FieldCondition(
-                    key="entities", match=models.MatchValue(value=params.entity)
+                    key="entities",
+                    match=models.MatchAny(any=[params.entity]),
                 )
             )
         if params.sentiment:
@@ -198,7 +198,7 @@ async def manage_memories(
                 )
             await qdrant.delete(
                 collection_name=params.memory_bank,
-                points_selector=[params.uuid],
+                points_selector=models.PointIdsList(points=[params.uuid]),
             )
             return {
                 "message": f"Memory with UUID '{params.uuid}' has been forgotten from Memory Bank '{params.memory_bank}'."

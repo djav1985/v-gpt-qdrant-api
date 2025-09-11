@@ -4,9 +4,8 @@ import asyncio
 import time
 from fastapi import APIRouter, Depends, HTTPException
 
-from fastembed import TextEmbedding
-from models import EmbeddingParams, EmbeddingResponse
-from dependencies import get_api_key, get_embeddings_model
+from app.models import EmbeddingParams, EmbeddingResponse
+from app.dependencies import get_api_key, get_embeddings_model
 
 # Creating an instance of the FastAPI router
 embeddings_router = APIRouter()

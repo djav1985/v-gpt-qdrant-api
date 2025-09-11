@@ -2,10 +2,10 @@
 import os
 from fastapi import FastAPI
 
-from dependencies import initialize_text_embedding
-from routes.memory import memory_router
-from routes.root import root_router
-from routes.embeddings import embeddings_router
+from app.dependencies import initialize_text_embedding
+from app.routes.memory import memory_router
+from app.routes.root import root_router
+from app.routes.embeddings import embeddings_router
 
 app = FastAPI(
     title="AI Memory API",
@@ -21,7 +21,7 @@ async def startup_event() -> None:
     """
     Startup hook: validates env vars and initializes the embeddings singleton.
     """
-    required_env_vars = ["API_KEY", "DIM", "QDRANT_HOST"]
+    required_env_vars = ["MEMORIES_API_KEY", "LOCAL_MODEL", "DIM", "QDRANT_HOST"]
     missing = [v for v in required_env_vars if not os.getenv(v)]
     if missing:
         raise RuntimeError(
