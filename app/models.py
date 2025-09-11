@@ -4,7 +4,7 @@ from typing import List, Optional, Union
 from uuid import UUID
 from datetime import datetime
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, ConfigDict, field_validator, model_validator
 
 
 class ActionEnum(str, Enum):
@@ -153,6 +153,20 @@ class ManageMemoryParams(BaseModel):
         example="123e4567-e89b-12d3-a456-426614174000",
     )
 
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {"memory_bank": "personal_bank", "action": "create"},
+                {"memory_bank": "personal_bank", "action": "delete"},
+                {
+                    "memory_bank": "personal_bank",
+                    "action": "forget",
+                    "uuid": "123e4567-e89b-12d3-a456-426614174000",
+                },
+            ]
+        }
+    )
+
     @field_validator("memory_bank")
     def validate_memory_bank(cls, value: str) -> str:
         if not is_valid_identifier(value):
@@ -228,4 +242,12 @@ class ManageMemoryResponse(BaseModel):
         ...,
         description="Result of the management operation",
         example="Memory Bank 'personal_bank' created successfully",
+    )
+
+
+class ErrorResponse(BaseModel):
+    detail: str = Field(
+        ...,
+        description="Explanation of the error",
+        example="Invalid API key",
     )

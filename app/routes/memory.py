@@ -17,6 +17,7 @@ from models import (
     RecallMemoryResponse,
     ManageMemoryResponse,
     MemoryRecord,
+    ErrorResponse,
 )
 from dependencies import (
     get_embeddings_model,
@@ -40,8 +41,24 @@ memory_router = APIRouter()
     description="Store a memory with sentiment, entities, and tags in a memory bank.",  # noqa: E501
     tags=["memory"],
     responses={
-        400: {"description": "Memory content cannot be empty"},
-        403: {"description": "Invalid API key"},
+        400: {
+            "model": ErrorResponse,
+            "description": "Memory content cannot be empty",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Memory content cannot be empty"}
+                }
+            },
+        },
+        403: {
+            "model": ErrorResponse,
+            "description": "Invalid API key",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Invalid API key"}
+                }
+            },
+        },
     },
 )
 async def save_memory(
@@ -90,7 +107,26 @@ async def save_memory(
     summary="Recall memories",
     description="Retrieve memories similar to a query from a memory bank.",
     tags=["memory"],
-    responses={403: {"description": "Invalid API key"}},
+    responses={
+        400: {
+            "model": ErrorResponse,
+            "description": "Invalid memory bank name or blank query",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "query cannot be blank"}
+                }
+            },
+        },
+        403: {
+            "model": ErrorResponse,
+            "description": "Invalid API key",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Invalid API key"}
+                }
+            },
+        },
+    },
 )
 async def recall_memory(
     params: SearchParams,
@@ -153,11 +189,78 @@ async def recall_memory(
     ],
     response_model=ManageMemoryResponse,
     summary="Manage memory banks",
-    description="Create, delete, or forget memories within a memory bank.",
+    description=(
+        "Create, delete, or forget memories within a memory bank.\n\n"
+        "**Create**\n"
+        "Request:\n"
+        "```json\n{\"memory_bank\": \"personal_bank\", \"action\": \"create\"}\n```\n"
+        "Response:\n"
+        "```json\n{\"message\": \"Memory Bank 'personal_bank' created successfully\"}\n```\n"
+        "**Delete**\n"
+        "Request:\n"
+        "```json\n{\"memory_bank\": \"personal_bank\", \"action\": \"delete\"}\n```\n"
+        "Response:\n"
+        "```json\n{\"message\": \"Memory Bank 'personal_bank' has been deleted.\"}\n```\n"
+        "**Forget**\n"
+        "Request:\n"
+        "```json\n"
+        "{\"memory_bank\": \"personal_bank\", \"action\": \"forget\", "
+        "\"uuid\": \"123e4567-e89b-12d3-a456-426614174000\"}\n```\n"
+        "Response:\n"
+        "```json\n"
+        "{\"message\": \"Memory with UUID '123e4567-e89b-12d3-a456-426614174000' "
+        "has been forgotten from Memory Bank 'personal_bank'.\"}\n```"
+    ),
     tags=["memory"],
     responses={
-        400: {"description": "Invalid memory bank name or missing UUID"},
-        403: {"description": "Invalid API key"},
+        200: {
+            "description": "Successful memory management response",
+            "content": {
+                "application/json": {
+                    "examples": {
+                        "create": {
+                            "summary": "Create memory bank",
+                            "value": {
+                                "message": "Memory Bank 'personal_bank' created successfully"
+                            },
+                        },
+                        "delete": {
+                            "summary": "Delete memory bank",
+                            "value": {
+                                "message": "Memory Bank 'personal_bank' has been deleted."
+                            },
+                        },
+                        "forget": {
+                            "summary": "Forget memory",
+                            "value": {
+                                "message": (
+                                    "Memory with UUID '123e4567-e89b-12d3-a456-426614174000' "
+                                    "has been forgotten from Memory Bank 'personal_bank'."
+                                )
+                            },
+                        },
+                    }
+                }
+            },
+        },
+        400: {
+            "model": ErrorResponse,
+            "description": "Invalid memory bank name or missing UUID",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Invalid memory bank name or missing UUID"
+                    }
+                }
+            },
+        },
+        403: {
+            "model": ErrorResponse,
+            "description": "Invalid API key",
+            "content": {
+                "application/json": {"example": {"detail": "Invalid API key"}}
+            },
+        },
     },
 )
 async def manage_memories(
