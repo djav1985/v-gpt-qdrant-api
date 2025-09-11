@@ -1,7 +1,7 @@
 import pytest
 from fastapi import HTTPException
 
-import dependencies
+from app import dependencies
 
 
 class DummyEmbed:
@@ -22,12 +22,17 @@ def test_get_instance_pre_init_raises():
 
 
 def test_get_instance_after_initialize(monkeypatch):
-    monkeypatch.setattr(
-        dependencies, "TextEmbedding", lambda *args, **kwargs: DummyEmbed()
-    )
-    dependencies.initialize_text_embedding()
-    instance = dependencies.SingletonTextEmbedding.get_instance()
-    assert isinstance(instance, DummyEmbed)
+    async def run():
+        monkeypatch.setattr(
+            dependencies, "TextEmbedding", lambda *args, **kwargs: DummyEmbed()
+        )
+        await dependencies.initialize_text_embedding()
+        instance = dependencies.SingletonTextEmbedding.get_instance()
+        assert isinstance(instance, DummyEmbed)
+
+    import asyncio
+
+    asyncio.run(run())
 
 
 class DummyClient:
@@ -38,17 +43,21 @@ class DummyClient:
         self.closed = True
 
 
-@pytest.mark.asyncio
-async def test_create_qdrant_client_closes(monkeypatch):
-    dummy = DummyClient()
-    monkeypatch.setattr(
-        dependencies, "AsyncQdrantClient", lambda *args, **kwargs: dummy
-    )
-    gen = dependencies.create_qdrant_client()
-    client = await gen.__anext__()
-    assert client is dummy
-    await gen.aclose()
-    assert dummy.closed
+def test_create_qdrant_client_closes(monkeypatch):
+    async def run():
+        dummy = DummyClient()
+        monkeypatch.setattr(
+            dependencies, "AsyncQdrantClient", lambda *args, **kwargs: dummy
+        )
+        gen = dependencies.create_qdrant_client()
+        client = await gen.__anext__()
+        assert client is dummy
+        await gen.aclose()
+        assert dummy.closed
+
+    import asyncio
+
+    asyncio.run(run())
 
 
 def test_get_api_key_valid(monkeypatch):

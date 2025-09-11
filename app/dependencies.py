@@ -7,7 +7,8 @@ from fastapi import HTTPException, Security
 from fastapi.security import APIKeyHeader
 from fastembed import TextEmbedding
 from qdrant_client import AsyncQdrantClient
-from models import ErrorResponse
+
+from app.models import ErrorResponse
 
 
 class SingletonTextEmbedding:
@@ -29,23 +30,21 @@ class SingletonTextEmbedding:
         return cls._instance
 
     @classmethod
-    def initialize(cls) -> None:
+    async def initialize(cls) -> None:
         """Initializes the singleton instance using environment configuration."""
         if cls._instance is None:
-            cls._instance = asyncio.run(
-                asyncio.to_thread(
-                    TextEmbedding,
-                    model_name=os.getenv("LOCAL_MODEL"),
-                    cache_dir="/app/models",
-                    parallel="none",
-                    threads=3,
-                )
+            cls._instance = await asyncio.to_thread(
+                TextEmbedding,
+                model_name=os.getenv("LOCAL_MODEL"),
+                cache_dir="/app/models",
+                parallel="none",
+                threads=3,
             )
 
 
-def initialize_text_embedding() -> None:
+async def initialize_text_embedding() -> None:
     """Initialize the TextEmbedding singleton at application startup."""
-    SingletonTextEmbedding.initialize()
+    await SingletonTextEmbedding.initialize()
 
 
 def get_embeddings_model() -> TextEmbedding:

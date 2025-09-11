@@ -2,26 +2,19 @@ import asyncio
 import uuid
 from datetime import datetime, timezone
 
+import numpy as np
 from fastapi import APIRouter, Depends, HTTPException
 from qdrant_client import AsyncQdrantClient, models
 
-from models import (
-    SaveParams,
-    SaveMemoryResponse,
-    ErrorResponse,
+from app.models import SaveParams, SaveMemoryResponse, ErrorResponse
+from app.dependencies import (
+    get_embeddings_model,
+    create_qdrant_client,
+    get_api_key,
 )
-from dependencies import get_embeddings_model, create_qdrant_client, get_api_key
+from app.routes.common import ERROR_RESPONSES
 
 router = APIRouter()
-
-ERROR_RESPONSES = {
-    400: {"model": ErrorResponse, "description": "Bad Request"},
-    401: {"model": ErrorResponse, "description": "Unauthorized"},
-    403: {"model": ErrorResponse, "description": "Forbidden"},
-    404: {"model": ErrorResponse, "description": "Not Found"},
-    422: {"model": ErrorResponse, "description": "Validation Error"},
-    500: {"model": ErrorResponse, "description": "Internal Server Error"},
-}
 
 
 @router.post(
@@ -46,12 +39,7 @@ async def save_memory(
 ) -> SaveMemoryResponse:
     model = get_embeddings_model()
     raw_vector = await asyncio.to_thread(model.embed, params.memory)
-    if hasattr(raw_vector, "tolist"):
-        raw_vector = raw_vector.tolist()
-    vector = list(raw_vector)
-    if vector and isinstance(vector[0], (list, tuple)):
-        vector = list(vector[0])
-    vector = [float(v) for v in vector]
+    vector = np.array(raw_vector, dtype=float).flatten().tolist()
     uuid_str = str(uuid.uuid4())
     timestamp = datetime.now(timezone.utc).isoformat()
 

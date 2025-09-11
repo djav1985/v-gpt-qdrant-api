@@ -18,4 +18,10 @@ See [standard-version](https://github.com/conventional-changelog/standard-versio
 - remove redis-based rate limiting and associated dependencies
 - refactor startup to use FastAPI's lifespan context manager
 - load TextEmbedding in a background thread, simplify initialization calls, and manage Qdrant client via async generator
+- replace bare imports with package-relative paths and drop test path hacks
+- load TextEmbedding asynchronously and await initialization during lifespan
+- centralize shared error responses
+- simplify embedding vector handling with NumPy
+- align OpenAPI security with X-API-Key header
+- remove unused startup event and modernize typing hints
 

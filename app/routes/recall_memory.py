@@ -2,24 +2,11 @@ import asyncio
 from fastapi import APIRouter, Depends
 from qdrant_client import AsyncQdrantClient, models
 
-from models import (
-    SearchParams,
-    RecallMemoryResponse,
-    MemoryRecord,
-    ErrorResponse,
-)
-from dependencies import get_embeddings_model, create_qdrant_client, get_api_key
+from app.models import SearchParams, RecallMemoryResponse, MemoryRecord
+from app.dependencies import get_embeddings_model, create_qdrant_client, get_api_key
+from app.routes.common import ERROR_RESPONSES
 
 router = APIRouter()
-
-ERROR_RESPONSES = {
-    400: {"model": ErrorResponse, "description": "Bad Request"},
-    401: {"model": ErrorResponse, "description": "Unauthorized"},
-    403: {"model": ErrorResponse, "description": "Forbidden"},
-    404: {"model": ErrorResponse, "description": "Not Found"},
-    422: {"model": ErrorResponse, "description": "Validation Error"},
-    500: {"model": ErrorResponse, "description": "Internal Server Error"},
-}
 
 
 @router.post(

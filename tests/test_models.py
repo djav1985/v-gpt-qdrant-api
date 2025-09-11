@@ -4,7 +4,7 @@ from uuid import uuid4
 
 from pydantic import ValidationError
 
-from models import (
+from app.models import (
     SaveParams,
     SearchParams,
     ManageMemoryParams,
