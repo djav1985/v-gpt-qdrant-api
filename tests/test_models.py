@@ -12,6 +12,18 @@ from app.models import (
 )
 
 
+def test_saveparams_lists_unchanged():
+    params = SaveParams(
+        memory_bank="bank",
+        memory="hello",
+        sentiment="neutral",
+        entities=["a", "b"],
+        tags=["x", "y"],
+    )
+    assert params.entities == ["a", "b"]
+    assert params.tags == ["x", "y"]
+
+
 def test_save_params_splits_comma_separated_fields():
     params = SaveParams(
         memory_bank="bank1",
