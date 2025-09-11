@@ -89,7 +89,7 @@ class SearchParams(BaseModel):
     query: Annotated[str, constr(min_length=1)] = Field(
         ..., description="The search query used to retrieve similar memories.", json_schema_extra={"example": "Alice park meeting"}
     )
-    top_k: Annotated[int, conint(ge=1, le=100)] = Field(
+    top_k: TopKInt = Field(
         5, description="The number of most similar memories to return (1-100).", json_schema_extra={"example": 5}
     )
     entity: Optional[Annotated[str, constr(min_length=1)]] = Field(

@@ -1,7 +1,6 @@
 import sys
 from pathlib import Path
 import types
-import fastapi_limiter.depends
 
 # Ensure modules can be imported as if running from the app directory
 sys.path.append(str(Path(__file__).resolve().parent.parent / "app"))
@@ -20,13 +19,3 @@ class _DummyTextEmbedding:
 
 fastembed_stub.TextEmbedding = _DummyTextEmbedding
 sys.modules["fastembed"] = fastembed_stub
-
-
-def _no_rate_limit(*args, **kwargs):
-    async def dependency():
-        return None
-
-    return dependency
-
-
-fastapi_limiter.depends.RateLimiter = _no_rate_limit
