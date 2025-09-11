@@ -1,7 +1,6 @@
 # Build stage
 FROM python:3.10-slim as builder
 
-# Set the working directory
 WORKDIR /app
 
 # Copy the requirements file and cache
@@ -11,7 +10,7 @@ COPY requirements.txt /app
 # Install Python dependencies in a virtual environment
 RUN python -m venv /app/venv && \
     . /app/venv/bin/activate && \
-    pip install --no-index --find-links /app/cache -r requirements.txt
+    pip install --find-links /app/cache -r requirements.txt
 
 # Final stage
 FROM python:3.10-slim
