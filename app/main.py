@@ -1,16 +1,29 @@
-### main.py
+# main.py
 import os
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, Security
+from fastapi.security import APIKeyHeader
 from dependencies import initialize_text_embedding
-from routes.memory import memory_router
-from routes.root import root_router
+
+api_key_scheme = APIKeyHeader(name="X-API-Key", description="API key header")
+
+
+def verify_api_key(api_key: str = Security(api_key_scheme)) -> str:
+    if api_key != os.getenv("API_KEY"):
+        raise HTTPException(status_code=403, detail="Invalid API key")
+    return api_key
+
+
+from routes.memory import memory_router  # noqa: E402
+from routes.root import root_router  # noqa: E402
 
 app = FastAPI(
     title="AI Memory API",
     version="0.1.0",
     description="A FastAPI application that allows users to save memories ...",
     root_path=os.getenv("ROOT_PATH", ""),
-    servers=[{"url": os.getenv("BASE_URL", ""), "description": "Base API server"}],
+    servers=[
+        {"url": os.getenv("BASE_URL", ""), "description": "Base API server"}
+    ],
 )
 
 
