@@ -38,18 +38,18 @@ async def manage_memories(
 ) -> ManageMemoryResponse:
     if params.action is ActionEnum.CREATE:
         await asyncio.gather(
-            qdrant.create_collection(
-                collection_name=params.memory_bank,
-                vectors_config=VectorParams(
-                    size=int(os.getenv("DIM")),
-                    distance=Distance.COSINE,
+                qdrant.create_collection(
+                    collection_name=params.memory_bank,
+                    vectors_config=VectorParams(
+                        size=_get_dim_env(),
+                        distance=Distance.COSINE,
+                    ),
                 ),
-            ),
             *[
                 qdrant.create_payload_index(
                     collection_name=params.memory_bank,
                     field_name=field,
-                    field_schema="keyword",
+                    field_schema=models.KeywordIndexParams(type=models.KeywordIndexType.KEYWORD),
                 )
                 for field in ["sentiment", "entities", "tags"]
             ],
@@ -81,3 +81,13 @@ async def manage_memories(
                 detail=f"Unsupported action: {params.action}",
             ).model_dump(),
         )
+
+def _get_dim_env() -> int:
+    dim = os.getenv("DIM")
+    if dim is None:
+        raise RuntimeError("Environment variable 'DIM' is not set.")
+    try:
+        return int(dim)
+    except ValueError:
+        raise RuntimeError(f"Environment variable 'DIM' must be an integer, got: {dim}")
+

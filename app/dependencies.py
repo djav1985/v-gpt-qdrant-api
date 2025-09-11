@@ -33,9 +33,10 @@ class SingletonTextEmbedding:
     async def initialize(cls) -> None:
         """Initializes the singleton instance using environment configuration."""
         if cls._instance is None:
+            model_name = os.getenv("LOCAL_MODEL") or "BAAI/bge-small-en-v1.5"
             cls._instance = await asyncio.to_thread(
                 TextEmbedding,
-                model_name=os.getenv("LOCAL_MODEL"),
+                model_name=model_name,
                 cache_dir="/app/models",
                 parallel="none",
                 threads=3,

@@ -27,4 +27,6 @@ router = APIRouter()
 async def create_embedding(payload: EmbeddingRequest) -> EmbeddingResponse:
     model = get_embeddings_model()
     vector = await asyncio.to_thread(model.embed, payload.text)
-    return EmbeddingResponse(embedding=vector.tolist())
+    import numpy as np
+    vector_list = np.array(vector, dtype=float).flatten().tolist()
+    return EmbeddingResponse(embedding=vector_list)
