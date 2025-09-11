@@ -1,6 +1,5 @@
 import pytest
 from fastapi import HTTPException
-from fastapi.security import HTTPAuthorizationCredentials
 import dependencies
 
 
@@ -33,19 +32,17 @@ async def test_get_instance_after_initialize(monkeypatch):
 
 
 def test_get_api_key_valid(monkeypatch):
-    monkeypatch.setenv("MEMORIES_API_KEY", "secret")
-    creds = HTTPAuthorizationCredentials(scheme="Bearer", credentials="secret")
-    assert dependencies.get_api_key(creds) == "secret"
+    monkeypatch.setenv("API_KEY", "secret")
+    assert dependencies.get_api_key("secret") == "secret"
 
 
 def test_get_api_key_invalid(monkeypatch):
-    monkeypatch.setenv("MEMORIES_API_KEY", "secret")
-    creds = HTTPAuthorizationCredentials(scheme="Bearer", credentials="wrong")
+    monkeypatch.setenv("API_KEY", "secret")
     with pytest.raises(HTTPException):
-        dependencies.get_api_key(creds)
+        dependencies.get_api_key("wrong")
 
 
 def test_get_api_key_missing(monkeypatch):
-    monkeypatch.setenv("MEMORIES_API_KEY", "secret")
+    monkeypatch.setenv("API_KEY", "secret")
     with pytest.raises(HTTPException):
         dependencies.get_api_key(None)

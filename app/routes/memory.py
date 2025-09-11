@@ -1,7 +1,7 @@
 import os
 import uuid
 import asyncio
-from datetime import datetime
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi_limiter.depends import RateLimiter
@@ -18,8 +18,11 @@ from models import (
     ManageMemoryResponse,
     MemoryRecord,
 )
-from dependencies import get_embeddings_model, create_qdrant_client
-from ..main import verify_api_key
+from dependencies import (
+    get_embeddings_model,
+    create_qdrant_client,
+    get_api_key,
+)
 
 memory_router = APIRouter()
 
@@ -30,7 +33,7 @@ memory_router = APIRouter()
     operation_id="save_memory",
     dependencies=[
         Depends(RateLimiter(times=5, seconds=60)),
-        Depends(verify_api_key),
+        Depends(get_api_key),
     ],
     response_model=SaveMemoryResponse,
     summary="Save a memory",
@@ -53,7 +56,7 @@ async def save_memory(
     model = get_embeddings_model()
     vector = await asyncio.to_thread(model.embed, params.memory)
     uuid_str = str(uuid.uuid4())
-    timestamp = datetime.utcnow().isoformat()
+    timestamp = datetime.now(timezone.utc).isoformat()
 
     await qdrant.upsert(
         collection_name=params.memory_bank,
@@ -80,7 +83,7 @@ async def save_memory(
     operation_id="recall_memory",
     dependencies=[
         Depends(RateLimiter(times=10, seconds=60)),
-        Depends(verify_api_key),
+        Depends(get_api_key),
     ],
     response_model=RecallMemoryResponse,
     summary="Recall memories",
@@ -144,7 +147,7 @@ async def recall_memory(
     operation_id="manage_memories",
     dependencies=[
         Depends(RateLimiter(times=5, seconds=60)),
-        Depends(verify_api_key),
+        Depends(get_api_key),
     ],
     response_model=ManageMemoryResponse,
     summary="Manage memory banks",
@@ -197,7 +200,7 @@ async def manage_memories(
             )
         await qdrant.delete(
             collection_name=params.memory_bank,
-            points_selector=[params.uuid],
+            points_selector=models.PointIdsList(points=[params.uuid]),
         )
         return ManageMemoryResponse(
             message=(

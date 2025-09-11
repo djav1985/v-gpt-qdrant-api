@@ -7,4 +7,8 @@ See [standard-version](https://github.com/conventional-changelog/standard-versio
 - add unit tests for startup events, dependencies, API key validation, memory routes, root endpoint, and models
 - add unit tests for pydantic model validators
 - document memory API responses and security scheme
+- pin Pydantic to v2 and add redis-backed rate limiting
+- add optional embeddings endpoint gated by EMBEDDING_ENDPOINT flag
+- fix Qdrant deletion selector and use timezone-aware timestamps
+- unify API key handling and standardize container port 8060
 
