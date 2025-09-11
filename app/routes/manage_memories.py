@@ -49,7 +49,7 @@ async def manage_memories(
                 qdrant.create_payload_index(
                     collection_name=params.memory_bank,
                     field_name=field,
-                    field_schema="keyword",
+                    field_schema=models.KeywordIndexParams(type=models.KeywordIndexType.KEYWORD),
                 )
                 for field in ["sentiment", "entities", "tags"]
             ],
@@ -57,11 +57,13 @@ async def manage_memories(
         return ManageMemoryResponse(
             message=f"Memory Bank '{params.memory_bank}' created successfully"
         )
+
     elif params.action is ActionEnum.DELETE:
         await qdrant.delete_collection(collection_name=params.memory_bank)
         return ManageMemoryResponse(
             message=f"Memory Bank '{params.memory_bank}' has been deleted."
         )
+
     elif params.action is ActionEnum.FORGET:
         await qdrant.delete(
             collection_name=params.memory_bank,
@@ -72,6 +74,7 @@ async def manage_memories(
                 f"Memory with UUID '{params.uuid}' has been forgotten from Memory Bank '{params.memory_bank}'."
             )
         )
+
     else:
         raise HTTPException(
             status_code=400,
