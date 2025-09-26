@@ -23,10 +23,6 @@ class ErrorResponse(BaseModel):
     status: int = Field(..., description="HTTP status code of the error")
     code: str = Field(..., description="Application-specific error identifier")
     detail: str = Field(..., description="Human-readable explanation of the error")
-    message: Optional[str] = Field(
-        default=None,
-        description="Optional short summary, primarily intended for logging/debugging.",
-    )
     details: Optional[str] = Field(
         default=None,
         description=(
