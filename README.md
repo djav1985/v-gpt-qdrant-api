@@ -91,6 +91,20 @@ For GPTs:
 
 ---
 
+### Error Handling
+
+All endpoints emit structured error payloads that follow the shared `ErrorResponse` schema. Failures surface a short `detail` message alongside a machine-readable `code`, making it easy for clients to react programmatically while still showing a friendly explanation to end users.
+
+```json
+{
+  "status": 403,
+  "code": "invalid_api_key",
+  "detail": "Invalid or missing API key"
+}
+```
+
+When additional context is available (for example, exception messages from Qdrant), it is emitted in the optional `details` attribute so clients can log or display richer diagnostics without parsing human text.
+
 ## 🗂️ Repository Structure
 
 ```sh

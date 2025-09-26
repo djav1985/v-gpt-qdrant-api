@@ -93,8 +93,7 @@ def get_api_key(
             detail=ErrorResponse(
                 status=403,
                 code="invalid_api_key",
-                message="Invalid or missing API key",
-                details="Invalid or missing API key",
-            ).model_dump(),
+                detail="Invalid or missing API key",
+            ).model_dump(exclude_none=True),
         )
     return api_key

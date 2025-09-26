@@ -88,13 +88,13 @@ def custom_openapi() -> dict:
         servers=app.servers,
     )
     # Add API key authentication scheme
-    openapi_schema.setdefault("components", {}).setdefault(
-        "securitySchemes", {}
-    )["ApiKeyAuth"] = {
+    openapi_schema.setdefault("components", {}).setdefault("securitySchemes", {})[
+        "ApiKeyAuth"
+    ] = {
         "type": "apiKey",
         "name": "X-API-Key",
         "in": "header",
-        "description": "Provide the API key via the X-API-Key header"
+        "description": "Provide the API key via the X-API-Key header",
     }
     openapi_schema["openapi"] = "3.1.0"
     app.openapi_schema = openapi_schema

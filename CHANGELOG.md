@@ -16,6 +16,7 @@ See [standard-version](https://github.com/conventional-changelog/standard-versio
 - switch tests to pytest's native async support
 - declare pytest-asyncio as a test dependency
 - add docstrings for memory and embedding route handlers
+- standardize API error payloads around `detail` field and trim optional attributes when unused
 - add BaseSettings configuration and forbid extra request fields
 - add unit tests for startup events, dependencies, API key validation, memory routes, root endpoint, and models
 - add unit tests for pydantic model validators

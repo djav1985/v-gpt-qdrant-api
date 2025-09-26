@@ -18,12 +18,21 @@ from pydantic import (
 
 
 class ErrorResponse(BaseModel):
-    """Standard error response format across all apps."""
+    """Standardised error response structure returned by the API."""
+
     status: int = Field(..., description="HTTP status code of the error")
     code: str = Field(..., description="Application-specific error identifier")
-    message: str = Field(..., description="Human-readable summary of the error")
+    detail: str = Field(..., description="Human-readable explanation of the error")
+    message: Optional[str] = Field(
+        default=None,
+        description="Optional short summary, primarily intended for logging/debugging.",
+    )
     details: Optional[str] = Field(
-        None, description="Additional information that may help resolve the error"
+        default=None,
+        description=(
+            "Additional information that may help resolve the error. Typically includes "
+            "upstream exception context."
+        ),
     )
 
     model_config = ConfigDict(extra="forbid")
@@ -56,10 +65,10 @@ class SaveParams(StrictBaseModel):
     """
     Parameters required to save a memory.
     """
+
     memory_bank: Annotated[str, constr(min_length=1)] = Field(
         ...,
-        description="The name of the memory bank where the memory will be "
-        "stored.",
+        description="The name of the memory bank where the memory will be stored.",
         json_schema_extra={"example": "personal_bank"},
     )
     memory: str = Field(
@@ -180,9 +189,7 @@ class ManageMemoryParams(StrictBaseModel):
     )
     uuid: Optional[UUID] = Field(
         None,
-        description=(
-            "The UUID of the memory to be forgotten (required for forget)."
-        ),
+        description="The UUID of the memory to be forgotten (required for forget).",
         json_schema_extra={"example": "123e4567-e89b-12d3-a456-426614174000"},
     )
 
@@ -221,9 +228,7 @@ class MemoryRecord(StrictBaseModel):
     id: UUID = Field(
         ...,
         description="Unique memory identifier",
-        json_schema_extra={
-            "example": "123e4567-e89b-12d3-a456-426614174000"
-        },
+        json_schema_extra={"example": "123e4567-e89b-12d3-a456-426614174000"},
     )
     memory: Annotated[str, constr(min_length=1)] = Field(
         ...,
@@ -268,9 +273,7 @@ class SaveMemoryResponse(StrictBaseModel):
     uuid: UUID = Field(
         ...,
         description="Unique identifier for the saved memory",
-        json_schema_extra={
-            "example": "123e4567-e89b-12d3-a456-426614174000"
-        },
+        json_schema_extra={"example": "123e4567-e89b-12d3-a456-426614174000"},
     )
 
 

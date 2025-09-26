@@ -82,9 +82,9 @@ async def save_memory(
             detail=ErrorResponse(
                 status=500,
                 code="qdrant_upsert_failed",
-                message="Failed to save memory to Qdrant",
+                detail="Failed to save memory to Qdrant",
                 details=str(exc),
-            ).model_dump(),
+            ).model_dump(exclude_none=True),
         ) from exc
     except Exception as exc:  # pragma: no cover - unexpected
         logging.getLogger(__name__).exception("Unexpected error during memory save")
@@ -93,8 +93,8 @@ async def save_memory(
             detail=ErrorResponse(
                 status=500,
                 code="unexpected_error",
-                message="Unexpected error during memory save",
+                detail="Unexpected error during memory save",
                 details=str(exc),
-            ).model_dump(),
+            ).model_dump(exclude_none=True),
         ) from exc
     return SaveMemoryResponse(message="Memory saved successfully", uuid=memory_id)

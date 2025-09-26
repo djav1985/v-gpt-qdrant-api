@@ -27,12 +27,12 @@ router = APIRouter()
     description=(
         "Create, delete, or forget memories within a memory bank.\n\n"
         "**Create**\nRequest:\n"
-        "``{\"memory_bank\": \"personal_bank\", \"action\": \"create\"}``"
+        '``{"memory_bank": "personal_bank", "action": "create"}``'
         "\n**Delete**\nRequest:\n"
-        "``{\"memory_bank\": \"personal_bank\", \"action\": \"delete\"}``"
+        '``{"memory_bank": "personal_bank", "action": "delete"}``'
         "\n**Forget**\nRequest:\n"
-        "``{\"memory_bank\": \"personal_bank\", \"action\": \"forget\", "
-        "\"uuid\": \"123e4567-e89b-12d3-a456-426614174000\"}``"
+        '``{"memory_bank": "personal_bank", "action": "forget", '
+        '"uuid": "123e4567-e89b-12d3-a456-426614174000"}``'
     ),
     tags=["memory"],
     responses={
@@ -64,10 +64,10 @@ async def manage_memories(
                 detail=ErrorResponse(
                     status=500,
                     code="missing_dim",
-                    message="Embedding dimension (DIM) is not set",
+                    detail="Embedding dimension (DIM) is not set",
                     details="Embedding dimension (DIM) is not set in "
                     "environment/config.",
-                ).model_dump(),
+                ).model_dump(exclude_none=True),
             )
         try:
             await asyncio.gather(
@@ -93,9 +93,9 @@ async def manage_memories(
                 detail=ErrorResponse(
                     status=500,
                     code="qdrant_create_failed",
-                    message="Failed to create memory bank",
+                    detail="Failed to create memory bank",
                     details=str(exc),
-                ).model_dump(),
+                ).model_dump(exclude_none=True),
             ) from exc
         except Exception as exc:  # pragma: no cover - unexpected
             logging.getLogger(__name__).exception(
@@ -106,9 +106,9 @@ async def manage_memories(
                 detail=ErrorResponse(
                     status=500,
                     code="unexpected_error",
-                    message="Unexpected error during memory bank creation",
+                    detail="Unexpected error during memory bank creation",
                     details=str(exc),
-                ).model_dump(),
+                ).model_dump(exclude_none=True),
             ) from exc
         return ManageMemoryResponse(
             message=f"Memory Bank '{params.memory_bank}' created successfully"
@@ -123,9 +123,9 @@ async def manage_memories(
                 detail=ErrorResponse(
                     status=500,
                     code="qdrant_delete_failed",
-                    message="Failed to delete memory bank",
+                    detail="Failed to delete memory bank",
                     details=str(exc),
-                ).model_dump(),
+                ).model_dump(exclude_none=True),
             ) from exc
         except Exception as exc:  # pragma: no cover - unexpected
             logging.getLogger(__name__).exception(
@@ -136,9 +136,9 @@ async def manage_memories(
                 detail=ErrorResponse(
                     status=500,
                     code="unexpected_error",
-                    message="Unexpected error during memory bank deletion",
+                    detail="Unexpected error during memory bank deletion",
                     details=str(exc),
-                ).model_dump(),
+                ).model_dump(exclude_none=True),
             ) from exc
         return ManageMemoryResponse(
             message=f"Memory Bank '{params.memory_bank}' has been deleted."
@@ -156,9 +156,9 @@ async def manage_memories(
                 detail=ErrorResponse(
                     status=500,
                     code="qdrant_forget_failed",
-                    message="Failed to forget memory",
+                    detail="Failed to forget memory",
                     details=str(exc),
-                ).model_dump(),
+                ).model_dump(exclude_none=True),
             ) from exc
         except Exception as exc:  # pragma: no cover - unexpected
             logging.getLogger(__name__).exception(
@@ -169,9 +169,9 @@ async def manage_memories(
                 detail=ErrorResponse(
                     status=500,
                     code="unexpected_error",
-                    message="Unexpected error during memory deletion",
+                    detail="Unexpected error during memory deletion",
                     details=str(exc),
-                ).model_dump(),
+                ).model_dump(exclude_none=True),
             ) from exc
         return ManageMemoryResponse(
             message=(
@@ -186,7 +186,7 @@ async def manage_memories(
             detail=ErrorResponse(
                 status=400,
                 code="invalid_action",
-                message="Invalid action",
+                detail="Invalid action",
                 details=f"Unsupported action: {params.action}",
-            ).model_dump(),
+            ).model_dump(exclude_none=True),
         )
