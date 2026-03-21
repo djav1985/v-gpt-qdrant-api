@@ -1,15 +1,18 @@
 import asyncio
+import logging
 from datetime import datetime
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from qdrant_client import AsyncQdrantClient, models
+from qdrant_client.http.exceptions import ApiException as QdrantException
 
 from app.models import (
     SearchParams,
     RecallMemoryResponse,
     MemoryRecord,
     SentimentEnum,
+    ErrorResponse,
 )
 from app.dependencies import get_embeddings_model, create_qdrant_client, get_api_key
 from app.routes.common import ERROR_RESPONSES
@@ -57,18 +60,31 @@ async def recall_memory(
     query_vector = list(map(float, vector))
 
     filters = []
+
+    # Single entity filter (exact match)
     if params.entity:
         filters.append(
             models.FieldCondition(
                 key="entities", match=models.MatchValue(value=params.entity)
             )
         )
+
+    # Multiple entities filter (OR logic)
+    if params.entities:
+        filters.append(
+            models.FieldCondition(
+                key="entities", match=models.MatchAny(any=params.entities)
+            )
+        )
+
     if params.sentiment:
         filters.append(
             models.FieldCondition(
                 key="sentiment", match=models.MatchAny(any=[params.sentiment])
             )
         )
+
+    # Single tag filter (exact match)
     if params.tag:
         filters.append(
             models.FieldCondition(
@@ -77,13 +93,46 @@ async def recall_memory(
             )
         )
 
-    hits = await qdrant.search(
-        collection_name=params.memory_bank,
-        query_vector=query_vector,
-        query_filter=models.Filter(must=filters) if filters else None,
-        with_payload=True,
-        limit=params.top_k,
-    )
+    # Multiple tags filter (OR logic)
+    if params.tags:
+        filters.append(
+            models.FieldCondition(
+                key="tags",
+                match=models.MatchAny(any=params.tags),
+            )
+        )
+
+    try:
+        hits = await qdrant.search(
+            collection_name=params.memory_bank,
+            query_vector=query_vector,
+            query_filter=models.Filter(must=filters) if filters else None,
+            with_payload=True,
+            limit=params.top_k,
+            score_threshold=params.min_score if params.min_score > 0.0 else None,
+        )
+    except QdrantException as exc:
+        raise HTTPException(
+            status_code=500,
+            detail=ErrorResponse(
+                status=500,
+                code="qdrant_search_failed",
+                message="Failed to search memories in Qdrant",
+                details=str(exc),
+            ).model_dump(),
+        ) from exc
+    except Exception as exc:  # pragma: no cover - unexpected
+        logging.getLogger(__name__).exception("Unexpected error during memory recall")
+        raise HTTPException(
+            status_code=500,
+            detail=ErrorResponse(
+                status=500,
+                code="unexpected_error",
+                message="Unexpected error during memory recall",
+                details=str(exc),
+            ).model_dump(),
+        ) from exc
+
     results = []
     for hit in hits:
         payload = hit.payload or {}
