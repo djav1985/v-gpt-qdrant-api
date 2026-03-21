@@ -1,5 +1,8 @@
 import asyncio
 import logging
+import uuid
+from datetime import datetime, timezone
+
 from fastapi import APIRouter, Depends, HTTPException
 from qdrant_client import AsyncQdrantClient, models
 from qdrant_client.models import Distance, VectorParams
@@ -12,7 +15,7 @@ from app.models import (
     ManageMemoryResponse,
     ErrorResponse,
 )
-from app.dependencies import create_qdrant_client, get_api_key
+from app.dependencies import create_qdrant_client, get_api_key, get_embeddings_model
 from app.routes.common import ERROR_RESPONSES
 
 router = APIRouter()
@@ -25,14 +28,21 @@ router = APIRouter()
     response_model=ManageMemoryResponse,
     summary="Manage memory banks",
     description=(
-        "Create, delete, or forget memories within a memory bank.\n\n"
+        "Create, delete, list, update, or forget memories within a memory bank.\n\n"
         "**Create**\nRequest:\n"
         "``{\"memory_bank\": \"personal_bank\", \"action\": \"create\"}``"
         "\n**Delete**\nRequest:\n"
         "``{\"memory_bank\": \"personal_bank\", \"action\": \"delete\"}``"
+        "\n**List**\nRequest:\n"
+        "``{\"memory_bank\": \"personal_bank\", \"action\": \"list\"}``"
         "\n**Forget**\nRequest:\n"
         "``{\"memory_bank\": \"personal_bank\", \"action\": \"forget\", "
         "\"uuid\": \"123e4567-e89b-12d3-a456-426614174000\"}``"
+        "\n**Update**\nRequest:\n"
+        "``{\"memory_bank\": \"personal_bank\", \"action\": \"update\", "
+        "\"uuid\": \"123e4567-e89b-12d3-a456-426614174000\", "
+        "\"memory\": \"Updated text\", \"sentiment\": \"positive\", "
+        "\"entities\": [\"alice\"], \"tags\": [\"friends\"]}``"
     ),
     tags=["memory"],
     responses={
@@ -47,7 +57,7 @@ async def manage_memories(
     params: ManageMemoryParams,
     qdrant: AsyncQdrantClient = Depends(create_qdrant_client),
 ) -> ManageMemoryResponse:
-    """Create, delete, or forget memories within a memory bank.
+    """Create, delete, list, update, or forget memories within a memory bank.
 
     Args:
         params: Memory bank action and related parameters.
@@ -144,6 +154,38 @@ async def manage_memories(
             message=f"Memory Bank '{params.memory_bank}' has been deleted."
         )
 
+    elif params.action is ActionEnum.LIST:
+        try:
+            response = await qdrant.get_collections()
+            bank_names = [c.name for c in response.collections]
+        except QdrantException as exc:
+            raise HTTPException(
+                status_code=500,
+                detail=ErrorResponse(
+                    status=500,
+                    code="qdrant_list_failed",
+                    message="Failed to list memory banks",
+                    details=str(exc),
+                ).model_dump(),
+            ) from exc
+        except Exception as exc:  # pragma: no cover - unexpected
+            logging.getLogger(__name__).exception(
+                "Unexpected error during memory bank listing"
+            )
+            raise HTTPException(
+                status_code=500,
+                detail=ErrorResponse(
+                    status=500,
+                    code="unexpected_error",
+                    message="Unexpected error during memory bank listing",
+                    details=str(exc),
+                ).model_dump(),
+            ) from exc
+        return ManageMemoryResponse(
+            message=f"Found {len(bank_names)} memory bank(s).",
+            banks=bank_names,
+        )
+
     elif params.action is ActionEnum.FORGET:
         try:
             await qdrant.delete(
@@ -177,6 +219,64 @@ async def manage_memories(
             message=(
                 f"Memory with UUID '{params.uuid}' has been forgotten "
                 f"from Memory Bank '{params.memory_bank}'."
+            )
+        )
+
+    elif params.action is ActionEnum.UPDATE:
+        model = get_embeddings_model()
+        raw_vector = await asyncio.to_thread(model.embed, params.memory)
+        vector_list = list(raw_vector)
+        if isinstance(vector_list[0], (list, tuple)):
+            vector = vector_list[0]
+        else:
+            vector = vector_list
+        vector = list(map(float, vector))
+        timestamp = datetime.now(timezone.utc).isoformat()
+
+        try:
+            await qdrant.upsert(
+                collection_name=params.memory_bank,
+                points=[
+                    models.PointStruct(
+                        id=str(params.uuid),
+                        vector=vector,
+                        payload={
+                            "memory": params.memory,
+                            "timestamp": timestamp,
+                            "sentiment": params.sentiment,
+                            "entities": params.entities,
+                            "tags": params.tags,
+                        },
+                    )
+                ],
+            )
+        except QdrantException as exc:
+            raise HTTPException(
+                status_code=500,
+                detail=ErrorResponse(
+                    status=500,
+                    code="qdrant_update_failed",
+                    message="Failed to update memory",
+                    details=str(exc),
+                ).model_dump(),
+            ) from exc
+        except Exception as exc:  # pragma: no cover - unexpected
+            logging.getLogger(__name__).exception(
+                "Unexpected error during memory update"
+            )
+            raise HTTPException(
+                status_code=500,
+                detail=ErrorResponse(
+                    status=500,
+                    code="unexpected_error",
+                    message="Unexpected error during memory update",
+                    details=str(exc),
+                ).model_dump(),
+            ) from exc
+        return ManageMemoryResponse(
+            message=(
+                f"Memory with UUID '{params.uuid}' has been updated "
+                f"in Memory Bank '{params.memory_bank}'."
             )
         )
 

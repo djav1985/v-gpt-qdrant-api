@@ -33,6 +33,8 @@ class ActionEnum(str, Enum):
     CREATE = "create"
     DELETE = "delete"
     FORGET = "forget"
+    LIST = "list"
+    UPDATE = "update"
 
 
 class SentimentEnum(str, Enum):
@@ -130,18 +132,35 @@ class SearchParams(StrictBaseModel):
     )
     entity: Optional[Annotated[str, constr(min_length=1)]] = Field(
         None,
-        description="An entity to filter the search.",
+        description="A single entity to filter the search (exact match).",
         json_schema_extra={"example": "alice"},
+    )
+    entities: Optional[list[Annotated[str, constr(min_length=1)]]] = Field(
+        None,
+        description="Multiple entities to filter the search (OR logic).",
+        json_schema_extra={"example": ["alice", "bob"]},
     )
     tag: Optional[Annotated[str, constr(min_length=1)]] = Field(
         None,
-        description="A tag to filter the search.",
+        description="A single tag to filter the search (exact match).",
         json_schema_extra={"example": "friends"},
+    )
+    tags: Optional[list[Annotated[str, constr(min_length=1)]]] = Field(
+        None,
+        description="Multiple tags to filter the search (OR logic).",
+        json_schema_extra={"example": ["friends", "family"]},
     )
     sentiment: Optional[SentimentEnum] = Field(
         None,
         description="The sentiment to filter the search.",
         json_schema_extra={"example": "positive"},
+    )
+    min_score: float = Field(
+        0.0,
+        ge=0.0,
+        le=1.0,
+        description="Minimum similarity score threshold (0.0–1.0). Results below this are excluded.",
+        json_schema_extra={"example": 0.6},
     )
 
     @field_validator("query", mode="before")
@@ -181,9 +200,29 @@ class ManageMemoryParams(StrictBaseModel):
     uuid: Optional[UUID] = Field(
         None,
         description=(
-            "The UUID of the memory to be forgotten (required for forget)."
+            "The UUID of the memory to be forgotten or updated (required for forget and update)."
         ),
         json_schema_extra={"example": "123e4567-e89b-12d3-a456-426614174000"},
+    )
+    memory: Optional[str] = Field(
+        None,
+        description="Updated memory text (required for update action).",
+        json_schema_extra={"example": "Met Alice at the coffee shop"},
+    )
+    sentiment: Optional[SentimentEnum] = Field(
+        None,
+        description="Updated sentiment (required for update action).",
+        json_schema_extra={"example": "positive"},
+    )
+    entities: Optional[list[str]] = Field(
+        None,
+        description="Updated list of entities (required for update action).",
+        json_schema_extra={"example": ["alice"]},
+    )
+    tags: Optional[list[str]] = Field(
+        None,
+        description="Updated list of tags (required for update action).",
+        json_schema_extra={"example": ["friends"]},
     )
 
     model_config = ConfigDict(
@@ -192,10 +231,20 @@ class ManageMemoryParams(StrictBaseModel):
             "examples": [
                 {"memory_bank": "personal_bank", "action": "create"},
                 {"memory_bank": "personal_bank", "action": "delete"},
+                {"memory_bank": "personal_bank", "action": "list"},
                 {
                     "memory_bank": "personal_bank",
                     "action": "forget",
                     "uuid": "123e4567-e89b-12d3-a456-426614174000",
+                },
+                {
+                    "memory_bank": "personal_bank",
+                    "action": "update",
+                    "uuid": "123e4567-e89b-12d3-a456-426614174000",
+                    "memory": "Met Alice at the coffee shop",
+                    "sentiment": "positive",
+                    "entities": ["alice"],
+                    "tags": ["friends"],
                 },
             ]
         },
@@ -207,13 +256,34 @@ class ManageMemoryParams(StrictBaseModel):
             raise ValueError("Invalid memory bank name.")
         return value
 
+    @field_validator("entities", "tags", mode="before")
+    def split_str_values(cls, v):
+        if isinstance(v, str):
+            return [item.strip() for item in v.split(",") if item.strip()]
+        return v
+
     @model_validator(mode="after")
     def check_uuid_action(self):
         if self.action == ActionEnum.FORGET:
             if self.uuid is None:
                 raise ValueError("uuid is required when action is forget")
+            if any(f is not None for f in [self.memory, self.sentiment, self.entities, self.tags]):
+                raise ValueError("memory, sentiment, entities, tags are only allowed for update action")
+        elif self.action == ActionEnum.UPDATE:
+            if self.uuid is None:
+                raise ValueError("uuid is required when action is update")
+            if self.memory is None:
+                raise ValueError("memory is required when action is update")
+            if self.sentiment is None:
+                raise ValueError("sentiment is required when action is update")
+            if self.entities is None:
+                raise ValueError("entities is required when action is update")
+            if self.tags is None:
+                raise ValueError("tags is required when action is update")
         elif self.uuid is not None:
-            raise ValueError("uuid is only allowed when action is forget")
+            raise ValueError("uuid is only allowed when action is forget or update")
+        elif any(f is not None for f in [self.memory, self.sentiment, self.entities, self.tags]):
+            raise ValueError("memory, sentiment, entities, tags are only allowed for update action")
         return self
 
 
@@ -287,6 +357,11 @@ class ManageMemoryResponse(StrictBaseModel):
         json_schema_extra={
             "example": "Memory Bank 'personal_bank' created successfully"
         },
+    )
+    banks: Optional[list[str]] = Field(
+        None,
+        description="List of available memory bank names (only present for list action).",
+        json_schema_extra={"example": ["personal_bank", "shared_bank"]},
     )
 
 
